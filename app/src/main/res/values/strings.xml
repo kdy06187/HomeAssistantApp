@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">HomeAssistantApp</string>
+    <string-array name="protocol_array"><item>TCP_DIY</item><item>MATTER</item></string-array>
 </resources>

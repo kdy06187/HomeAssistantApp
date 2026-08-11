@@ -4,9 +4,13 @@ import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -21,6 +25,7 @@ import com.example.homeassistantapp.dto.ControlResponse;
 import com.example.homeassistantapp.dto.DeviceListResponse;
 import com.example.homeassistantapp.view.DeviceAdapter;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -60,5 +65,35 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         viewModel.fetchDevices();
+        FloatingActionButton fabAddDevice = findViewById(R.id.fabAddDevice);
+        fabAddDevice.setOnClickListener(v -> showAddDeviceDialog());
+    }
+    private void showAddDeviceDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("새로운 기기 추가");
+
+        // 만든 레이아웃 인플레이트
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_add_device, null);
+        builder.setView(dialogView);
+
+        Spinner spinnerProtocol = dialogView.findViewById(R.id.spinnerProtocol);
+        EditText editDeviceName = dialogView.findViewById(R.id.editDeviceName);
+        EditText editPayload = dialogView.findViewById(R.id.editPayload);
+
+        builder.setPositiveButton("등록", (dialog, which) -> {
+            String type = spinnerProtocol.getSelectedItem().toString(); // "ARDUINO" or "MATTER"
+            String name = editDeviceName.getText().toString();
+            String payload = editPayload.getText().toString();
+
+            if(!name.isEmpty() && !payload.isEmpty()){
+                // 이전에 만들어둔 ViewModel의 addDevice(커미셔닝 API) 호출!
+                viewModel.addDevice(type, name, payload);
+            } else {
+                Toast.makeText(MainActivity.this, "정보를 모두 입력해주세요.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("취소", (dialog, which) -> dialog.dismiss());
+        builder.show();
     }
 }

@@ -1,5 +1,7 @@
 package com.example.homeassistantapp.api;
 
+import com.example.homeassistantapp.dto.AddDeviceRequest;
+import com.example.homeassistantapp.dto.AddDeviceResponse;
 import com.example.homeassistantapp.dto.ControlRequest;
 import com.example.homeassistantapp.dto.ControlResponse;
 import com.example.homeassistantapp.dto.DeviceListResponse;
@@ -15,4 +17,6 @@ public interface HomeAssistantApi {
     Call<DeviceListResponse> getDeviceList(); // <DeviceListResponse>
     @POST("/api/control")
     Call<ControlResponse> controlDevice(@Body ControlRequest request); // <ControlResponse>
+    @POST("/api/commission")
+    Call<AddDeviceResponse> addDevice(@Body AddDeviceRequest request);
 }

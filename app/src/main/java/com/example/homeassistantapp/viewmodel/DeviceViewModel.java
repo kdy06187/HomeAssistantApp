@@ -4,6 +4,8 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.homeassistantapp.dto.AddDeviceRequest;
+import com.example.homeassistantapp.dto.AddDeviceResponse;
 import com.example.homeassistantapp.dto.ControlRequest;
 import com.example.homeassistantapp.dto.ControlResponse;
 import com.example.homeassistantapp.dto.Device;
@@ -58,6 +60,28 @@ public class DeviceViewModel extends ViewModel {
             @Override
             public void onFailure(Call<ControlResponse> call, Throwable t) {
                 toastMessage.setValue("제어 에러: " + t.getMessage());
+            }
+        });
+    }
+    // 커미셔닝 요청
+    public void addDevice(String type, String name, String payload){
+        AddDeviceRequest request = new AddDeviceRequest(type, name, payload);
+        // 로딩 토스트 메시지 띄우기
+        toastMessage.setValue("기기 등록을 서버에 요청했습니다...");
+
+        RetrofitClient.getApi().addDevice(request).enqueue(new Callback<AddDeviceResponse>() {
+            @Override
+            public void onResponse(Call<AddDeviceResponse> call, Response<AddDeviceResponse> response){
+                if(response.isSuccessful() && response.body() != null){
+                    toastMessage.setValue("등록 성공: " + response.body().message);
+                    fetchDevices();
+                } else{
+                    toastMessage.setValue("등록 실패: " + response.code());
+                }
+            }
+            @Override
+            public void onFailure(Call<AddDeviceResponse> call, Throwable t){
+                toastMessage.setValue("통신 실패: " + t.getMessage());
             }
         });
     }
