@@ -1,9 +1,12 @@
 package com.example.homeassistantapp.api;
 
+import android.service.controls.Control;
+
 import com.example.homeassistantapp.dto.AddDeviceRequest;
 import com.example.homeassistantapp.dto.AddDeviceResponse;
 import com.example.homeassistantapp.dto.ControlRequest;
 import com.example.homeassistantapp.dto.ControlResponse;
+import com.example.homeassistantapp.dto.DeleteDeviceRequest;
 import com.example.homeassistantapp.dto.DeviceListResponse;
 
 
@@ -19,4 +22,6 @@ public interface HomeAssistantApi {
     Call<ControlResponse> controlDevice(@Body ControlRequest request); // <ControlResponse>
     @POST("/api/commission")
     Call<AddDeviceResponse> addDevice(@Body AddDeviceRequest request);
+    @POST("/api/devices/delete")
+    Call<ControlResponse> deleteDevice(@Body DeleteDeviceRequest request);
 }

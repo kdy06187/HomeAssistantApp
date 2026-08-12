@@ -9,4 +9,16 @@ public class Device {
     public String name;
     @SerializedName("type")
     public String type;
+
+    public String getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getType() {
+        return type;
+    }
 }

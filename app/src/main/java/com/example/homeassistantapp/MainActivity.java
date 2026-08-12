@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.homeassistantapp.api.HomeAssistantApi;
 import com.example.homeassistantapp.dto.ControlRequest;
 import com.example.homeassistantapp.dto.ControlResponse;
+import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.dto.DeviceListResponse;
 import com.example.homeassistantapp.view.DeviceAdapter;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
@@ -52,6 +53,9 @@ public class MainActivity extends AppCompatActivity {
             viewModel.controlDevice(deviceId, command);
         });
         recyclerView.setAdapter(adapter);
+        adapter.setOnDeviceLongClickListener(device -> showDeviceDeleteDialog(device));
+
+
         // ViewModel의 데이터(LiveData) 관찰하기
         viewModel.getDeviceList().observe(this, devices -> {
             if (devices != null) {
@@ -95,5 +99,15 @@ public class MainActivity extends AppCompatActivity {
 
         builder.setNegativeButton("취소", (dialog, which) -> dialog.dismiss());
         builder.show();
+    }
+    private void showDeviceDeleteDialog(Device device) {
+        new AlertDialog.Builder(MainActivity.this)
+                .setTitle("기기 삭제")
+                .setMessage("정말 [" + device.getName() + "] 기기를 삭제하시겠습니까?")
+                .setPositiveButton("삭제", (dialog, which) -> {
+                    viewModel.deleteDevice(device.getId()); // ViewModel의 삭제 로직 호출!
+                })
+                .setNegativeButton("취소", null)
+                .show();
     }
 }

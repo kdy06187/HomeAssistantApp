@@ -8,6 +8,7 @@ import com.example.homeassistantapp.dto.AddDeviceRequest;
 import com.example.homeassistantapp.dto.AddDeviceResponse;
 import com.example.homeassistantapp.dto.ControlRequest;
 import com.example.homeassistantapp.dto.ControlResponse;
+import com.example.homeassistantapp.dto.DeleteDeviceRequest;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.dto.DeviceListResponse;
 import com.example.homeassistantapp.network.RetrofitClient;
@@ -81,6 +82,26 @@ public class DeviceViewModel extends ViewModel {
             }
             @Override
             public void onFailure(Call<AddDeviceResponse> call, Throwable t){
+                toastMessage.setValue("통신 실패: " + t.getMessage());
+            }
+        });
+    }
+    public void deleteDevice(String deviceId) {
+        toastMessage.setValue("기기 삭제 중...");
+
+        RetrofitClient.getApi().deleteDevice(new DeleteDeviceRequest(deviceId)).enqueue(new Callback<ControlResponse>() {
+            @Override
+            public void onResponse(Call<ControlResponse> call, Response<ControlResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    toastMessage.setValue("삭제 성공!");
+                    fetchDevices(); // 🌟 삭제가 완료되면 서버에서 최신 리스트를 다시 불러와 갱신!
+                } else {
+                    toastMessage.setValue("삭제 실패: 서버 오류");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ControlResponse> call, Throwable t) {
                 toastMessage.setValue("통신 실패: " + t.getMessage());
             }
         });

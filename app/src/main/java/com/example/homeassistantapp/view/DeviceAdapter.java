@@ -24,6 +24,14 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         void onControlClick(String deviceId, String command);
     }
 
+    public interface OnDeviceLongClickListener{
+        void onDeviceLongClick(Device device);
+    }
+    private OnDeviceLongClickListener longClickListener;
+
+    public void setOnDeviceLongClickListener(OnDeviceLongClickListener listener){
+        this.longClickListener = listener;
+    }
     public DeviceAdapter(OnDeviceControlListener listener){
         this.listener = listener;
     }
@@ -53,6 +61,12 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             if(listener != null){
                 listener.onControlClick(device.id, "OFF");
             }
+        });
+        holder.itemView.setOnLongClickListener(v -> {
+            if(longClickListener != null){
+                longClickListener.onDeviceLongClick(device);
+            }
+            return true;
         });
     }
     @Override
