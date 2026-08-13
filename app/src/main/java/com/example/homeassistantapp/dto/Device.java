@@ -9,6 +9,8 @@ public class Device {
     public String name;
     @SerializedName("type")
     public String type;
+    @SerializedName("state")
+    public String state;
 
     public String getId() {
         return id;
@@ -20,5 +22,9 @@ public class Device {
 
     public String getType() {
         return type;
+    }
+
+    public void setState(String state) {
+        this.state = state;
     }
 }

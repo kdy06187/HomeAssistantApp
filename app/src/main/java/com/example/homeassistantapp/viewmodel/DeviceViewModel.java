@@ -11,6 +11,7 @@ import com.example.homeassistantapp.dto.ControlResponse;
 import com.example.homeassistantapp.dto.DeleteDeviceRequest;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.dto.DeviceListResponse;
+import com.example.homeassistantapp.dto.DeviceStateResponse;
 import com.example.homeassistantapp.network.RetrofitClient;
 
 import java.util.List;
@@ -103,6 +104,35 @@ public class DeviceViewModel extends ViewModel {
             @Override
             public void onFailure(Call<ControlResponse> call, Throwable t) {
                 toastMessage.setValue("통신 실패: " + t.getMessage());
+            }
+        });
+    }
+    public void syncDeviceState(String deviceId) {
+        RetrofitClient.getApi().getDeviceState(deviceId).enqueue(new Callback<DeviceStateResponse>() {
+            @Override
+            public void onResponse(Call<DeviceStateResponse> call, Response<DeviceStateResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    String realState = response.body().state; // "ON" 또는 "OFF"
+
+                    // 🌟 현재 LiveData에 있는 기기 리스트를 꺼내서, 상태가 바뀐 기기만 업데이트!
+                    List<Device> currentList = deviceList.getValue();
+                    if (currentList != null) {
+                        for (int i = 0; i < currentList.size(); i++) {
+                            if (currentList.get(i).getId().equals(deviceId)) {
+                                currentList.get(i).setState(realState); // 최신 상태로 덮어쓰기
+
+                                // UI(어댑터)에 갱신 알림 (메인 스레드에서 실행)
+                                deviceList.setValue(currentList);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<DeviceStateResponse> call, Throwable t) {
+                // 조용히 실패 처리 (상태 갱신 실패는 앱을 터뜨릴 정돈 아니므로 로그만 남기거나 무시)
             }
         });
     }

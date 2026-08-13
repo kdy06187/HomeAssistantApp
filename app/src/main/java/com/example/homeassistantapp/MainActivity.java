@@ -38,6 +38,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class MainActivity extends AppCompatActivity {
     private DeviceViewModel viewModel;
     private DeviceAdapter adapter;
+    private boolean isManualRefresh = true;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
         swipeRefreshLayout.setOnRefreshListener(() -> {
             // ViewModel에 만들어둔 기기 목록 조회 API를 호출합니다.
             viewModel.fetchDevices();
+            isManualRefresh = true;
         });
 
         // 어댑터 연결 (버튼 클릭 시 처리할 로직 정의)
@@ -72,6 +74,14 @@ public class MainActivity extends AppCompatActivity {
             }
             if (swipeRefreshLayout.isRefreshing()) {
                 swipeRefreshLayout.setRefreshing(false);
+            }
+            if (isManualRefresh) {
+                isManualRefresh = false; // 즉시 잠금
+                for (Device device : devices) {
+                    if(device.getType().equals("MATTER")) {
+                        viewModel.syncDeviceState(device.getId());
+                    }
+                }
             }
         });
         // 토스트 메시지가 갱신되면 화면에 띄움
