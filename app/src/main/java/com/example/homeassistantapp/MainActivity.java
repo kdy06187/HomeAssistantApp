@@ -18,6 +18,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.homeassistantapp.api.HomeAssistantApi;
 import com.example.homeassistantapp.dto.ControlRequest;
@@ -48,6 +49,14 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView recyclerView = findViewById(R.id.recyclerViewDevices);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
+        SwipeRefreshLayout swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+
+        // 🌟 1. 당겨서 새로고침 제스처를 인식했을 때의 동작 설정
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            // ViewModel에 만들어둔 기기 목록 조회 API를 호출합니다.
+            viewModel.fetchDevices();
+        });
+
         // 어댑터 연결 (버튼 클릭 시 처리할 로직 정의)
         adapter = new DeviceAdapter((deviceId, command) -> {
             viewModel.controlDevice(deviceId, command);
@@ -61,11 +70,17 @@ public class MainActivity extends AppCompatActivity {
             if (devices != null) {
                 adapter.setDevices(devices);
             }
+            if (swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
         });
         // 토스트 메시지가 갱신되면 화면에 띄움
         viewModel.getToastMessage().observe(this, message -> {
             if (message != null) {
                 Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
+            if (swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
             }
         });
         viewModel.fetchDevices();
