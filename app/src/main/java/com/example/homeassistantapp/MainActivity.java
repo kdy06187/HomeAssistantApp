@@ -60,8 +60,18 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // 어댑터 연결 (버튼 클릭 시 처리할 로직 정의)
-        adapter = new DeviceAdapter((deviceId, command) -> {
-            viewModel.controlDevice(deviceId, command);
+        adapter = new DeviceAdapter(new DeviceAdapter.OnDeviceControlListener() {
+            @Override
+            public void onControlClick(String deviceId, String command) {
+                // 기존 기기 전원 제어 로직
+                viewModel.controlDevice(deviceId, command);
+            }
+
+            @Override
+            public void onEnergyClick(String deviceId) {
+                // 🌟 새롭게 추가한 전력량 조회 뷰모델 함수 호출!
+                viewModel.fetchDeviceEnergy(deviceId);
+            }
         });
         recyclerView.setAdapter(adapter);
         adapter.setOnDeviceLongClickListener(device -> showDeviceDeleteDialog(device));
@@ -78,9 +88,9 @@ public class MainActivity extends AppCompatActivity {
             if (isManualRefresh) {
                 isManualRefresh = false; // 즉시 잠금
                 for (Device device : devices) {
-                    if(device.getType().equals("MATTER")) {
+
                         viewModel.syncDeviceState(device.getId());
-                    }
+
                 }
             }
         });

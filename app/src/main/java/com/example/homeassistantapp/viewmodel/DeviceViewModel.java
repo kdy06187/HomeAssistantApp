@@ -12,6 +12,7 @@ import com.example.homeassistantapp.dto.DeleteDeviceRequest;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.dto.DeviceListResponse;
 import com.example.homeassistantapp.dto.DeviceStateResponse;
+import com.example.homeassistantapp.dto.EnergyResponse;
 import com.example.homeassistantapp.network.RetrofitClient;
 
 import java.util.List;
@@ -133,6 +134,47 @@ public class DeviceViewModel extends ViewModel {
             @Override
             public void onFailure(Call<DeviceStateResponse> call, Throwable t) {
                 // 조용히 실패 처리 (상태 갱신 실패는 앱을 터뜨릴 정돈 아니므로 로그만 남기거나 무시)
+            }
+        });
+    }
+    public void fetchDeviceEnergy(String deviceId) {
+        toastMessage.setValue("전력량 조회 중...");
+
+        RetrofitClient.getApi().getDeviceEnergy(deviceId).enqueue(new Callback<EnergyResponse>() {
+            @Override
+            public void onResponse(Call<EnergyResponse> call, Response<EnergyResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+
+                    // 1. 밀리(m) 단위를 일반 사용자가 보기 편한 W, kWh로 변환
+                    double currentPowerW = response.body().activePowerMw / 1000.0;
+                    double totalEnergyKwh = response.body().totalEnergyMwh / 1000000.0;
+
+                    // 2. 화면에 띄울 예쁜 문자열 포맷팅 (예: "실시간: 15.0 W / 누적: 0.5400 kWh")
+                    String powerText = String.format("실시간: %.1f W / 누적: %.4f kWh", currentPowerW, totalEnergyKwh);
+
+                    // 3. 현재 LiveData의 리스트를 꺼내서 해당 기기의 전력 텍스트만 업데이트!
+                    List<Device> currentList = deviceList.getValue();
+                    if (currentList != null) {
+                        for (int i = 0; i < currentList.size(); i++) {
+                            if (currentList.get(i).getId().equals(deviceId)) {
+
+                                currentList.get(i).setPowerInfo(powerText); // 텍스트 덮어쓰기
+                                deviceList.setValue(currentList); // UI(어댑터)에 갱신 알림 핑!
+                                break;
+
+                            }
+                        }
+                    }
+                    toastMessage.setValue("전력량 업데이트 완료!");
+
+                } else {
+                    toastMessage.setValue("전력 조회 실패: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<EnergyResponse> call, Throwable t) {
+                toastMessage.setValue("통신 실패: " + t.getMessage());
             }
         });
     }

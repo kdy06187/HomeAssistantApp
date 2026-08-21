@@ -22,6 +22,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
 
     public interface OnDeviceControlListener{
         void onControlClick(String deviceId, String command);
+        void onEnergyClick(String deviceId);
     }
 
     public interface OnDeviceLongClickListener{
@@ -52,6 +53,12 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         holder.textDeviceName.setText(device.name);
         holder.textDeviceType.setText(device.type);
 
+        if (device.getPowerInfo() != null) {
+            holder.textPowerInfo.setText(device.getPowerInfo());
+        } else {
+            holder.textPowerInfo.setText("전력 정보 없음");
+        }
+
         holder.btnOn.setOnClickListener(v -> {
             if(listener != null){
                 listener.onControlClick(device.id, "ON");
@@ -68,6 +75,11 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             }
             return true;
         });
+        holder.btnEnergy.setOnClickListener(v -> {
+            if(listener != null){
+                listener.onEnergyClick(device.id); // 메인 액티비티로 이벤트 전달
+            }
+        });
     }
     @Override
     public int getItemCount(){
@@ -78,12 +90,16 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         TextView textDeviceName, textDeviceType;
         Button btnOn, btnOff;
 
+        TextView textPowerInfo;
+        Button btnEnergy;
         public DeviceViewHolder(@NonNull View itemView){
             super(itemView);
             textDeviceName = itemView.findViewById(R.id.textDeviceName);
             textDeviceType = itemView.findViewById(R.id.textDeviceType);
             btnOn = itemView.findViewById(R.id.btnOn);
             btnOff = itemView.findViewById(R.id.btnOff);
+            textPowerInfo = itemView.findViewById(R.id.textPowerInfo);
+            btnEnergy = itemView.findViewById(R.id.btnEnergy);
         }
     }
 }

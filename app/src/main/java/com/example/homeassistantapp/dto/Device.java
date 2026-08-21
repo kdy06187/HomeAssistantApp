@@ -12,6 +12,7 @@ public class Device {
     @SerializedName("state")
     public String state;
 
+    public String powerInfo = "전력 정보 없음";
     public String getId() {
         return id;
     }
@@ -26,5 +27,12 @@ public class Device {
 
     public void setState(String state) {
         this.state = state;
+    }
+    public String getPowerInfo() {
+        return powerInfo;
+    }
+
+    public void setPowerInfo(String powerInfo) {
+        this.powerInfo = powerInfo;
     }
 }
