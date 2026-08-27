@@ -10,8 +10,14 @@ import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.formatter.ValueFormatter;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class EnergyLineChartView extends LineChart {
     public EnergyLineChartView(Context context){
@@ -38,10 +44,19 @@ public class EnergyLineChartView extends LineChart {
     public void setEnergyData(List<EnergyLog> logs) {
         List<Entry> entries = new ArrayList<>();
 
+        final String[] timeLabels = new String[logs.size()];
+        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        SimpleDateFormat outputFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
         for (int i = 0; i < logs.size(); i++) {
             // Y축 값: 전력량, X축 값: 인덱스 순서
             float energy = (float) logs.get(i).getTotalEnergy_mWh();
             entries.add(new Entry(i, energy));
+            try {
+                Date date = inputFormat.parse(logs.get(i).getTimestamp());
+                timeLabels[i] = outputFormat.format(date);
+            } catch (ParseException e) {
+                timeLabels[i] = ""; // 파싱 에러 시 빈칸 처리
+            }
         }
 
         LineDataSet dataSet = new LineDataSet(entries, "전력 사용량");
@@ -53,6 +68,20 @@ public class EnergyLineChartView extends LineChart {
 
         LineData lineData = new LineData(dataSet);
         this.setData(lineData);
+        XAxis xAxis = this.getXAxis();
+        xAxis.setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                int index = (int) value;
+                // value(X축 좌표)를 인덱스로 삼아, 저장해둔 시간 배열에서 꺼내옵니다.
+                if (index >= 0 && index < timeLabels.length) {
+                    return timeLabels[index];
+                }
+                return "";
+            }
+        });
+
+        xAxis.setGranularity(1f);
         this.invalidate(); // 화면에 렌더링(새로고침)
     }
 }

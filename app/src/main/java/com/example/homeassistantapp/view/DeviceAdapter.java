@@ -1,5 +1,6 @@
 package com.example.homeassistantapp.view;
 
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,21 +10,23 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.homeassistantapp.R;
+import com.example.homeassistantapp.activity.DeviceDetailActivity;
 import com.example.homeassistantapp.dto.Device;
 
 import org.jspecify.annotations.NonNull;
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceViewHolder>{
     private List<Device> deviceList = new ArrayList<>();
-    private OnDeviceControlListener listener;
+//    private OnDeviceControlListener listener;
 
-    public interface OnDeviceControlListener{
-        void onControlClick(String deviceId, String command);
-        void onEnergyClick(String deviceId);
-    }
+//    public interface OnDeviceControlListener{
+//        void onControlClick(String deviceId, String command);
+//        void onEnergyClick(String deviceId);
+//    }
 
     public interface OnDeviceLongClickListener{
         void onDeviceLongClick(Device device);
@@ -33,9 +36,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
     public void setOnDeviceLongClickListener(OnDeviceLongClickListener listener){
         this.longClickListener = listener;
     }
-    public DeviceAdapter(OnDeviceControlListener listener){
-        this.listener = listener;
-    }
+
     public void setDevices(List<Device> devices){
         this.deviceList = devices;
         notifyDataSetChanged();
@@ -50,29 +51,15 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
     @Override
     public void onBindViewHolder(@NonNull DeviceViewHolder holder,int position){
         Device device = deviceList.get(position);
-        holder.textDeviceName.setText(device.name);
-        holder.textDeviceType.setText(device.type);
+        holder.tvDeviceName.setText(device.getName());
+        holder.tvDeviceType.setText(device.getType());
 
-        if (device.getPowerInfo() != null) {
-            holder.textPowerInfo.setText(device.getPowerInfo());
-        } else {
-            holder.textPowerInfo.setText("전력 정보 없음");
-        }
-        if (device.getEnergyLogs() != null && !device.getEnergyLogs().isEmpty()) {
-            holder.chartView.setVisibility(View.VISIBLE); // 차트 보이기
-            holder.chartView.setEnergyData(device.getEnergyLogs()); // 커스텀 뷰에 데이터 쏙!
-        } else {
-            holder.chartView.setVisibility(View.GONE); // 아직 조회 안 했으면 숨기기
-        }
-        holder.btnOn.setOnClickListener(v -> {
-            if(listener != null){
-                listener.onControlClick(device.id, "ON");
-            }
-        });
-        holder.btnOff.setOnClickListener(v -> {
-            if(listener != null){
-                listener.onControlClick(device.id, "OFF");
-            }
+        holder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(v.getContext(), DeviceDetailActivity.class);
+            intent.putExtra("EXTRA_DEVICE_ID", device.getId());
+            intent.putExtra("EXTRA_DEVICE_NAME", device.getName());
+            intent.putExtra("EXTRA_DEVICE_TYPE", device.getType());
+            v.getContext().startActivity(intent);
         });
         holder.itemView.setOnLongClickListener(v -> {
             if(longClickListener != null){
@@ -80,11 +67,33 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             }
             return true;
         });
-        holder.btnEnergy.setOnClickListener(v -> {
-            if(listener != null){
-                listener.onEnergyClick(device.id); // 메인 액티비티로 이벤트 전달
-            }
-        });
+//        if (device.getPowerInfo() != null) {
+//            holder.textPowerInfo.setText(device.getPowerInfo());
+//        } else {
+//            holder.textPowerInfo.setText("전력 정보 없음");
+//        }
+//        if (device.getEnergyLogs() != null && !device.getEnergyLogs().isEmpty()) {
+//            holder.chartView.setVisibility(View.VISIBLE); // 차트 보이기
+//            holder.chartView.setEnergyData(device.getEnergyLogs()); // 커스텀 뷰에 데이터 쏙!
+//        } else {
+//            holder.chartView.setVisibility(View.GONE); // 아직 조회 안 했으면 숨기기
+//        }
+//        holder.btnOn.setOnClickListener(v -> {
+//            if(listener != null){
+//                listener.onControlClick(device.id, "ON");
+//            }
+//        });
+//        holder.btnOff.setOnClickListener(v -> {
+//            if(listener != null){
+//                listener.onControlClick(device.id, "OFF");
+//            }
+//        });
+
+//        holder.btnEnergy.setOnClickListener(v -> {
+//            if(listener != null){
+//                listener.onEnergyClick(device.id); // 메인 액티비티로 이벤트 전달
+//            }
+//        });
 
     }
     @Override
@@ -93,21 +102,13 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
     }
 
     static class DeviceViewHolder extends RecyclerView.ViewHolder{
-        TextView textDeviceName, textDeviceType;
-        Button btnOn, btnOff;
-
-        TextView textPowerInfo;
-        Button btnEnergy;
-        EnergyLineChartView chartView;
+        TextView tvDeviceName;
+        TextView tvDeviceType;
         public DeviceViewHolder(@NonNull View itemView){
             super(itemView);
-            textDeviceName = itemView.findViewById(R.id.textDeviceName);
-            textDeviceType = itemView.findViewById(R.id.textDeviceType);
-            btnOn = itemView.findViewById(R.id.btnOn);
-            btnOff = itemView.findViewById(R.id.btnOff);
-            textPowerInfo = itemView.findViewById(R.id.textPowerInfo);
-            btnEnergy = itemView.findViewById(R.id.btnEnergy);
-            chartView = itemView.findViewById(R.id.modularEnergyChart);
+            tvDeviceName = itemView.findViewById(R.id.tvDeviceName);
+            tvDeviceType = itemView.findViewById(R.id.tvDeviceType);
+
         }
     }
 }

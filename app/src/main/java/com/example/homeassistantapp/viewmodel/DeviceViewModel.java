@@ -25,10 +25,12 @@ import retrofit2.Response;
 public class DeviceViewModel extends ViewModel {
     private final MutableLiveData<List<Device>> deviceList = new MutableLiveData<>();
     private final MutableLiveData<String> toastMessage = new MutableLiveData<>();
+    private MutableLiveData<List<EnergyLog>> detailEnergyHistory = new MutableLiveData<>();
+
 
     public LiveData<List<Device>> getDeviceList() { return deviceList; }
     public LiveData<String> getToastMessage() { return toastMessage; }
-
+    public LiveData<List<EnergyLog>> getDetailEnergyHistory() {return detailEnergyHistory;}
     public void fetchDevices() {
         RetrofitClient.getApi().getDeviceList().enqueue(new Callback<DeviceListResponse>() {
             @Override
@@ -181,33 +183,18 @@ public class DeviceViewModel extends ViewModel {
     }
 
     public void fetchDeviceEnergyHistory(String deviceId) {
-        toastMessage.setValue("통계 데이터 로드 중...");
-
         RetrofitClient.getApi().getDeviceEnergyHistory(deviceId).enqueue(new Callback<List<EnergyLog>>() {
             @Override
             public void onResponse(Call<List<EnergyLog>> call, Response<List<EnergyLog>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-
-                    List<Device> currentList = deviceList.getValue();
-                    if (currentList != null) {
-                        for (int i = 0; i < currentList.size(); i++) {
-                            if (currentList.get(i).getId().equals(deviceId)) {
-
-                                // 서버에서 받은 리스트를 해당 기기에 쏙 넣기
-                                currentList.get(i).setEnergyLogs(response.body());
-
-                                // UI(어댑터)에 갱신 알림 핑!
-                                deviceList.setValue(currentList);
-                                break;
-                            }
-                        }
-                    }
+                    // 🌟 서버에서 받아온 차트 데이터를 기기 리스트가 아닌, 전용 파이프라인에 쏩니다!
+                    detailEnergyHistory.setValue(response.body());
                 }
             }
 
             @Override
             public void onFailure(Call<List<EnergyLog>> call, Throwable t) {
-                toastMessage.setValue("통계 통신 실패: " + t.getMessage());
+                toastMessage.setValue("전력량 로그를 불러오지 못했습니다.");
             }
         });
     }

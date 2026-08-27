@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:background="#FFFFFF">
+
+        <!-- 기기 아이콘 (추후 프로토콜이나 기기 종류에 따라 변경) -->
+        <ImageView
+            android:id="@+id/ivDeviceIcon"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@android:drawable/ic_dialog_info"
+            app:tint="#4CAF50" />
+
+        <!-- 🌟 핵심: 직관적인 ON/OFF 토글 스위치 -->
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchDeviceControl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignTop="@id/ivDeviceIcon" />
+
+        <!-- 기기 이름 -->
+        <TextView
+            android:id="@+id/tvDashboardDeviceName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/ivDeviceIcon"
+            android:layout_marginTop="16dp"
+            android:text="거실 무드등"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#333333" />
+
+    </RelativeLayout>
+</androidx.cardview.widget.CardView>

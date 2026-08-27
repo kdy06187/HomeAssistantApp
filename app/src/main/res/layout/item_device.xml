@@ -1,97 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:padding="16dp"
     android:layout_margin="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="4dp">
+    android:background="?android:attr/selectableItemBackground"
+    android:elevation="2dp">
 
-    <!-- 카드뷰 전체를 감싸는 세로형 레이아웃 -->
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:orientation="vertical">
 
-        <!-- 상단 영역: 기기명, 타입, ON/OFF 버튼 -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/tvDeviceName"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:text="기기 이름"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#333333" />
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/textDeviceName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="기기 이름"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="#333333"/>
-
-                <TextView
-                    android:id="@+id/textDeviceType"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="MATTER"
-                    android:textSize="14sp"
-                    android:textColor="#888888"
-                    android:layout_marginTop="4dp"/>
-            </LinearLayout>
-
-            <Button
-                android:id="@+id/btnOn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ON"
-                android:backgroundTint="#4CAF50"
-                android:layout_marginEnd="8dp"/>
-
-            <Button
-                android:id="@+id/btnOff"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="OFF"
-                android:backgroundTint="#F44336"/>
-        </LinearLayout>
-
-        <!-- 하단 영역: 전력량 표시 및 조회 버튼 (🌟 새로 추가된 부분) -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/tvDeviceType"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="12dp">
-
-            <TextView
-                android:id="@+id/textPowerInfo"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="전력 정보 없음"
-                android:textColor="#555555"
-                android:textSize="13sp" />
-
-            <Button
-                android:id="@+id/btnEnergy"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="전력 조회"
-                android:textSize="12sp"
-                style="?android:attr/buttonBarButtonStyle" />
-        </LinearLayout>
-        <com.example.homeassistantapp.view.EnergyLineChartView
-            android:id="@+id/modularEnergyChart"
-            android:layout_width="match_parent"
-            android:layout_height="250dp"
-            android:layout_marginTop="16dp"/>
-
+            android:layout_marginTop="4dp"
+            android:text="MATTER / TCP_DIY"
+            android:textSize="14sp"
+            android:textColor="#888888" />
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+
+    <!-- 상세 화면으로 넘어간다는 직관적인 힌트 아이콘 -->
+    <ImageView
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:src="@android:drawable/ic_media_next"
+        app:tint="#CCCCCC" />
+</RelativeLayout>
