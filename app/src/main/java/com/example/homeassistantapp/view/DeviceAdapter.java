@@ -58,7 +58,12 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         } else {
             holder.textPowerInfo.setText("전력 정보 없음");
         }
-
+        if (device.getEnergyLogs() != null && !device.getEnergyLogs().isEmpty()) {
+            holder.chartView.setVisibility(View.VISIBLE); // 차트 보이기
+            holder.chartView.setEnergyData(device.getEnergyLogs()); // 커스텀 뷰에 데이터 쏙!
+        } else {
+            holder.chartView.setVisibility(View.GONE); // 아직 조회 안 했으면 숨기기
+        }
         holder.btnOn.setOnClickListener(v -> {
             if(listener != null){
                 listener.onControlClick(device.id, "ON");
@@ -80,6 +85,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
                 listener.onEnergyClick(device.id); // 메인 액티비티로 이벤트 전달
             }
         });
+
     }
     @Override
     public int getItemCount(){
@@ -92,6 +98,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
 
         TextView textPowerInfo;
         Button btnEnergy;
+        EnergyLineChartView chartView;
         public DeviceViewHolder(@NonNull View itemView){
             super(itemView);
             textDeviceName = itemView.findViewById(R.id.textDeviceName);
@@ -100,6 +107,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             btnOff = itemView.findViewById(R.id.btnOff);
             textPowerInfo = itemView.findViewById(R.id.textPowerInfo);
             btnEnergy = itemView.findViewById(R.id.btnEnergy);
+            chartView = itemView.findViewById(R.id.modularEnergyChart);
         }
     }
 }

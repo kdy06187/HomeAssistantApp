@@ -87,6 +87,11 @@
                 android:textSize="12sp"
                 style="?android:attr/buttonBarButtonStyle" />
         </LinearLayout>
+        <com.example.homeassistantapp.view.EnergyLineChartView
+            android:id="@+id/modularEnergyChart"
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:layout_marginTop="16dp"/>
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

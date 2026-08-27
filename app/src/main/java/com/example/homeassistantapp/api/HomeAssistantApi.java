@@ -9,8 +9,11 @@ import com.example.homeassistantapp.dto.ControlResponse;
 import com.example.homeassistantapp.dto.DeleteDeviceRequest;
 import com.example.homeassistantapp.dto.DeviceListResponse;
 import com.example.homeassistantapp.dto.DeviceStateResponse;
+import com.example.homeassistantapp.dto.EnergyLog;
 import com.example.homeassistantapp.dto.EnergyResponse;
 
+
+import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -31,4 +34,6 @@ public interface HomeAssistantApi {
     Call<DeviceStateResponse> getDeviceState(@Path("deviceId") String deviceId);
     @GET("/api/devices/{deviceId}/energy")
     Call<EnergyResponse> getDeviceEnergy(@Path("deviceId") String deviceId);
+    @GET("/api/devices/{id}/energy/history")
+    Call<List<EnergyLog>> getDeviceEnergyHistory(@Path("id") String deviceId);
 }

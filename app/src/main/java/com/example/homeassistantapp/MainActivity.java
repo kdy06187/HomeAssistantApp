@@ -26,6 +26,7 @@ import com.example.homeassistantapp.dto.ControlResponse;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.dto.DeviceListResponse;
 import com.example.homeassistantapp.view.DeviceAdapter;
+import com.example.homeassistantapp.view.EnergyLineChartView;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -51,7 +52,6 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         SwipeRefreshLayout swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
-
         // 🌟 1. 당겨서 새로고침 제스처를 인식했을 때의 동작 설정
         swipeRefreshLayout.setOnRefreshListener(() -> {
             // ViewModel에 만들어둔 기기 목록 조회 API를 호출합니다.
@@ -71,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
             public void onEnergyClick(String deviceId) {
                 // 🌟 새롭게 추가한 전력량 조회 뷰모델 함수 호출!
                 viewModel.fetchDeviceEnergy(deviceId);
+                viewModel.fetchDeviceEnergyHistory(deviceId);
             }
         });
         recyclerView.setAdapter(adapter);
@@ -103,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
                 swipeRefreshLayout.setRefreshing(false);
             }
         });
+
         viewModel.fetchDevices();
         FloatingActionButton fabAddDevice = findViewById(R.id.fabAddDevice);
         fabAddDevice.setOnClickListener(v -> showAddDeviceDialog());

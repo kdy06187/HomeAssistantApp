@@ -2,6 +2,8 @@ package com.example.homeassistantapp.dto;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.List;
+
 public class Device {
     @SerializedName("id")
     public String id;
@@ -24,7 +26,7 @@ public class Device {
     public String getType() {
         return type;
     }
-
+    private List<EnergyLog> energyLogs;
     public void setState(String state) {
         this.state = state;
     }
@@ -34,5 +36,12 @@ public class Device {
 
     public void setPowerInfo(String powerInfo) {
         this.powerInfo = powerInfo;
+    }
+    public List<EnergyLog> getEnergyLogs() {
+        return energyLogs;
+    }
+
+    public void setEnergyLogs(List<EnergyLog> energyLogs) {
+        this.energyLogs = energyLogs;
     }
 }

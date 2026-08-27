@@ -12,6 +12,7 @@ import com.example.homeassistantapp.dto.DeleteDeviceRequest;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.dto.DeviceListResponse;
 import com.example.homeassistantapp.dto.DeviceStateResponse;
+import com.example.homeassistantapp.dto.EnergyLog;
 import com.example.homeassistantapp.dto.EnergyResponse;
 import com.example.homeassistantapp.network.RetrofitClient;
 
@@ -175,6 +176,38 @@ public class DeviceViewModel extends ViewModel {
             @Override
             public void onFailure(Call<EnergyResponse> call, Throwable t) {
                 toastMessage.setValue("통신 실패: " + t.getMessage());
+            }
+        });
+    }
+
+    public void fetchDeviceEnergyHistory(String deviceId) {
+        toastMessage.setValue("통계 데이터 로드 중...");
+
+        RetrofitClient.getApi().getDeviceEnergyHistory(deviceId).enqueue(new Callback<List<EnergyLog>>() {
+            @Override
+            public void onResponse(Call<List<EnergyLog>> call, Response<List<EnergyLog>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+
+                    List<Device> currentList = deviceList.getValue();
+                    if (currentList != null) {
+                        for (int i = 0; i < currentList.size(); i++) {
+                            if (currentList.get(i).getId().equals(deviceId)) {
+
+                                // 서버에서 받은 리스트를 해당 기기에 쏙 넣기
+                                currentList.get(i).setEnergyLogs(response.body());
+
+                                // UI(어댑터)에 갱신 알림 핑!
+                                deviceList.setValue(currentList);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<EnergyLog>> call, Throwable t) {
+                toastMessage.setValue("통계 통신 실패: " + t.getMessage());
             }
         });
     }
