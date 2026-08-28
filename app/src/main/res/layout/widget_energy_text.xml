@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:paddingVertical="8dp">
@@ -19,5 +20,15 @@
         android:layout_height="wrap_content"
         android:text="15.0 W"
         android:textColor="#2196F3"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:layout_marginEnd="8dp"/>
+    <ImageView
+        android:id="@+id/btnRefreshEnergyText"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:src="@android:drawable/ic_popup_sync"
+        app:tint="#888888" />
 </LinearLayout>

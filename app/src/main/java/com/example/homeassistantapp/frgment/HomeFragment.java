@@ -48,6 +48,12 @@ public class HomeFragment extends Fragment {
                 // 뷰모델을 통해 해당 기기의 최신 전력량 로그를 서버에 요청
                 viewModel.fetchDeviceEnergyHistory(deviceId);
             }
+            @Override
+            public void onRefreshEnergy(String deviceId) {
+                // 🌟 현재 상태(전력량)를 서버에 요청하는 메서드 호출
+                // (현재 사용 중인 '기기 상태 갱신 API' 메서드명으로 변경해 주세요)
+                viewModel.fetchDeviceEnergy(deviceId);
+            }
         });
         recyclerView.setAdapter(adapter);
 
@@ -60,7 +66,7 @@ public class HomeFragment extends Fragment {
                 for (Device device : devices) {
                     // 전력 측정 기기인데 아직 차트 데이터(Log)가 null이라면 자동 요청!
                     // (무한 루프를 방지하기 위해 null일 때만 요청하는 것이 핵심입니다)
-                    if (device.getPowerInfo() != null && device.getEnergyLogs() == null) {
+                    if (device.getType().equals("MATTER")&&device.getPowerInfo() != null && device.getEnergyLogs() == null) {
                         if (!requestedChartIds.contains(device.getId())) {
                             requestedChartIds.add(device.getId()); // 명단에 추가!
                             viewModel.fetchDeviceEnergyHistory(device.getId()); // 서버에 요청
@@ -80,9 +86,13 @@ public class HomeFragment extends Fragment {
         List<Device> currentDevices = viewModel.getDeviceList().getValue();
         if (currentDevices != null) {
             for (Device device : currentDevices) {
-                if (device.getPowerInfo() != null && device.getEnergyLogs() != null) {
-                    // 화면에 돌아올 때마다 강제로 차트 최신 데이터를 다시 물어옵니다.
-                    viewModel.fetchDeviceEnergyHistory(device.getId());
+                if (device.getType().equals("MATTER") && device.getPowerInfo() != null) {
+                    // 🌟 차트 최신화와 동시에 현재 전력량 텍스트도 강제 최신화!
+                    viewModel.fetchDeviceEnergy(device.getId());
+
+                    if (device.getEnergyLogs() != null) {
+                        viewModel.fetchDeviceEnergyHistory(device.getId());
+                    }
                 }
             }
         }

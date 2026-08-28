@@ -22,6 +22,7 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
     public interface OnDeviceControlListener {
         void onToggle(String deviceId, boolean isChecked);
         void onRefreshChart(String deviceId);
+        void onRefreshEnergy(String deviceId);
     }
 
     public DashboardAdapter(OnDeviceControlListener listener) {
@@ -60,16 +61,20 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
             holder.widgetContainer.addView(toggleWidget);
         }
         // 기기가 전력 측정 기능을 지원한다면 전력량 위젯 부착
-        if (device.getPowerInfo() != null && !device.getPowerInfo().isEmpty()) {
+        if (device.getType().equals("MATTER")) {
             View energyWidget = inflater.inflate(R.layout.widget_energy_text, holder.widgetContainer, false);
             TextView tvEnergy = energyWidget.findViewById(R.id.tvWidgetEnergy);
+            ImageView btnRefresh = energyWidget.findViewById(R.id.btnRefreshEnergyText);
 
             tvEnergy.setText(device.getPowerInfo());
 
+            btnRefresh.setOnClickListener(v -> {
+                if (listener != null) listener.onRefreshEnergy(device.getId());
+            });
             holder.widgetContainer.addView(energyWidget);
         }
         // 차트 위젯 부착 (전력량 로그 데이터가 있는 경우에만 조립)
-        if (device.getPowerInfo() != null) {
+        if (device.getType().equals("MATTER")) {
             View chartWidget = inflater.inflate(R.layout.widget_chart, holder.widgetContainer, false);
             EnergyLineChartView chartView = chartWidget.findViewById(R.id.widgetEnergyChart);
             ImageView btnRefresh = chartWidget.findViewById(R.id.btnRefreshChart);
