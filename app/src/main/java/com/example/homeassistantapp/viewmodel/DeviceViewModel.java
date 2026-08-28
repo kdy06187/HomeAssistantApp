@@ -16,6 +16,7 @@ import com.example.homeassistantapp.dto.EnergyLog;
 import com.example.homeassistantapp.dto.EnergyResponse;
 import com.example.homeassistantapp.network.RetrofitClient;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import retrofit2.Call;
@@ -190,6 +191,13 @@ public class DeviceViewModel extends ViewModel {
                 }
             }
         }
+    }
+    public void updateDeviceOrder(List<Device> reorderedList) {
+        // 1. LiveData가 바라보는 데이터를 순서가 바뀐 새 리스트로 교체
+        deviceList.setValue(new ArrayList<>(reorderedList));
+
+        // TODO: (선택 사항) 나중에는 앱을 껐다 켜도 순서가 유지되도록
+        // 여기서 Room DB나 서버 API(SharedPreferences 등)에 바뀐 순서를 영구 저장하는 로직이 들어가야 합니다.
     }
 }
 

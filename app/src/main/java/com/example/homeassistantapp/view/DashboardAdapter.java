@@ -93,7 +93,19 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
         }
 
     }
+    public void moveItem(int fromPosition, int toPosition) {
+        // 1. 리스트에서 원래 있던 자리의 기기를 뽑아냅니다.
+        Device movedDevice = deviceList.remove(fromPosition);
+        // 2. 새로운 자리에 그 기기를 밀어 넣습니다.
+        deviceList.add(toPosition, movedDevice);
+        // 3. UI에 "이 두 자리 순서가 바뀌었어!"라고 알려주어 애니메이션을 실행시킵니다.
+        notifyItemMoved(fromPosition, toPosition);
+    }
 
+    // 나중에 순서가 바뀐 최종 리스트를 가져오기 위한 Getter 메서드
+    public List<Device> getCurrentList() {
+        return deviceList;
+    }
     @Override
     public int getItemCount() {
         return deviceList.size();
