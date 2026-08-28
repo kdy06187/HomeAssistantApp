@@ -27,6 +27,7 @@ import com.example.homeassistantapp.dto.ControlResponse;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.dto.DeviceListResponse;
 import com.example.homeassistantapp.frgment.DeviceFragment;
+import com.example.homeassistantapp.frgment.HomeFragment;
 import com.example.homeassistantapp.view.DeviceAdapter;
 import com.example.homeassistantapp.view.EnergyLineChartView;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
@@ -53,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
 
             int itemId = item.getItemId();
             if (itemId == R.id.nav_home) {
-                // TODO: HomeFragment 연결 예정
+                selectedFragment = new HomeFragment();
             } else if (itemId == R.id.nav_devices) {
                 selectedFragment = new DeviceFragment();
             } else if (itemId == R.id.nav_settings) {

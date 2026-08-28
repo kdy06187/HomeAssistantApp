@@ -13,33 +13,44 @@
         android:padding="16dp"
         android:background="#FFFFFF">
 
-        <!-- 기기 아이콘 (추후 프로토콜이나 기기 종류에 따라 변경) -->
+        <!-- 좌측 상단: 기기 아이콘 -->
         <ImageView
-            android:id="@+id/ivDeviceIcon"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:id="@+id/ivDashboardIcon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:src="@android:drawable/ic_dialog_info"
             app:tint="#4CAF50" />
 
-        <!-- 🌟 핵심: 직관적인 ON/OFF 토글 스위치 -->
+        <!-- 🌟 우측 상단: 직관적인 ON/OFF 토글 스위치 -->
         <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/switchDeviceControl"
+            android:id="@+id/switchDashboardControl"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
-            android:layout_alignTop="@id/ivDeviceIcon" />
+            android:layout_alignTop="@id/ivDashboardIcon" />
 
-        <!-- 기기 이름 -->
+        <!-- 좌측 하단: 기기 이름 -->
         <TextView
             android:id="@+id/tvDashboardDeviceName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/ivDeviceIcon"
+            android:layout_below="@id/ivDashboardIcon"
             android:layout_marginTop="16dp"
-            android:text="거실 무드등"
+            android:text="거실 조명"
             android:textSize="16sp"
             android:textStyle="bold"
             android:textColor="#333333" />
+
+        <!-- 기기 이름 아래: 상태 표시 (예: 켜짐/꺼짐) -->
+        <TextView
+            android:id="@+id/tvDashboardStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tvDashboardDeviceName"
+            android:layout_marginTop="4dp"
+            android:text="꺼짐"
+            android:textSize="12sp"
+            android:textColor="#888888" />
 
     </RelativeLayout>
 </androidx.cardview.widget.CardView>
