@@ -17,7 +17,7 @@ import com.example.homeassistantapp.dto.EnergyResponse;
 import com.example.homeassistantapp.network.RetrofitClient;
 
 import java.util.List;
-
+import java.util.function.Consumer;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -119,18 +119,7 @@ public class DeviceViewModel extends ViewModel {
                     String realState = response.body().state; // "ON" 또는 "OFF"
 
                     // 🌟 현재 LiveData에 있는 기기 리스트를 꺼내서, 상태가 바뀐 기기만 업데이트!
-                    List<Device> currentList = deviceList.getValue();
-                    if (currentList != null) {
-                        for (int i = 0; i < currentList.size(); i++) {
-                            if (currentList.get(i).getId().equals(deviceId)) {
-                                currentList.get(i).setState(realState); // 최신 상태로 덮어쓰기
-
-                                // UI(어댑터)에 갱신 알림 (메인 스레드에서 실행)
-                                deviceList.setValue(currentList);
-                                break;
-                            }
-                        }
-                    }
+                    updateDevice(deviceId, device -> device.setState(realState));
                 }
             }
 
@@ -156,18 +145,7 @@ public class DeviceViewModel extends ViewModel {
                     String powerText = String.format("실시간: %.1f W / 누적: %.4f kWh", currentPowerW, totalEnergyKwh);
 
                     // 3. 현재 LiveData의 리스트를 꺼내서 해당 기기의 전력 텍스트만 업데이트!
-                    List<Device> currentList = deviceList.getValue();
-                    if (currentList != null) {
-                        for (int i = 0; i < currentList.size(); i++) {
-                            if (currentList.get(i).getId().equals(deviceId)) {
-
-                                currentList.get(i).setPowerInfo(powerText); // 텍스트 덮어쓰기
-                                deviceList.setValue(currentList); // UI(어댑터)에 갱신 알림 핑!
-                                break;
-
-                            }
-                        }
-                    }
+                    updateDevice(deviceId, device -> device.setPowerInfo(powerText));
                     toastMessage.setValue("전력량 업데이트 완료!");
 
                 } else {
@@ -189,6 +167,7 @@ public class DeviceViewModel extends ViewModel {
                 if (response.isSuccessful() && response.body() != null) {
                     // 🌟 서버에서 받아온 차트 데이터를 기기 리스트가 아닌, 전용 파이프라인에 쏩니다!
                     detailEnergyHistory.setValue(response.body());
+                    updateDevice(deviceId, device -> device.setEnergyLogs(response.body()));
                 }
             }
 
@@ -198,4 +177,19 @@ public class DeviceViewModel extends ViewModel {
             }
         });
     }
+    private void updateDevice(String deviceId, Consumer<Device> updateAction) {
+        List<Device> currentList = deviceList.getValue();
+        if (currentList != null) {
+            for (int i = 0; i < currentList.size(); i++) {
+                if (currentList.get(i).getId().equals(deviceId)) {
+                    // 1. 전달받은 구체적인 데이터 변경 작업 실행
+                    updateAction.accept(currentList.get(i));
+                    // 2. 리스트 갱신 알림 (공통)
+                    deviceList.setValue(currentList);
+                    break;
+                }
+            }
+        }
+    }
 }
+
