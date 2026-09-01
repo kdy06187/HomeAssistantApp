@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
@@ -54,19 +55,39 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         holder.tvDeviceName.setText(device.getName());
         holder.tvDeviceType.setText(device.getType());
 
-        holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(v.getContext(), DeviceDetailActivity.class);
-            intent.putExtra("EXTRA_DEVICE_ID", device.getId());
-            intent.putExtra("EXTRA_DEVICE_NAME", device.getName());
-            intent.putExtra("EXTRA_DEVICE_TYPE", device.getType());
-            v.getContext().startActivity(intent);
-        });
-        holder.itemView.setOnLongClickListener(v -> {
-            if(longClickListener != null){
-                longClickListener.onDeviceLongClick(device);
-            }
-            return true;
-        });
+        boolean isPairing = "TEMP_PAIRING".equals(device.getId()) || device.isPairing();
+
+        if (isPairing) {
+            // [페어링 중 상태 UI]
+            holder.progressBar.setVisibility(View.VISIBLE);
+            holder.tvDeviceType.setVisibility(View.GONE); // 타입 텍스트 대신 로딩바 노출 (기획에 따라 유지 가능)
+            holder.itemView.setAlpha(0.5f); // 전체를 약간 투명하게 처리
+
+            // 임시 기기이므로 클릭 이벤트 차단
+            holder.itemView.setOnClickListener(null);
+            holder.itemView.setOnLongClickListener(null);
+        } else {
+            // [정상 기기 상태 UI]
+            holder.progressBar.setVisibility(View.GONE);
+            holder.tvDeviceType.setVisibility(View.VISIBLE);
+            holder.itemView.setAlpha(1.0f);
+
+            // 정상 기기 클릭 이벤트 활성화
+            holder.itemView.setOnClickListener(v -> {
+                Intent intent = new Intent(v.getContext(), DeviceDetailActivity.class);
+                intent.putExtra("EXTRA_DEVICE_ID", device.getId());
+                intent.putExtra("EXTRA_DEVICE_NAME", device.getName());
+                intent.putExtra("EXTRA_DEVICE_TYPE", device.getType());
+                v.getContext().startActivity(intent);
+            });
+
+            holder.itemView.setOnLongClickListener(v -> {
+                if (longClickListener != null) {
+                    longClickListener.onDeviceLongClick(device);
+                }
+                return true;
+            });
+        }
 //        if (device.getPowerInfo() != null) {
 //            holder.textPowerInfo.setText(device.getPowerInfo());
 //        } else {
@@ -104,11 +125,12 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
     static class DeviceViewHolder extends RecyclerView.ViewHolder{
         TextView tvDeviceName;
         TextView tvDeviceType;
+        ProgressBar progressBar;
         public DeviceViewHolder(@NonNull View itemView){
             super(itemView);
             tvDeviceName = itemView.findViewById(R.id.tvDeviceName);
             tvDeviceType = itemView.findViewById(R.id.tvDeviceType);
-
+            progressBar = itemView.findViewById(R.id.progressBar);
         }
     }
 }

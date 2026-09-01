@@ -15,6 +15,25 @@ public class Device {
     public String state;
 
     public String powerInfo = "전력 정보 없음";
+
+    public boolean isPairing;
+
+    public boolean isPairing() {
+        return isPairing;
+    }
+
+    public void setPairing(boolean pairing) {
+        isPairing = pairing;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getId() {
         return id;
     }

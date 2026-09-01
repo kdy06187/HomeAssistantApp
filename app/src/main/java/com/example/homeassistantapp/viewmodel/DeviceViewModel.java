@@ -75,6 +75,21 @@ public class DeviceViewModel extends ViewModel {
         AddDeviceRequest request = new AddDeviceRequest(type, name, payload);
         // 로딩 토스트 메시지 띄우기
         toastMessage.setValue("기기 등록을 서버에 요청했습니다...");
+        // 페어링 중인 기기 추가
+        List<Device> currentList = deviceList.getValue();
+        if (currentList == null) {
+            currentList = new ArrayList<>();
+        } else {
+            currentList = new ArrayList<>(currentList);
+        }
+
+        Device tempDevice = new Device();
+        tempDevice.setId("TEMP_PAIRING"); // 식별용 임시 ID
+        tempDevice.setName(name);
+        tempDevice.setPairing(true);
+        currentList.add(0, tempDevice);
+
+        deviceList.setValue(currentList);
 
         RetrofitClient.getApi().addDevice(request).enqueue(new Callback<AddDeviceResponse>() {
             @Override
@@ -84,13 +99,29 @@ public class DeviceViewModel extends ViewModel {
                     fetchDevices();
                 } else{
                     toastMessage.setValue("등록 실패: " + response.code());
+                    removeTempDevice();
                 }
             }
             @Override
             public void onFailure(Call<AddDeviceResponse> call, Throwable t){
                 toastMessage.setValue("통신 실패: " + t.getMessage());
+                removeTempDevice();
             }
         });
+    }
+    private void removeTempDevice() {
+        List<Device> currentList = deviceList.getValue();
+        if (currentList != null) {
+            List<Device> newList = new ArrayList<>(currentList);
+            // 안드로이드 API 수준에 따라 Iterator 또는 removeIf 사용
+            for (int i = 0; i < newList.size(); i++) {
+                if ("TEMP_PAIRING".equals(newList.get(i).getId())) {
+                    newList.remove(i);
+                    break;
+                }
+            }
+            deviceList.setValue(newList);
+        }
     }
     public void deleteDevice(String deviceId) {
         toastMessage.setValue("기기 삭제 중...");

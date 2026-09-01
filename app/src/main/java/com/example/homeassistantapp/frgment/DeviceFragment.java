@@ -73,7 +73,9 @@ public class DeviceFragment extends Fragment {
                 isManualRefresh = false; // 즉시 잠금
                 for (Device device : devices) {
 
-                    viewModel.syncDeviceState(device.getId());
+                    if (!"TEMP_PAIRING".equals(device.getId()) && !device.isPairing()) {
+                        viewModel.syncDeviceState(device.getId());
+                    }
 
                 }
             }
