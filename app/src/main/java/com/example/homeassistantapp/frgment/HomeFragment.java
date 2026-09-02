@@ -133,11 +133,12 @@ public class HomeFragment extends Fragment {
 
                 for (Device device : sortedList) {
                     // 전력 측정 기기인데 아직 차트 데이터(Log)가 null이라면 자동 요청!
-                    // (무한 루프를 방지하기 위해 null일 때만 요청하는 것이 핵심입니다)
-                    if (device.getType().equals("MATTER")&&device.getPowerInfo() != null && device.getEnergyLogs() == null) {
-                        if (!requestedChartIds.contains(device.getId())) {
-                            requestedChartIds.add(device.getId()); // 명단에 추가!
-                            viewModel.fetchDeviceEnergyHistory(device.getId()); // 서버에 요청
+                    if(!"TEMP_PAIRING".equals(device.getId()) && !device.isPairing()) {
+                        if (device.getType().equals("MATTER") && device.getPowerInfo() != null && device.getEnergyLogs() == null) {
+                            if (!requestedChartIds.contains(device.getId())) {
+                                requestedChartIds.add(device.getId()); // 명단에 추가!
+                                viewModel.fetchDeviceEnergyHistory(device.getId()); // 서버에 요청
+                            }
                         }
                     }
                 }
@@ -154,12 +155,14 @@ public class HomeFragment extends Fragment {
         List<Device> currentDevices = viewModel.getDeviceList().getValue();
         if (currentDevices != null) {
             for (Device device : currentDevices) {
-                if (device.getType().equals("MATTER") && device.getPowerInfo() != null) {
-                    // 🌟 차트 최신화와 동시에 현재 전력량 텍스트도 강제 최신화!
-                    viewModel.fetchDeviceEnergy(device.getId());
+                if(!"TEMP_PAIRING".equals(device.getId()) && !device.isPairing()) {
+                    if (device.getType().equals("MATTER") && device.getPowerInfo() != null) {
+                        // 🌟 차트 최신화와 동시에 현재 전력량 텍스트도 강제 최신화!
+                        viewModel.fetchDeviceEnergy(device.getId());
 
-                    if (device.getEnergyLogs() != null) {
-                        viewModel.fetchDeviceEnergyHistory(device.getId());
+                        if (device.getEnergyLogs() != null) {
+                            viewModel.fetchDeviceEnergyHistory(device.getId());
+                        }
                     }
                 }
             }

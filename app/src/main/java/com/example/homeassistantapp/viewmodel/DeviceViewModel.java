@@ -60,6 +60,7 @@ public class DeviceViewModel extends ViewModel {
                 if (response.isSuccessful() && response.body() != null) {
                     toastMessage.setValue(response.body().message);
                 } else {
+                    updateDevice(targetId,device -> device.setState("OFFLINE")); // 실패 시 상태 롤백
                     toastMessage.setValue("제어 실패");
                 }
             }
@@ -87,6 +88,7 @@ public class DeviceViewModel extends ViewModel {
         tempDevice.setId("TEMP_PAIRING"); // 식별용 임시 ID
         tempDevice.setName(name);
         tempDevice.setPairing(true);
+        tempDevice.setType(type);
         currentList.add(0, tempDevice);
 
         deviceList.setValue(currentList);
@@ -181,6 +183,7 @@ public class DeviceViewModel extends ViewModel {
                     toastMessage.setValue("전력량 업데이트 완료!");
 
                 } else {
+                    updateDevice(deviceId,device -> device.setState("OFFLINE"));
                     toastMessage.setValue("전력 조회 실패: " + response.code());
                 }
             }
@@ -200,6 +203,10 @@ public class DeviceViewModel extends ViewModel {
                     // 🌟 서버에서 받아온 차트 데이터를 기기 리스트가 아닌, 전용 파이프라인에 쏩니다!
                     detailEnergyHistory.setValue(response.body());
                     updateDevice(deviceId, device -> device.setEnergyLogs(response.body()));
+                }
+                else{
+                    updateDevice(deviceId,device -> device.setState("OFFLINE"));
+                    toastMessage.setValue("전력량 로그를 불러오지 못했습니다: " + response.code());
                 }
             }
 

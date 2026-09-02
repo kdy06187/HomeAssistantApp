@@ -1,5 +1,6 @@
 package com.example.homeassistantapp.view;
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -45,6 +46,28 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
     public void onBindViewHolder(@NonNull DashboardViewHolder holder, int position) {
         Device device = deviceList.get(position);
         holder.tvDeviceName.setText(device.getName());
+
+        if ("TEMP_PAIRING".equals(device.getId()) || device.isPairing()) {
+            // [페어링 중]
+            holder.tvDeviceStatus.setText("페어링중");
+            holder.tvDeviceStatus.setTextColor(Color.parseColor("#888888")); // 회색
+            holder.widgetContainer.setVisibility(View.GONE); // 조작 위젯 숨김
+            holder.itemView.setAlpha(0.5f);
+
+        } else if (device.getState().equals("OFFLINE")) {
+            // [오프라인] (Device 모델에 isOffline 속성이 있거나 상태값으로 판단)
+            holder.tvDeviceStatus.setText("오프라인");
+            holder.tvDeviceStatus.setTextColor(Color.parseColor("#F44336")); // 빨간색
+            holder.widgetContainer.setVisibility(View.VISIBLE);
+            holder.itemView.setAlpha(0.5f); // 비활성화된 느낌 부여
+
+        } else {
+            // [연결됨]
+            holder.tvDeviceStatus.setText("연결됨");
+            holder.tvDeviceStatus.setTextColor(Color.parseColor("#4CAF50")); // 녹색
+            holder.widgetContainer.setVisibility(View.VISIBLE);
+            holder.itemView.setAlpha(1.0f);
+        }
 
         holder.widgetContainer.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(holder.itemView.getContext());
@@ -112,14 +135,16 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
     }
 
     static class DashboardViewHolder extends RecyclerView.ViewHolder {
-        TextView tvDeviceName;
+        TextView tvDeviceName,tvDeviceStatus;
         LinearLayout widgetContainer;
 
         public DashboardViewHolder(@NonNull View itemView) {
             super(itemView);
             // item_device_section.xml에 있는 뷰들의 ID와 연결
             tvDeviceName = itemView.findViewById(R.id.tvSectionDeviceName);
+            tvDeviceStatus = itemView.findViewById(R.id.tvDeviceStatus);
             widgetContainer = itemView.findViewById(R.id.widgetContainer);
+
         }
     }
 }

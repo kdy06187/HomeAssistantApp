@@ -14,16 +14,35 @@
         android:padding="16dp"
         android:background="#FFFFFF">
 
-        <!-- 섹션 타이틀 (기기 이름) -->
-        <TextView
-            android:id="@+id/tvSectionDeviceName"
-            android:layout_width="wrap_content"
+        <!-- 기기 이름과 상태를 나란히 배치하기 위한 가로 컨테이너 -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="거실 메인 조명"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="#333333"
-            android:layout_marginBottom="12dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <!-- 기기 이름 (layout_weight="1"로 남은 공간 차지) -->
+            <TextView
+                android:id="@+id/tvSectionDeviceName"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="거실 메인 조명"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#333333" />
+
+            <!-- 상태 표시 텍스트 추가 -->
+            <TextView
+                android:id="@+id/tvDeviceStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="연결됨"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:paddingStart="8dp" />
+        </LinearLayout>
 
         <!-- 🌟 DIY 위젯들이 레고처럼 조립될 빈 컨테이너 -->
         <LinearLayout
