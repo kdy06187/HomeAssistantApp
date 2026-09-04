@@ -10,6 +10,7 @@ public class EnergyLog {
     @SerializedName("totalEnergy_mWh")
     private long totalEnergy_mWh;
 
+
     // Getter & Setter
     public String getTimestamp() {
         return timestamp;
@@ -26,4 +27,5 @@ public class EnergyLog {
     public void setTotalEnergy_mWh(long totalEnergy_mWh) {
         this.totalEnergy_mWh = totalEnergy_mWh;
     }
+
 }

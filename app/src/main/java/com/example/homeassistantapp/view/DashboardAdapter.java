@@ -4,8 +4,10 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.SwitchCompat;
@@ -22,6 +24,7 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
 
     public interface OnDeviceControlListener {
         void onToggle(String deviceId, boolean isChecked);
+        void onRefreshDevice(String deviceId);
         void onRefreshChart(String deviceId);
         void onRefreshEnergy(String deviceId);
     }
@@ -47,6 +50,14 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
         Device device = deviceList.get(position);
         holder.tvDeviceName.setText(device.getName());
 
+        String status = device.getState();
+
+        // UI 기본 상태 초기화
+        holder.pbDeviceLoading.setVisibility(View.GONE);
+        holder.btnRefreshStatus.setVisibility(View.VISIBLE);
+        holder.btnRefreshStatus.setEnabled(true);
+        holder.widgetContainer.setVisibility(View.VISIBLE);
+
         if ("TEMP_PAIRING".equals(device.getId()) || device.isPairing()) {
             // [페어링 중]
             holder.tvDeviceStatus.setText("페어링중");
@@ -54,8 +65,12 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
             holder.widgetContainer.setVisibility(View.GONE); // 조작 위젯 숨김
             holder.itemView.setAlpha(0.5f);
 
+        } else if ("LOADING".equals(status)) {
+            holder.tvDeviceStatus.setTextColor(Color.parseColor("#888888"));
+            holder.pbDeviceLoading.setVisibility(View.VISIBLE);
+            holder.btnRefreshStatus.setEnabled(false); // 로딩 중 중복 클릭 방지
+            holder.itemView.setAlpha(0.7f);
         } else if (device.getState().equals("OFFLINE")) {
-            // [오프라인] (Device 모델에 isOffline 속성이 있거나 상태값으로 판단)
             holder.tvDeviceStatus.setText("오프라인");
             holder.tvDeviceStatus.setTextColor(Color.parseColor("#F44336")); // 빨간색
             holder.widgetContainer.setVisibility(View.VISIBLE);
@@ -68,6 +83,11 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
             holder.widgetContainer.setVisibility(View.VISIBLE);
             holder.itemView.setAlpha(1.0f);
         }
+        holder.btnRefreshStatus.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onRefreshDevice(device.getId());
+            }
+        });
 
         holder.widgetContainer.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(holder.itemView.getContext());
@@ -136,6 +156,8 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
 
     static class DashboardViewHolder extends RecyclerView.ViewHolder {
         TextView tvDeviceName,tvDeviceStatus;
+        ProgressBar pbDeviceLoading;
+        ImageButton btnRefreshStatus;
         LinearLayout widgetContainer;
 
         public DashboardViewHolder(@NonNull View itemView) {
@@ -143,6 +165,8 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
             // item_device_section.xml에 있는 뷰들의 ID와 연결
             tvDeviceName = itemView.findViewById(R.id.tvSectionDeviceName);
             tvDeviceStatus = itemView.findViewById(R.id.tvDeviceStatus);
+            pbDeviceLoading = itemView.findViewById(R.id.pbDeviceLoading);
+            btnRefreshStatus = itemView.findViewById(R.id.btnRefreshStatus);
             widgetContainer = itemView.findViewById(R.id.widgetContainer);
 
         }

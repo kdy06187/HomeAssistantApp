@@ -10,6 +10,7 @@ import com.example.homeassistantapp.dto.DeleteDeviceRequest;
 import com.example.homeassistantapp.dto.DeviceListResponse;
 import com.example.homeassistantapp.dto.DeviceStateResponse;
 import com.example.homeassistantapp.dto.EnergyLog;
+import com.example.homeassistantapp.dto.EnergyLogResponse;
 import com.example.homeassistantapp.dto.EnergyResponse;
 
 
@@ -35,5 +36,5 @@ public interface HomeAssistantApi {
     @GET("/api/devices/{deviceId}/energy")
     Call<EnergyResponse> getDeviceEnergy(@Path("deviceId") String deviceId);
     @GET("/api/devices/{id}/energy/history")
-    Call<List<EnergyLog>> getDeviceEnergyHistory(@Path("id") String deviceId);
+    Call<EnergyLogResponse> getDeviceEnergyHistory(@Path("id") String deviceId);
 }

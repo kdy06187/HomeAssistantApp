@@ -3,8 +3,8 @@ package com.example.homeassistantapp.dto;
 import com.google.gson.annotations.SerializedName;
 
 public class EnergyResponse {
-    @SerializedName("deviceId")
-    public String deviceId;
+    @SerializedName("device_status")
+    public String device_status;
 
     // 실시간 전력량 (밀리와트 단위)
     @SerializedName("activePower_mW")

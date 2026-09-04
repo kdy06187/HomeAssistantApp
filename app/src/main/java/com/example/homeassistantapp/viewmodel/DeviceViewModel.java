@@ -13,6 +13,7 @@ import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.dto.DeviceListResponse;
 import com.example.homeassistantapp.dto.DeviceStateResponse;
 import com.example.homeassistantapp.dto.EnergyLog;
+import com.example.homeassistantapp.dto.EnergyLogResponse;
 import com.example.homeassistantapp.dto.EnergyResponse;
 import com.example.homeassistantapp.network.RetrofitClient;
 
@@ -53,12 +54,15 @@ public class DeviceViewModel extends ViewModel {
 
     // 제어 명령 전송 로직
     public void controlDevice(String targetId, String command) {
+        updateDevice(targetId, device -> device.setState("LOADING")); // 제어 시작 시 상태를 LOADING으로 표시
+
         ControlRequest request = new ControlRequest(targetId, command);
         RetrofitClient.getApi().controlDevice(request).enqueue(new Callback<ControlResponse>() {
             @Override
             public void onResponse(Call<ControlResponse> call, Response<ControlResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     toastMessage.setValue(response.body().message);
+                    updateDevice(targetId, device -> device.setState(response.body().status)); // 성공 시 상태 업데이트
                 } else {
                     updateDevice(targetId,device -> device.setState("OFFLINE")); // 실패 시 상태 롤백
                     toastMessage.setValue("제어 실패");
@@ -126,6 +130,7 @@ public class DeviceViewModel extends ViewModel {
         }
     }
     public void deleteDevice(String deviceId) {
+        updateDevice(deviceId, device -> device.setState("LOADING"));
         toastMessage.setValue("기기 삭제 중...");
 
         RetrofitClient.getApi().deleteDevice(new DeleteDeviceRequest(deviceId)).enqueue(new Callback<ControlResponse>() {
@@ -146,6 +151,7 @@ public class DeviceViewModel extends ViewModel {
         });
     }
     public void syncDeviceState(String deviceId) {
+        updateDevice(deviceId, device -> device.setState("LOADING")); // 상태 동기화 시작 시 LOADING 표시
         RetrofitClient.getApi().getDeviceState(deviceId).enqueue(new Callback<DeviceStateResponse>() {
             @Override
             public void onResponse(Call<DeviceStateResponse> call, Response<DeviceStateResponse> response) {
@@ -160,12 +166,13 @@ public class DeviceViewModel extends ViewModel {
             @Override
             public void onFailure(Call<DeviceStateResponse> call, Throwable t) {
                 // 조용히 실패 처리 (상태 갱신 실패는 앱을 터뜨릴 정돈 아니므로 로그만 남기거나 무시)
+                updateDevice(deviceId, device -> device.setState("OFFLINE"));
             }
         });
     }
     public void fetchDeviceEnergy(String deviceId) {
         toastMessage.setValue("전력량 조회 중...");
-
+        updateDevice(deviceId, device -> device.setState("LOADING"));
         RetrofitClient.getApi().getDeviceEnergy(deviceId).enqueue(new Callback<EnergyResponse>() {
             @Override
             public void onResponse(Call<EnergyResponse> call, Response<EnergyResponse> response) {
@@ -179,7 +186,10 @@ public class DeviceViewModel extends ViewModel {
                     String powerText = String.format("실시간: %.1f W / 누적: %.4f kWh", currentPowerW, totalEnergyKwh);
 
                     // 3. 현재 LiveData의 리스트를 꺼내서 해당 기기의 전력 텍스트만 업데이트!
-                    updateDevice(deviceId, device -> device.setPowerInfo(powerText));
+                    updateDevice(deviceId, device -> {
+                        device.setPowerInfo(powerText);
+                        device.setState(response.body().device_status); // 전력 조회 성공 시 상태를 ONLINE으로 표시
+                    });
                     toastMessage.setValue("전력량 업데이트 완료!");
 
                 } else {
@@ -196,13 +206,18 @@ public class DeviceViewModel extends ViewModel {
     }
 
     public void fetchDeviceEnergyHistory(String deviceId) {
-        RetrofitClient.getApi().getDeviceEnergyHistory(deviceId).enqueue(new Callback<List<EnergyLog>>() {
+        updateDevice(deviceId, device -> device.setState("LOADING"));
+
+        RetrofitClient.getApi().getDeviceEnergyHistory(deviceId).enqueue(new Callback<EnergyLogResponse>() {
             @Override
-            public void onResponse(Call<List<EnergyLog>> call, Response<List<EnergyLog>> response) {
+            public void onResponse(Call<EnergyLogResponse> call, Response<EnergyLogResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     // 🌟 서버에서 받아온 차트 데이터를 기기 리스트가 아닌, 전용 파이프라인에 쏩니다!
-                    detailEnergyHistory.setValue(response.body());
-                    updateDevice(deviceId, device -> device.setEnergyLogs(response.body()));
+                    detailEnergyHistory.setValue(response.body().getLogs());
+                    updateDevice(deviceId, device -> {
+                        device.setEnergyLogs(response.body().getLogs());
+                        device.setState(response.body().getDevice_status());
+                    });
                 }
                 else{
                     updateDevice(deviceId,device -> device.setState("OFFLINE"));
@@ -211,7 +226,7 @@ public class DeviceViewModel extends ViewModel {
             }
 
             @Override
-            public void onFailure(Call<List<EnergyLog>> call, Throwable t) {
+            public void onFailure(Call<EnergyLogResponse> call, Throwable t) {
                 toastMessage.setValue("전력량 로그를 불러오지 못했습니다.");
             }
         });

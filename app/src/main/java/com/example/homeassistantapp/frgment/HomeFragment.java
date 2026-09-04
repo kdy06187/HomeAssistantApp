@@ -50,6 +50,11 @@ public class HomeFragment extends Fragment {
                 viewModel.controlDevice(deviceId, command);
             }
             @Override
+            public void onRefreshDevice(String deviceId) {
+                // 뷰모델을 통해 해당 기기의 최신 상태를 서버에 요청
+                viewModel.syncDeviceState(deviceId);
+            }
+            @Override
             public void onRefreshChart(String deviceId) {
                 // 뷰모델을 통해 해당 기기의 최신 전력량 로그를 서버에 요청
                 viewModel.fetchDeviceEnergyHistory(deviceId);
