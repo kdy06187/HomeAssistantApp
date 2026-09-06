@@ -150,9 +150,9 @@ public class DeviceViewModel extends ViewModel {
             }
         });
     }
-    public void syncDeviceState(String deviceId) {
+    public void syncDeviceState(String deviceId, boolean isManualRefresh) {
         updateDevice(deviceId, device -> device.setState("LOADING")); // 상태 동기화 시작 시 LOADING 표시
-        RetrofitClient.getApi().getDeviceState(deviceId).enqueue(new Callback<DeviceStateResponse>() {
+        RetrofitClient.getApi().getDeviceState(deviceId,isManualRefresh).enqueue(new Callback<DeviceStateResponse>() {
             @Override
             public void onResponse(Call<DeviceStateResponse> call, Response<DeviceStateResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {

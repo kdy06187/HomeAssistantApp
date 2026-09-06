@@ -69,15 +69,14 @@ public class DeviceFragment extends Fragment {
             if (swipeRefreshLayout.isRefreshing()) {
                 swipeRefreshLayout.setRefreshing(false);
             }
+            // 수동 새로고침 시에만 각 기기의 상태를 서버에 요청
             if (isManualRefresh) {
-                isManualRefresh = false; // 즉시 잠금
                 for (Device device : devices) {
-
                     if (!"TEMP_PAIRING".equals(device.getId()) && !device.isPairing()) {
-                        viewModel.syncDeviceState(device.getId());
+                        viewModel.syncDeviceState(device.getId(),isManualRefresh);
                     }
-
                 }
+                isManualRefresh = false; // 즉시 잠금
             }
         });
         // 토스트 메시지가 갱신되면 화면에 띄움

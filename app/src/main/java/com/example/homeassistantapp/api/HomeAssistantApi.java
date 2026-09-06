@@ -21,6 +21,7 @@ import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 public interface HomeAssistantApi {
     @GET("/api/devices")
@@ -32,7 +33,8 @@ public interface HomeAssistantApi {
     @POST("/api/devices/delete")
     Call<ControlResponse> deleteDevice(@Body DeleteDeviceRequest request);
     @GET("/api/devices/{deviceId}/state")
-    Call<DeviceStateResponse> getDeviceState(@Path("deviceId") String deviceId);
+    Call<DeviceStateResponse> getDeviceState(@Path("deviceId") String deviceId
+            , @Query("isManualRefresh") boolean isManualRefresh);
     @GET("/api/devices/{deviceId}/energy")
     Call<EnergyResponse> getDeviceEnergy(@Path("deviceId") String deviceId);
     @GET("/api/devices/{id}/energy/history")

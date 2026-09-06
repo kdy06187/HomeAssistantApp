@@ -52,7 +52,7 @@ public class HomeFragment extends Fragment {
             @Override
             public void onRefreshDevice(String deviceId) {
                 // 뷰모델을 통해 해당 기기의 최신 상태를 서버에 요청
-                viewModel.syncDeviceState(deviceId);
+                viewModel.syncDeviceState(deviceId,true);
             }
             @Override
             public void onRefreshChart(String deviceId) {
