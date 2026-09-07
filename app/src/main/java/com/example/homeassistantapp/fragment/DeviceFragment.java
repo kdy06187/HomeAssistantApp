@@ -1,7 +1,7 @@
-package com.example.homeassistantapp.frgment;
+package com.example.homeassistantapp.fragment;
 
-import static java.security.AccessController.getContext;
-
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,7 +19,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.example.homeassistantapp.MainActivity;
 import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.view.DeviceAdapter;
@@ -111,8 +110,16 @@ public class DeviceFragment extends Fragment {
             String payload = editPayload.getText().toString();
 
             if(!name.isEmpty() && !payload.isEmpty()){
+                SharedPreferences prefs = requireActivity().getSharedPreferences("HomeAssistantPrefs", Context.MODE_PRIVATE);
+                String ssid = prefs.getString("WIFI_SSID", "");
+                String password = prefs.getString("WIFI_PASSWORD", "");
+
+                if (ssid.isEmpty()) {
+                    Toast.makeText(getContext(), "설정 탭에서 와이파이를 먼저 설정해주세요.", Toast.LENGTH_LONG).show();
+                    return; // 등록 진행 중단
+                }
                 // 이전에 만들어둔 ViewModel의 addDevice(커미셔닝 API) 호출!
-                viewModel.addDevice(type, name, payload);
+                viewModel.addDevice(type, name, payload, ssid, password);
             } else {
                 Toast.makeText(getContext(), "정보를 모두 입력해주세요.", Toast.LENGTH_SHORT).show();
             }

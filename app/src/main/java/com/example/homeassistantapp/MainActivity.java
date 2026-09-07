@@ -1,44 +1,17 @@
 package com.example.homeassistantapp;
 
-import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
-
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
-import android.widget.EditText;
-import android.widget.Spinner;
-import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.example.homeassistantapp.api.HomeAssistantApi;
-import com.example.homeassistantapp.dto.ControlRequest;
-import com.example.homeassistantapp.dto.ControlResponse;
-import com.example.homeassistantapp.dto.Device;
-import com.example.homeassistantapp.dto.DeviceListResponse;
-import com.example.homeassistantapp.frgment.DeviceFragment;
-import com.example.homeassistantapp.frgment.HomeFragment;
-import com.example.homeassistantapp.view.DeviceAdapter;
-import com.example.homeassistantapp.view.EnergyLineChartView;
-import com.example.homeassistantapp.viewmodel.DeviceViewModel;
+import com.example.homeassistantapp.fragment.DeviceFragment;
+import com.example.homeassistantapp.fragment.HomeFragment;
+import com.example.homeassistantapp.fragment.SettingsFragment;
+import com.example.homeassistantapp.network.RetrofitClient;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
     @Override
@@ -46,6 +19,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // MainActivity.java의 onCreate() 내부
+        SharedPreferences prefs = getSharedPreferences("HomeAssistantPrefs", Context.MODE_PRIVATE);
+        String ip = prefs.getString("SERVER_IP", "192.168.219.108");
+        String port = prefs.getString("SERVER_PORT", "8000");
+
+        // 앱 구동 시 저장된 설정값으로 Retrofit 초기화
+        RetrofitClient.rebuildClient(ip, port);
         BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
 
         // 탭 클릭 리스너 설정
@@ -58,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (itemId == R.id.nav_devices) {
                 selectedFragment = new DeviceFragment();
             } else if (itemId == R.id.nav_settings) {
-                // TODO: SettingsFragment 연결 예정
+                selectedFragment = new SettingsFragment();
             }
 
             // 프래그먼트 교체 (null 체크 후)
