@@ -1,5 +1,7 @@
 package com.example.homeassistantapp.network;
 
+import android.util.Log;
+
 import com.example.homeassistantapp.api.HomeAssistantApi;
 
 import java.util.concurrent.TimeUnit;
@@ -15,6 +17,8 @@ public class RetrofitClient {
     // 🌟 설정창에서 IP/Port를 변경할 때마다 호출되어 Base URL을 동적으로 갱신합니다.
     public static void rebuildClient(String ip, String port) {
         String baseUrl = "http://" + ip + ":" + port + "/";
+
+        Log.d("RetrofitClient", "생성된 Base URL: " + baseUrl);
 
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .connectTimeout(60, TimeUnit.SECONDS)

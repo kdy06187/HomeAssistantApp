@@ -1,5 +1,7 @@
 package com.example.homeassistantapp.view;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,18 +12,24 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.R;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.DashboardViewHolder>{
     private List<Device> deviceList = new ArrayList<>();
     private OnDeviceControlListener listener;
 
+    private Set<String> editingDeviceIds = new HashSet<>();
     public interface OnDeviceControlListener {
         void onToggle(String deviceId, boolean isChecked);
         void onRefreshDevice(String deviceId);
@@ -48,8 +56,25 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
     @Override
     public void onBindViewHolder(@NonNull DashboardViewHolder holder, int position) {
         Device device = deviceList.get(position);
-        holder.tvDeviceName.setText(device.getName());
+        holder.currentDeviceId = device.getId();
 
+        boolean isEditing = editingDeviceIds.contains(device.getId());
+        holder.widgetAdapter.setEditMode(isEditing);
+        if (isEditing) {
+            holder.btnEditWidgets.setColorFilter(Color.parseColor("#FF9800"));
+        } else {
+            holder.btnEditWidgets.clearColorFilter();
+        }
+        holder.btnEditWidgets.setOnClickListener(v -> {
+            if (editingDeviceIds.contains(device.getId())) {
+                editingDeviceIds.remove(device.getId()); // 편집 모드 끄기
+            } else {
+                editingDeviceIds.add(device.getId()); // 편집 모드 켜기
+            }
+            notifyItemChanged(position); // 변경된 상태로 이 기기만 다시 그리기
+        });
+
+        holder.tvDeviceName.setText(device.getName());
         String status = device.getState();
 
         // UI 기본 상태 초기화
@@ -89,51 +114,40 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
             }
         });
 
-        holder.widgetContainer.removeAllViews();
-        LayoutInflater inflater = LayoutInflater.from(holder.itemView.getContext());
-        // 기기가 스위치 기능을 지원한다면 토글 위젯 부착
+        List<String> activeWidgets = new ArrayList<>();
+
+        // (나중에는 이 activeWidgets 리스트를 SharedPreferences에서 불러와서 세팅하게 됩니다)
         if (device.getType().equals("MATTER") || device.getType().equals("TCP_DIY")) {
-            View toggleWidget = inflater.inflate(R.layout.widget_toggle, holder.widgetContainer, false);
-            SwitchCompat switchControl = toggleWidget.findViewById(R.id.switchWidgetControl);
-
-            switchControl.setChecked("ON".equalsIgnoreCase(device.getState()));
-            switchControl.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (listener != null) listener.onToggle(device.getId(), isChecked);
-            });
-
-            holder.widgetContainer.addView(toggleWidget);
+            activeWidgets.add("TOGGLE");
         }
-        // 기기가 전력 측정 기능을 지원한다면 전력량 위젯 부착
         if (device.getType().equals("MATTER")) {
-            View energyWidget = inflater.inflate(R.layout.widget_energy_text, holder.widgetContainer, false);
-            TextView tvEnergy = energyWidget.findViewById(R.id.tvWidgetEnergy);
-            ImageView btnRefresh = energyWidget.findViewById(R.id.btnRefreshEnergyText);
-
-            tvEnergy.setText(device.getPowerInfo());
-
-            btnRefresh.setOnClickListener(v -> {
-                if (listener != null) listener.onRefreshEnergy(device.getId());
-            });
-            holder.widgetContainer.addView(energyWidget);
+            activeWidgets.add("ENERGY");
+            activeWidgets.add("CHART");
         }
-        // 차트 위젯 부착 (전력량 로그 데이터가 있는 경우에만 조립)
-        if (device.getType().equals("MATTER")) {
-            View chartWidget = inflater.inflate(R.layout.widget_chart, holder.widgetContainer, false);
-            EnergyLineChartView chartView = chartWidget.findViewById(R.id.widgetEnergyChart);
-            ImageView btnRefresh = chartWidget.findViewById(R.id.btnRefreshChart);
 
-            // 데이터가 존재하면 차트에 세팅하고, 없으면 텅 빈 상태 유지
-            if (device.getEnergyLogs() != null && !device.getEnergyLogs().isEmpty()) {
-                chartView.setEnergyData(device.getEnergyLogs());
+        SharedPreferences prefs = holder.itemView.getContext().getSharedPreferences("DashboardPrefs", Context.MODE_PRIVATE);
+        String savedOrder = prefs.getString(device.getId() + "_widget_order", "");
+
+        if (!savedOrder.isEmpty()) {
+            List<String> sortedWidgets = new ArrayList<>();
+            String[] savedArray = savedOrder.split(",");
+
+            // 저장된 순서대로 새 리스트에 넣기
+            for (String type : savedArray) {
+                if (activeWidgets.contains(type)) {
+                    sortedWidgets.add(type);
+                    activeWidgets.remove(type); // 이미 넣은 건 원본에서 제거
+                }
             }
+            // 혹시 앱 업데이트 등으로 새로 생긴 위젯이 있다면 맨 뒤에 마저 붙이기
+            sortedWidgets.addAll(activeWidgets);
 
-            // 새로고침 버튼 이벤트 연결
-            btnRefresh.setOnClickListener(v -> {
-                if (listener != null) listener.onRefreshChart(device.getId());
-            });
-
-            holder.widgetContainer.addView(chartWidget);
+            activeWidgets = sortedWidgets; // 정렬된 리스트로 교체
         }
+
+        // 위젯 어댑터에 리스트 전달 -> 자동으로 화면에 렌더링됨
+        holder.widgetAdapter.setWidgets(activeWidgets, device, listener);
+
 
     }
     public void moveItem(int fromPosition, int toPosition) {
@@ -158,7 +172,10 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
         TextView tvDeviceName,tvDeviceStatus;
         ProgressBar pbDeviceLoading;
         ImageButton btnRefreshStatus;
-        LinearLayout widgetContainer;
+        ImageButton btnEditWidgets;
+        RecyclerView widgetContainer;
+        WidgetAdapter widgetAdapter;
+        String currentDeviceId;
 
         public DashboardViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -167,7 +184,56 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
             tvDeviceStatus = itemView.findViewById(R.id.tvDeviceStatus);
             pbDeviceLoading = itemView.findViewById(R.id.pbDeviceLoading);
             btnRefreshStatus = itemView.findViewById(R.id.btnRefreshStatus);
-            widgetContainer = itemView.findViewById(R.id.widgetContainer);
+            btnEditWidgets = itemView.findViewById(R.id.btnEditWidgets);
+            widgetContainer = itemView.findViewById(R.id.widgetRecyclerView);
+
+            widgetContainer.setLayoutManager(new LinearLayoutManager(itemView.getContext()));
+            widgetAdapter = new WidgetAdapter();
+            widgetContainer.setAdapter(widgetAdapter);
+
+            ItemTouchHelper.SimpleCallback widgetTouch = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
+                @Override
+                public boolean isLongPressDragEnabled() {
+                    return false;
+                }
+                @Override
+                public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                    // 손가락으로 드래그 시 위젯 어댑터의 위치 변경 로직 호출
+                    widgetAdapter.moveItem(viewHolder.getAdapterPosition(), target.getAdapterPosition());
+                    return true;
+                }
+                @Override
+                public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                    // 스와이프 삭제는 추후 편집 모드에서 구현
+                }
+                @Override
+                public void onSelectedChanged(@Nullable RecyclerView.ViewHolder viewHolder, int actionState) {
+                    super.onSelectedChanged(viewHolder, actionState);
+                    if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+                        widgetContainer.getParent().requestDisallowInterceptTouchEvent(true);
+                    }
+                }
+
+                // 🌟 추가: 드래그 종료 시 바깥쪽 목록 스크롤 다시 켜기
+                @Override
+                public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                    super.clearView(recyclerView, viewHolder);
+
+                    if (currentDeviceId != null) {
+                        SharedPreferences prefs = itemView.getContext().getSharedPreferences("DashboardPrefs", Context.MODE_PRIVATE);
+                        StringBuilder orderStr = new StringBuilder();
+                        for (String type : widgetAdapter.getWidgetTypes()) {
+                            orderStr.append(type).append(",");
+                        }
+                        prefs.edit().putString(currentDeviceId + "_widget_order", orderStr.toString()).apply();
+                    }
+                }
+
+            };
+            ItemTouchHelper itemTouchHelper = new ItemTouchHelper(widgetTouch);
+            itemTouchHelper.attachToRecyclerView(widgetContainer);
+            widgetAdapter.setTouchHelper(itemTouchHelper);
+
 
         }
     }

@@ -48,6 +48,13 @@
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:paddingStart="8dp" />
+            <ImageButton
+                android:id="@+id/btnEditWidgets"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_edit"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="위젯 편집" />
             <!-- 🌟 새로고침 버튼 -->
             <ImageButton
                 android:id="@+id/btnRefreshStatus"
@@ -60,11 +67,11 @@
         </LinearLayout>
 
         <!-- 🌟 DIY 위젯들이 레고처럼 조립될 빈 컨테이너 -->
-        <LinearLayout
-            android:id="@+id/widgetContainer"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/widgetRecyclerView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:nestedScrollingEnabled="false" />
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

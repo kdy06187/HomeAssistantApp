@@ -30,6 +30,14 @@
             android:focusable="true"
             android:src="@android:drawable/ic_popup_sync"
             app:tint="#888888" />
+        <ImageButton
+            android:id="@+id/btnDeleteWidget"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_close"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:visibility="gone"
+            android:layout_gravity="top|end" />
     </RelativeLayout>
 
     <!-- 본인의 패키지명으로 꼭 수정해 주세요! -->
