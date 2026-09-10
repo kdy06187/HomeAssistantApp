@@ -71,6 +71,10 @@ public class HomeFragment extends Fragment {
                 ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) { // 위아래 드래그만 허용 (스와이프 삭제는 0으로 비활성화)
 
             @Override
+            public boolean isLongPressDragEnabled() {
+                return !adapter.isAnyDeviceEditing();
+            }
+            @Override
             public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
                 int fromPosition = viewHolder.getAdapterPosition();
                 int toPosition = target.getAdapterPosition();

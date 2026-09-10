@@ -45,7 +45,10 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
         this.deviceList = devices;
         notifyDataSetChanged();
     }
-
+    public boolean isAnyDeviceEditing() {
+        // editingDeviceIds 주머니가 비어있지 않으면(편집 중이면) true 반환
+        return !editingDeviceIds.isEmpty();
+    }
     @NonNull
     @Override
     public DashboardViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
