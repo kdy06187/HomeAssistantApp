@@ -2,6 +2,8 @@ package com.example.homeassistantapp.dto;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.List;
+
 public class AddDeviceRequest {
     @SerializedName("protocolType")
     public String protocolType;
@@ -14,12 +16,16 @@ public class AddDeviceRequest {
 
     @SerializedName("password")
     public String password;
-    public AddDeviceRequest(String protocolType, String deviceName, String payload, String ssid, String password) {
+
+    @SerializedName("driverType")
+    public List<String> driverType;
+    public AddDeviceRequest(String protocolType, String deviceName, String payload, String ssid, String password, List<String> driverType) {
         this.protocolType = protocolType;
         this.deviceName = deviceName;
         this.payload = payload;
         this.ssid = ssid;
         this.password = password;
+        this.driverType = driverType;
     }
 
 }

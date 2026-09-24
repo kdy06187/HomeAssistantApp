@@ -25,6 +25,9 @@ import com.example.homeassistantapp.view.DeviceAdapter;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class DeviceFragment extends Fragment {
     private DeviceViewModel viewModel;
     private DeviceAdapter adapter;
@@ -104,12 +107,21 @@ public class DeviceFragment extends Fragment {
         EditText editDeviceName = dialogView.findViewById(R.id.editDeviceName);
         EditText editPayload = dialogView.findViewById(R.id.editPayload);
 
+        Spinner spinnerDriver = dialogView.findViewById(R.id.spinnerDriver);
+
         builder.setPositiveButton("등록", (dialog, which) -> {
             String type = spinnerProtocol.getSelectedItem().toString(); // "ARDUINO" or "MATTER"
             String name = editDeviceName.getText().toString();
             String payload = editPayload.getText().toString();
 
-            if(!name.isEmpty() && !payload.isEmpty()){
+            String[] driverValues = getResources().getStringArray(R.array.driver_value_array);
+            int selectedDriverIndex = spinnerDriver.getSelectedItemPosition();
+            String driverType = driverValues[selectedDriverIndex];
+            List<String> driverTypes = new ArrayList<>();
+            if (!driverType.isEmpty()) {
+                driverTypes.add(driverType);
+            }
+            if(!name.isEmpty()){
                 SharedPreferences prefs = requireActivity().getSharedPreferences("HomeAssistantPrefs", Context.MODE_PRIVATE);
                 String ssid = prefs.getString("WIFI_SSID", "");
                 String password = prefs.getString("WIFI_PASSWORD", "");
@@ -119,7 +131,7 @@ public class DeviceFragment extends Fragment {
                     return; // 등록 진행 중단
                 }
                 // 이전에 만들어둔 ViewModel의 addDevice(커미셔닝 API) 호출!
-                viewModel.addDevice(type, name, payload, ssid, password);
+                viewModel.addDevice(type, name, payload, ssid, password,driverTypes);
             } else {
                 Toast.makeText(getContext(), "정보를 모두 입력해주세요.", Toast.LENGTH_SHORT).show();
             }
