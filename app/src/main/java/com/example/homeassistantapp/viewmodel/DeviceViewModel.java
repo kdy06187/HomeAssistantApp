@@ -76,7 +76,7 @@ public class DeviceViewModel extends ViewModel {
         });
     }
     // 커미셔닝 요청
-    public void addDevice(String type, String name, String payload, String ssid, String password, List<String> driver) {
+    public void addDevice(String type, String name, String payload, String ssid, String password, List<Integer> driver) {
         AddDeviceRequest request = new AddDeviceRequest(type, name, payload, ssid, password, driver);
         // 로딩 토스트 메시지 띄우기
         toastMessage.setValue("기기 등록을 서버에 요청했습니다...");

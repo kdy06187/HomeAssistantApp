@@ -9,8 +9,8 @@
 
     <!-- 서버로 전송할 실제 값 (위 배열과 순서가 1:1 대응되어야 함) -->
     <string-array name="driver_value_array">
-        <item></item>         <!-- 없음일 때는 빈 문자열 -->
-        <item>PCDriver</item> <!-- PC 제어 -->
-        <item>TVDriver</item> <!-- TV 제어 -->
+        <item>0</item>         <!-- 없음일 때는 빈 문자열 -->
+        <item>1</item> <!-- PC 제어 -->
+        <item>2</item> <!-- TV 제어 -->
     </string-array>
 </resources>

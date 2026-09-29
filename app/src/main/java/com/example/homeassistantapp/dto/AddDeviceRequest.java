@@ -17,9 +17,9 @@ public class AddDeviceRequest {
     @SerializedName("password")
     public String password;
 
-    @SerializedName("driverType")
-    public List<String> driverType;
-    public AddDeviceRequest(String protocolType, String deviceName, String payload, String ssid, String password, List<String> driverType) {
+    @SerializedName("driverTypes")
+    public List<Integer> driverType;
+    public AddDeviceRequest(String protocolType, String deviceName, String payload, String ssid, String password, List<Integer> driverType) {
         this.protocolType = protocolType;
         this.deviceName = deviceName;
         this.payload = payload;

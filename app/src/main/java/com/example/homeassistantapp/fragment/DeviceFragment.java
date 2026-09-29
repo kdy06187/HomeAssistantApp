@@ -116,10 +116,10 @@ public class DeviceFragment extends Fragment {
 
             String[] driverValues = getResources().getStringArray(R.array.driver_value_array);
             int selectedDriverIndex = spinnerDriver.getSelectedItemPosition();
-            String driverType = driverValues[selectedDriverIndex];
-            List<String> driverTypes = new ArrayList<>();
-            if (!driverType.isEmpty()) {
-                driverTypes.add(driverType);
+            int driverTypeInt = Integer.parseInt(driverValues[selectedDriverIndex]);
+            List<Integer> driverTypes = new ArrayList<>();
+            if (driverTypeInt > 0) {
+                driverTypes.add(driverTypeInt);
             }
             if(!name.isEmpty()){
                 SharedPreferences prefs = requireActivity().getSharedPreferences("HomeAssistantPrefs", Context.MODE_PRIVATE);
