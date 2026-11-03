@@ -1,5 +1,7 @@
 package com.example.homeassistantapp.viewmodel;
 
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -47,6 +49,7 @@ public class DeviceViewModel extends ViewModel {
 
             @Override
             public void onFailure(Call<DeviceListResponse> call, Throwable t) {
+                Log.d("DeviceViewModel", "fetchDevices onFailure: " + t.getMessage());
                 toastMessage.setValue("서버 연결 실패: " + t.getMessage());
             }
         });
