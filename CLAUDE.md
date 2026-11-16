@@ -65,4 +65,5 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `strings.xml`의 `driver_display_array`와 `driver_value_array`는 인덱스로 대응되므로 순서가 같아야 합니다. 값 `0`은 드라이버 없음을 뜻하며 빈 `driverTypes` 목록으로 전송됩니다.
 - 새 의존성은 기존 방식대로 추가합니다. Retrofit, MPAndroidChart, SwipeRefreshLayout은 `app/build.gradle.kts`에 직접 적혀 있고, 나머지는 `gradle/libs.versions.toml`에 있습니다. MPAndroidChart를 위해 `settings.gradle.kts`에 JitPack이 활성화되어 있습니다.
 - 코드 주석과 사용자에게 보이는 문자열은 한글로 작성하며, UI 문자열은 대부분 `strings.xml`이 아니라 코드에 직접 들어 있습니다.
+- 클래스·메서드·변수·테스트 이름은 영어로 쓴다. 주석과 화면 문구만 한글.
 - 커밋 메시지는 `feat)` 또는 `fix)` 접두사와 한글 요약을 사용하고, 파일별 메모(`- 파일명 : 변경 내용`)를 덧붙이는 경우가 많습니다.
