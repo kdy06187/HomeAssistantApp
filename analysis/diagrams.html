@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>HomeAssistantApp 구조·흐름 그림 (0단계 분석)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: "Malgun Gothic", sans-serif; max-width: 1000px; margin: 24px auto; padding: 0 16px; color: #222; line-height: 1.6; }
+  h1 { font-size: 1.5em; }
+  h2 { margin-top: 2.2em; border-bottom: 2px solid #ddd; padding-bottom: 4px; }
+  .diagram { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 12px; overflow-x: auto; }
+  .note { background: #f1f7ff; border-left: 4px solid #4a90d9; padding: 8px 14px; margin-top: 10px; }
+  .note p { margin: 4px 0; }
+  .meta { color: #666; font-size: 0.9em; }
+  .est { color: #b45309; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>HomeAssistantApp 구조·흐름 그림</h1>
+<p class="meta">0단계(분석) 시각화. 근거: <code>analysis/as-is-설계.md</code>, <code>analysis/기능목록.md</code> (기준 커밋 0ca5dbf). 문서로 확인하지 못한 내용은 <span class="est">추정</span>으로 표시했다. 실제 기기·서버 실행은 확인하지 않았다.</p>
+
+<h2>1. 현재 구조도</h2>
+<div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  MA["MainActivity"]
+  HF["HomeFragment (대시보드)"]
+  DF["DeviceFragment (기기 관리)"]
+  SF["SettingsFragment (설정)"]
+  DDA["DeviceDetailActivity"]
+  VM["DeviceViewModel (액티비티 범위 공유)"]
+  VM2["DeviceViewModel (별도 인스턴스)"]
+  RC["RetrofitClient (static)"]
+  API["HomeAssistantApi"]
+  SRV[("스마트홈 서버 (저장소 밖)")]
+  P1[("HomeAssistantPrefs")]
+  P2[("DashboardPrefs")]
+
+  MA -- "탭 선택 시 새로 생성/교체" --> HF
+  MA -- "탭 선택 시 새로 생성/교체" --> DF
+  MA -- "탭 선택 시 새로 생성/교체" --> SF
+  DF -- "항목 클릭 Intent" --> DDA
+  HF -- "observe / 호출" --> VM
+  DF -- "observe / 호출" --> VM
+  DDA -- "이력 조회" --> VM2
+  VM -- "getApi()" --> RC
+  VM2 -- "getApi()" --> RC
+  RC -- "Retrofit 생성" --> API
+  API -- "평문 HTTP/JSON" --> SRV
+  MA -- "rebuildClient" --> RC
+  SF -- "rebuildClient" --> RC
+  MA -- "IP/포트 읽기" --> P1
+  SF -- "IP/포트/Wi-Fi 읽기·쓰기" --> P1
+  DF -- "Wi-Fi 읽기" --> P1
+  HF -- "기기·위젯 순서 저장/읽기" --> P2
+</pre>
+</div>
+<div class="note">
+<p>앱 화면은 <b>화면(Fragment) → ViewModel → RetrofitClient → HomeAssistantApi → 서버</b> 한 방향으로 흐른다. 중간에 리포지토리 계층은 없다. 대시보드와 기기 관리는 같은 <code>DeviceViewModel</code>을 함께 써서 기기 목록을 공유하고, 상세 화면은 자기 것을 따로 만든다(그래서 목록이 비어 있다).</p>
+<p>저장은 SharedPreferences 2개뿐이다. 서버 주소·Wi-Fi 정보는 <code>HomeAssistantPrefs</code>, 대시보드 순서는 <code>DashboardPrefs</code>에 있고 DB는 없다.</p>
+<p>그림이 복잡해지지 않도록 어댑터(<code>DashboardAdapter</code>, <code>WidgetAdapter</code>, <code>DeviceAdapter</code>)와 차트 뷰는 뺐다. 문서상 <code>DashboardAdapter</code>도 <code>DashboardPrefs</code>에 위젯 순서를 쓴다(그림에서는 HomeFragment로 묶어 표시).</p>
+</div>
+
+<h2>2-a. 호출 흐름: 대시보드에서 기기 토글 명령 전송</h2>
+<div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor U as 사용자
+  participant T as ToggleViewHolder
+  participant HF as HomeFragment
+  participant VM as DeviceViewModel
+  participant S as 스마트홈 서버
+  U->>T: 스위치를 직접 누름 (isPressed일 때만)
+  T->>HF: onToggle(deviceId, isChecked)
+  HF->>VM: controlDevice(id, "ON" 또는 "OFF")
+  VM-->>HF: state = LOADING 으로 다시 내보냄 (로딩 표시)
+  VM->>S: POST /api/control (deviceId, command)
+  alt 응답 2xx + 본문 있음
+    S-->>VM: status, message
+    VM-->>HF: state = status 값, 토스트 = message
+  else 응답이 2xx 아님
+    VM-->>HF: state = OFFLINE, 토스트 "제어 실패"
+  else 통신 자체 실패
+    VM-->>HF: 토스트만 설정 (state는 LOADING으로 남음)
+  end
+</pre>
+</div>
+<div class="note">
+<p>스위치를 누르면 <code>ViewModel</code>이 먼저 기기 상태를 <code>LOADING</code>으로 바꿔 화면에 로딩 표시를 띄우고, 그다음 서버에 <code>/api/control</code> 요청을 보낸다.</p>
+<p>서버가 오류 응답(2xx 아님)을 주면 <code>OFFLINE</code>으로 표시된다. 반면 네트워크 자체가 실패하면 <code>OFFLINE</code>이 되지 않고 <code>LOADING</code>이 그대로 남는다(문서의 문제점 P-04). 즉 "실패하면 항상 오프라인 처리"는 아니다.</p>
+<p>토스트는 기기 관리 탭에서만 관찰하므로 대시보드에서는 메시지가 보이지 않을 수 있다 <span class="est">(추정: 문서의 F-16 설명에서 도출, 실행 확인 안 함)</span>.</p>
+</div>
+
+<h2>2-b. 호출 흐름: 설정 탭에서 서버 주소 저장</h2>
+<div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor U as 사용자
+  participant SF as SettingsFragment
+  participant P as HomeAssistantPrefs
+  participant RC as RetrofitClient
+  participant API as HomeAssistantApi
+  U->>SF: IP, 포트 입력 후 저장 버튼
+  SF->>SF: IP와 포트가 비어 있지 않은지만 확인 (형식 검증 없음)
+  SF->>P: SERVER_IP, SERVER_PORT 저장 (Wi-Fi SSID와 비밀번호도 함께 저장)
+  SF->>RC: rebuildClient(ip, port)
+  RC->>RC: Base URL을 http://ip:port/ 로 새 Retrofit 생성 후 정적 필드에 보관
+  Note over RC,API: 이후 getApi()는 새 주소의 HomeAssistantApi를 돌려줌
+</pre>
+</div>
+<div class="note">
+<p>설정 탭에서 저장하면 값이 <code>HomeAssistantPrefs</code>에 기록되고, 곧바로 <code>RetrofitClient.rebuildClient</code>가 새 주소로 Retrofit을 다시 만든다. 그래서 앱을 재시작하지 않아도 다음 요청부터 새 서버로 간다.</p>
+<p>앱을 다시 켜면 <code>MainActivity</code>가 저장된 값을 읽어 같은 <code>rebuildClient</code>를 호출한다. 입력값은 비어 있는지만 보고 주소 형식은 검사하지 않는다(문제점 P-01).</p>
+<p>저장 후 안내 메시지나 화면 갱신 동작은 문서에 없어 그리지 않았다 <span class="est">(미확인)</span>.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true, securityLevel: "loose", theme: "default" });
+</script>
+</body>
+</html>
