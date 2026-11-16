@@ -107,6 +107,33 @@
                             android:drawablePadding="12dp"
                             android:drawableTint="#9AA0A6"/>
                     </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- 서버 API 토큰 (계약서 §1.1). 힌트는 저장 여부에 따라 SettingsFragment가 바꾼다.
+                         textPassword + password_toggle: 기본은 가리고, 필요할 때만 눈 아이콘으로 확인한다. -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilApiToken"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:hint="API 토큰"
+                        app:endIconMode="password_toggle"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etApiToken"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPassword"
+                            android:importantForAutofill="no"
+                            android:maxLines="1"
+                            android:drawableStart="@drawable/ic_lock"
+                            android:drawablePadding="12dp"
+                            android:drawableTint="#9AA0A6"/>
+                    </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

@@ -209,17 +209,25 @@ public class DeviceViewModel extends ViewModel {
     }
 
     public void fetchDeviceEnergyHistory(String deviceId) {
+        // 오류 응답이 오면 LOADING 대신 원래 상태로 돌려놓기 위해 미리 기억해 둔다(불일치 #7).
+        final String previousState = findState(deviceId);
         updateDevice(deviceId, device -> device.setState("LOADING"));
 
         RetrofitClient.getApi().getDeviceEnergyHistory(deviceId).enqueue(new Callback<EnergyLogResponse>() {
             @Override
             public void onResponse(Call<EnergyLogResponse> call, Response<EnergyLogResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
+                EnergyLogResponse body = response.body();
+                if (response.isSuccessful() && body != null && body.hasError()) {
+                    // 계약서 E7: 실패도 HTTP 200 + {"error"} 로 온다. 성공으로 처리하면 상태가 null이 되어 앱이 죽었다.
+                    updateDevice(deviceId, device -> device.setState(previousState));
+                    toastMessage.setValue("전력량 로그를 불러오지 못했습니다: " + body.error);
+                } else if (response.isSuccessful() && body != null) {
                     // 🌟 서버에서 받아온 차트 데이터를 기기 리스트가 아닌, 전용 파이프라인에 쏩니다!
-                    detailEnergyHistory.setValue(response.body().getLogs());
+                    detailEnergyHistory.setValue(body.getLogs());
                     updateDevice(deviceId, device -> {
-                        device.setEnergyLogs(response.body().getLogs());
-                        device.setState(response.body().getDevice_status());
+                        device.setEnergyLogs(body.getLogs());
+                        // device_status 가 비어 있어도 null 로 덮어쓰지 않는다.
+                        device.setState(body.stateOr(previousState));
                     });
                 }
                 else{
@@ -234,6 +242,16 @@ public class DeviceViewModel extends ViewModel {
             }
         });
     }
+    /** 목록에서 기기의 현재 상태를 찾는다. 없으면(예: DeviceDetailActivity 의 빈 목록) null. */
+    private String findState(String deviceId) {
+        List<Device> currentList = deviceList.getValue();
+        if (currentList == null) return null;
+        for (Device device : currentList) {
+            if (deviceId.equals(device.getId())) return device.getState();
+        }
+        return null;
+    }
+
     private void updateDevice(String deviceId, Consumer<Device> updateAction) {
         List<Device> currentList = deviceList.getValue();
         if (currentList != null) {

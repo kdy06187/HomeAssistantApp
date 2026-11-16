@@ -98,7 +98,8 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
             holder.pbDeviceLoading.setVisibility(View.VISIBLE);
             holder.btnRefreshStatus.setEnabled(false); // 로딩 중 중복 클릭 방지
             holder.itemView.setAlpha(0.7f);
-        } else if (device.getState().equals("OFFLINE")) {
+        } else if ("OFFLINE".equals(status)) {
+            // 왜 상수 쪽에서 equals를 부르는가: 상태가 null이어도 NullPointerException 없이 false가 된다(불일치 #7).
             holder.tvDeviceStatus.setText("오프라인");
             holder.tvDeviceStatus.setTextColor(Color.parseColor("#F44336")); // 빨간색
             holder.widgetContainer.setVisibility(View.VISIBLE);
