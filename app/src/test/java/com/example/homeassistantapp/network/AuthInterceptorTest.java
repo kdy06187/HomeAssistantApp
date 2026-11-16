@@ -41,20 +41,23 @@ public class AuthInterceptorTest {
         return captured.get();
     }
 
+    // 토큰이 있으면 Bearer 헤더를 붙인다
     @Test
-    public void 토큰이_있으면_Bearer_헤더를_붙인다() throws Exception {
+    public void tokenPresent_addsBearerHeader() throws Exception {
         assertEquals("Bearer test-token-0123456789abcdef0123456789",
                 send("test-token-0123456789abcdef0123456789").header("Authorization"));
     }
 
+    // 토큰이 없으면 헤더를 붙이지 않는다
     @Test
-    public void 토큰이_없으면_헤더를_붙이지_않는다() throws Exception {
+    public void tokenMissing_omitsAuthorizationHeader() throws Exception {
         assertNull(send(null).header("Authorization"));
         assertNull(send("").header("Authorization"));
     }
 
+    // 토큰을 바꾸면 다음 요청부터 새 토큰을 쓴다
     @Test
-    public void 토큰을_바꾸면_다음_요청부터_새_토큰을_쓴다() throws Exception {
+    public void tokenChanged_nextRequestUsesNewToken() throws Exception {
         AtomicReference<String> token = new AtomicReference<>("old-token");
         AtomicReference<Request> captured = new AtomicReference<>();
         OkHttpClient client = new OkHttpClient.Builder()

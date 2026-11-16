@@ -14,8 +14,9 @@ import org.junit.Test;
 public class EnergyLogResponseTest {
     private final Gson gson = new Gson();
 
+    // 정상 응답이면 서버 상태를 쓴다
     @Test
-    public void 정상_응답이면_서버_상태를_쓴다() {
+    public void normalResponse_usesServerState() {
         EnergyLogResponse r = gson.fromJson(
                 "{\"device_status\":\"ON\",\"logs\":[{\"timestamp\":\"2026-11-16 09:30:00\",\"totalEnergy_mWh\":1048576}]}",
                 EnergyLogResponse.class);
@@ -24,23 +25,26 @@ public class EnergyLogResponseTest {
         assertEquals(1048576L, r.getLogs().get(0).getTotalEnergy_mWh());
     }
 
+    // 오류 응답이면 원래 상태를 유지한다
     @Test
-    public void 오류_응답이면_원래_상태를_유지한다() {
+    public void errorResponse_keepsOriginalState() {
         // 계약서 E7: 없는 기기·서버 오류도 HTTP 200 + {"error"}
         EnergyLogResponse r = gson.fromJson("{\"error\":\"등록되지 않은 기기입니다.\"}", EnergyLogResponse.class);
         assertTrue(r.hasError());
         assertEquals("OFF", r.stateOr("OFF"));
     }
 
+    // 상태가 비어 있으면 null로 덮어쓰지 않는다
     @Test
-    public void 상태가_비어_있으면_null로_덮어쓰지_않는다() {
+    public void missingStatus_doesNotOverwriteWithNull() {
         EnergyLogResponse r = gson.fromJson("{\"logs\":[]}", EnergyLogResponse.class);
         assertFalse(r.hasError());
         assertEquals("ON", r.stateOr("ON"));
     }
 
+    // 큰 누적값도 64비트로 읽는다
     @Test
-    public void 큰_누적값도_64비트로_읽는다() {
+    public void largeTotalEnergy_parsedAs64Bit() {
         EnergyLogResponse r = gson.fromJson(
                 "{\"device_status\":\"ON\",\"logs\":[{\"timestamp\":\"2026-11-16 09:30:00\",\"totalEnergy_mWh\":5000000000}]}",
                 EnergyLogResponse.class);
