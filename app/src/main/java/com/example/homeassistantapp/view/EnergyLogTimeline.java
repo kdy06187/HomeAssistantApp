@@ -37,6 +37,26 @@ public final class EnergyLogTimeline {
     }
 
     /**
+     * 누적 전력량을 구간 사용량으로 바꾼다 (계약서 E7, 불일치 #14).
+     * 반드시 oldestFirst()로 정렬한 목록을 넣는다. 결과 i번째 = (i+1)번째 기록 − i번째 기록.
+     * 그래서 결과는 입력보다 하나 적고, i번째 값은 (i+1)번째 기록 시각에 끝난 구간이다.
+     *
+     * 경계 처리:
+     * - 기록이 0~1개: 차이를 낼 이웃이 없으므로 빈 목록.
+     * - 차이가 음수: 기기 초기화·교체 등으로 누적값이 리셋된 것이다. 사용량이 음수일 수는 없으므로 0으로 둔다.
+     *   (리셋 뒤 값 자체를 그 구간 사용량으로 볼 수도 있지만, 리셋 시점을 알 수 없어 과대 표시될 수 있다.)
+     */
+    public static List<Long> intervalUsage(List<EnergyLog> oldestFirst) {
+        List<Long> result = new ArrayList<>();
+        if (oldestFirst == null) return result;
+        for (int i = 1; i < oldestFirst.size(); i++) {
+            long diff = oldestFirst.get(i).getTotalEnergy_mWh() - oldestFirst.get(i - 1).getTotalEnergy_mWh();
+            result.add(Math.max(0L, diff));
+        }
+        return result;
+    }
+
+    /**
      * 서버 UTC 시각을 현지 시간 "HH:mm"으로 바꾼다. 읽을 수 없으면 빈 문자열.
      * 왜: 서버 timestamp는 UTC다(계약서 E7). 시간대를 지정하지 않고 읽으면 폰 시간대로 착각해
      * 한국에서는 9시간 어긋난다.

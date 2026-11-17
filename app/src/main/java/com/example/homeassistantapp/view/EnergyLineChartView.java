@@ -45,16 +45,26 @@ public class EnergyLineChartView extends LineChart {
         List<EnergyLog> logs = EnergyLogTimeline.oldestFirst(rawLogs);
         TimeZone localZone = TimeZone.getDefault();
 
-        final String[] timeLabels = new String[logs.size()];
-        for (int i = 0; i < logs.size(); i++) {
-            // Y축 값: 전력량, X축 값: 인덱스 순서
-            float energy = (float) logs.get(i).getTotalEnergy_mWh();
-            entries.add(new Entry(i, energy));
-            // 불일치 #9: 서버 시각은 UTC라서 폰의 현지 시간으로 바꿔 표시한다(읽기 실패 시 빈칸).
-            timeLabels[i] = EnergyLogTimeline.toLocalTimeLabel(logs.get(i).getTimestamp(), localZone);
+        // 불일치 #14: 누적값은 계속 오르기만 하므로, 이웃한 두 기록의 차이(구간 사용량)를 그린다.
+        // usage[i]는 logs[i] → logs[i+1] 구간이라 점이 하나 줄어든다.
+        List<Long> usage = EnergyLogTimeline.intervalUsage(logs);
+        if (usage.isEmpty()) {
+            // 기록이 0~1개면 구간을 만들 수 없다. 빈 선 대신 안내 문구를 보여 준다.
+            setNoDataText("구간 사용량을 그리려면 기록이 2개 이상 필요합니다.");
+            clear(); // 데이터를 비우고 다시 그린다
+            return;
         }
 
-        LineDataSet dataSet = new LineDataSet(entries, "전력 사용량");
+        final String[] timeLabels = new String[usage.size()];
+        for (int i = 0; i < usage.size(); i++) {
+            // Y축 값: 구간 사용량(mWh), X축 값: 인덱스 순서
+            entries.add(new Entry(i, (float) usage.get(i)));
+            // X축 라벨은 구간이 끝난 시각(i+1번째 기록).
+            // 불일치 #9: 서버 시각은 UTC라서 폰의 현지 시간으로 바꿔 표시한다(읽기 실패 시 빈칸).
+            timeLabels[i] = EnergyLogTimeline.toLocalTimeLabel(logs.get(i + 1).getTimestamp(), localZone);
+        }
+
+        LineDataSet dataSet = new LineDataSet(entries, "구간 사용량 (mWh)");
         dataSet.setColor(Color.parseColor("#4CAF50")); // 메인 그린 색상
         dataSet.setLineWidth(2.5f);
         dataSet.setDrawCircles(false);                 // 부드러운 선을 위해 점 숨김

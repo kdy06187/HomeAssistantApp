@@ -57,6 +57,34 @@ public class EnergyLogTimelineTest {
         assertEquals(300, fromServer.get(0).getTotalEnergy_mWh());
     }
 
+    // 누적값을 이웃 값 차이(구간 사용량)로 바꾼다 (#14)
+    @Test
+    public void cumulative_becomesIntervalUsage() {
+        List<EnergyLog> logs = Arrays.asList(
+                log("2026-11-16 09:00:00", 100),
+                log("2026-11-16 09:10:00", 200),
+                log("2026-11-16 09:20:00", 350));
+        assertEquals(Arrays.asList(100L, 150L), EnergyLogTimeline.intervalUsage(logs));
+    }
+
+    // 누적값이 줄면(리셋) 그 구간은 0이다 (#14)
+    @Test
+    public void counterReset_becomesZero() {
+        List<EnergyLog> logs = Arrays.asList(
+                log("2026-11-16 09:00:00", 5000),
+                log("2026-11-16 09:10:00", 30),
+                log("2026-11-16 09:20:00", 80));
+        assertEquals(Arrays.asList(0L, 50L), EnergyLogTimeline.intervalUsage(logs));
+    }
+
+    // 기록이 1개 이하면 구간이 없다 (#14)
+    @Test
+    public void oneOrNoLog_hasNoInterval() {
+        assertTrue(EnergyLogTimeline.intervalUsage(Arrays.asList(log("2026-11-16 09:00:00", 100))).isEmpty());
+        assertTrue(EnergyLogTimeline.intervalUsage(Arrays.asList()).isEmpty());
+        assertTrue(EnergyLogTimeline.intervalUsage(null).isEmpty());
+    }
+
     // null이나 빈 목록이어도 죽지 않는다
     @Test
     public void nullOrEmpty_returnsEmptyList() {

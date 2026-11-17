@@ -1,5 +1,7 @@
 package com.example.homeassistantapp.viewmodel;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.lifecycle.LiveData;
@@ -17,10 +19,13 @@ import com.example.homeassistantapp.dto.DeviceStateResponse;
 import com.example.homeassistantapp.dto.EnergyLog;
 import com.example.homeassistantapp.dto.EnergyLogResponse;
 import com.example.homeassistantapp.dto.EnergyResponse;
+import com.example.homeassistantapp.network.ErrorMessages;
 import com.example.homeassistantapp.network.RetrofitClient;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -35,6 +40,36 @@ public class DeviceViewModel extends ViewModel {
     public LiveData<List<Device>> getDeviceList() { return deviceList; }
     public LiveData<String> getToastMessage() { return toastMessage; }
     public LiveData<List<EnergyLog>> getDetailEnergyHistory() {return detailEnergyHistory;}
+
+    // ── OFF 뒤 상태 재확인 (불일치 #15) ──
+    // 메인 스레드에서 50초 뒤 실행할 작업을 기기별로 들고 있다. 같은 기기에 새 명령이 오면 예전 예약은 취소한다.
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Map<String, Runnable> pendingRechecks = new HashMap<>();
+
+    private void cancelRecheck(String deviceId) {
+        Runnable pending = pendingRechecks.remove(deviceId);
+        if (pending != null) mainHandler.removeCallbacks(pending);
+    }
+
+    private void scheduleRecheck(String deviceId) {
+        cancelRecheck(deviceId);
+        Runnable recheck = () -> {
+            pendingRechecks.remove(deviceId);
+            // true: 서버에 저장된 값이 아니라 기기에 바로 물어보게 한다(계약서 E5 isManualRefresh).
+            syncDeviceState(deviceId, true);
+        };
+        pendingRechecks.put(deviceId, recheck);
+        mainHandler.postDelayed(recheck, PowerOffRecheck.DELAY_MS);
+    }
+
+    @Override
+    protected void onCleared() {
+        // 화면이 완전히 사라지면 예약도 버린다(사라진 ViewModel이 요청을 보내지 않게).
+        mainHandler.removeCallbacksAndMessages(null);
+        pendingRechecks.clear();
+        super.onCleared();
+    }
+
     public void fetchDevices() {
         RetrofitClient.getApi().getDeviceList().enqueue(new Callback<DeviceListResponse>() {
             @Override
@@ -43,7 +78,7 @@ public class DeviceViewModel extends ViewModel {
                     // 데이터가 도착하면 LiveData에 값을 집어넣음 -> View가 자동으로 알아챔!
                     deviceList.setValue(response.body().devices);
                 } else {
-                    toastMessage.setValue("목록 로드 실패: " + response.code());
+                    toastMessage.setValue("목록 로드 실패: " + ErrorMessages.describe(response)); // 불일치 #13
                 }
             }
 
@@ -59,6 +94,7 @@ public class DeviceViewModel extends ViewModel {
     public void controlDevice(String targetId, String command) {
         // 실패하면 LOADING을 풀고 원래 상태로 돌리기 위해 미리 기억해 둔다(불일치 #11).
         final String previousState = findState(targetId);
+        cancelRecheck(targetId); // 새 명령이 왔으니 예전 OFF 재확인 예약은 의미가 없다(불일치 #15)
         updateDevice(targetId, device -> device.setState("LOADING")); // 제어 시작 시 상태를 LOADING으로 표시
 
         ControlRequest request = new ControlRequest(targetId, command);
@@ -70,6 +106,10 @@ public class DeviceViewModel extends ViewModel {
                     // 성공: 2xx + "명령 성공!" (계약서 §4.1, 불일치 #5)
                     toastMessage.setValue(body.message);
                     updateDevice(targetId, device -> device.setState(stateOr(body.status, previousState)));
+                    // PC 드라이버 기기는 OFF 응답 뒤 45초가 지나야 실제로 꺼진다. 50초 뒤 E5로 다시 확인(불일치 #15).
+                    if (PowerOffRecheck.shouldRecheck(command, true)) {
+                        scheduleRecheck(targetId);
+                    }
                 } else if (response.isSuccessful() && body != null) {
                     // 명령 실패인데 200으로 온 경우(§6 I-01). status는 서버가 아는 현재 상태(또는 UNKNOWN)다.
                     toastMessage.setValue("제어 실패: " + (body.message != null ? body.message : "알 수 없는 응답"));
@@ -78,7 +118,7 @@ public class DeviceViewModel extends ViewModel {
                     // 400은 명령/JSON 형식 오류일 뿐 기기 상태와 상관없다. OFFLINE으로 바꾸지 않고 되돌린다(불일치 #6).
                     // 401이면 UnauthorizedInterceptor가 설정 화면으로 보낸다.
                     updateDevice(targetId, device -> device.setState(previousState));
-                    toastMessage.setValue("제어 실패: " + response.code());
+                    toastMessage.setValue("제어 실패: " + ErrorMessages.describe(response)); // 서버 문구(불일치 #13)
                 }
             }
 
@@ -123,7 +163,7 @@ public class DeviceViewModel extends ViewModel {
                     toastMessage.setValue("등록 성공: " + response.body().message);
                     fetchDevices();
                 } else{
-                    toastMessage.setValue("등록 실패: " + response.code());
+                    toastMessage.setValue("등록 실패: " + ErrorMessages.describe(response)); // 불일치 #13
                     removeTempDevice();
                 }
             }
@@ -161,7 +201,7 @@ public class DeviceViewModel extends ViewModel {
                     fetchDevices(); // 🌟 삭제가 완료되면 서버에서 최신 리스트를 다시 불러와 갱신!
                 } else {
                     updateDevice(deviceId, device -> device.setState(previousState));
-                    toastMessage.setValue("삭제 실패: 서버 오류");
+                    toastMessage.setValue("삭제 실패: " + ErrorMessages.describe(response)); // 불일치 #13
                 }
             }
 
@@ -220,9 +260,10 @@ public class DeviceViewModel extends ViewModel {
                     toastMessage.setValue("전력량 업데이트 완료!");
 
                 } else {
-                    // E6의 400 처리(OFFLINE 표시)는 개선 항목 #12에서 다룬다. 지금은 그대로 둔다.
-                    updateDevice(deviceId,device -> device.setState("OFFLINE"));
-                    toastMessage.setValue("전력 조회 실패: " + response.code());
+                    // E6의 400은 "등록되지 않은 기기"나 "서버 내부 오류"다. 기기가 꺼졌다는 뜻이 아니므로
+                    // OFFLINE으로 바꾸지 않고 요청 전 상태로 되돌린 뒤, 서버의 error 문구를 보여 준다(불일치 #12).
+                    updateDevice(deviceId, device -> device.setState(previousState));
+                    toastMessage.setValue("전력 조회 실패: " + ErrorMessages.describe(response));
                 }
             }
 
@@ -257,8 +298,10 @@ public class DeviceViewModel extends ViewModel {
                     });
                 }
                 else{
-                    updateDevice(deviceId,device -> device.setState("OFFLINE"));
-                    toastMessage.setValue("전력량 로그를 불러오지 못했습니다: " + response.code());
+                    // E7 오류는 보통 200 + error로 오므로(위 갈래), 여기는 401 같은 예외 경우다.
+                    // 기기 상태와 상관없으므로 요청 전 상태로 되돌리고 서버 문구를 보여 준다(불일치 #12·#13과 같은 방식).
+                    updateDevice(deviceId, device -> device.setState(previousState));
+                    toastMessage.setValue("전력량 로그를 불러오지 못했습니다: " + ErrorMessages.describe(response));
                 }
             }
 
