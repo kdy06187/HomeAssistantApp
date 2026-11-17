@@ -73,10 +73,8 @@ public class DeviceFragment extends Fragment {
                 isManualRefresh = false; // 상태 갱신이 목록을 다시 내보내도 반복 요청하지 않게
             }
         });
-        viewModel.getToastMessage().observe(getViewLifecycleOwner(), message -> {
-            if (message != null) {
-                Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
-            }
+        // 토스트 표시는 MainActivity가 한다. 여기서는 실패 응답에도 새로고침 표시를 끄기 위해 관찰한다.
+        viewModel.getToastMessage().observe(getViewLifecycleOwner(), event -> {
             if (swipeRefreshLayout.isRefreshing()) {
                 swipeRefreshLayout.setRefreshing(false);
             }

@@ -94,6 +94,8 @@ public class SettingsFragment extends Fragment {
             tilApiToken.setHint("API 토큰 (저장됨 · 바꿀 때만 입력)");
         }
 
+        // 저장한 값이 또 틀리면 다시 알려 줘야 하므로, 저장할 때마다 401 안내를 되살린다.
+        RetrofitClient.resetUnauthorizedNotice();
         Toast.makeText(getContext(), "설정이 성공적으로 저장되었습니다.", Toast.LENGTH_SHORT).show();
     }
 }

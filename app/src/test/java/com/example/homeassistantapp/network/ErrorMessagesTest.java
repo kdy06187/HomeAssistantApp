@@ -45,4 +45,12 @@ public class ErrorMessagesTest {
     public void describe_fallsBackToCode() {
         assertEquals("HTTP 500", ErrorMessages.describe(errorResponse(500, "oops")));
     }
+
+    @Test
+    public void onlyCode401_isUnauthorized() {
+        org.junit.Assert.assertTrue(ErrorMessages.isUnauthorized(401));
+        org.junit.Assert.assertFalse(ErrorMessages.isUnauthorized(400));
+        org.junit.Assert.assertFalse(ErrorMessages.isUnauthorized(403));
+        org.junit.Assert.assertFalse(ErrorMessages.isUnauthorized(200));
+    }
 }

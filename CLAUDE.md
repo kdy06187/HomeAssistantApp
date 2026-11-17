@@ -41,7 +41,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 리포지토리 계층이 없는 단일 액티비티 MVVM 구조입니다: Fragment → `DeviceViewModel` → `RetrofitClient.getApi()` → `HomeAssistantApi`.
 
 **공유 상태.** `MainActivity`는 하단 내비게이션에 따라 `HomeFragment`, `DeviceFragment`, `SettingsFragment`를 교체하며, 전환할 때마다 새 인스턴스를 만듭니다. Home과 Device는 모두 `requireActivity()`로 `DeviceViewModel`을 가져오므로 같은 기기 목록을 공유합니다. 여기서 비롯되는 특성은 다음과 같습니다.
-- `fetchDevices()` 호출과 `toastMessage` 관찰은 `DeviceFragment`에서만 합니다. Home은 Device 탭(기본 탭)이 목록을 불러왔다는 전제로 동작하고, 다른 탭이 표시되는 동안에는 토스트가 나타나지 않습니다.
+- `fetchDevices()` 호출은 `DeviceFragment`에서만 합니다. Home은 Device 탭(기본 탭)이 목록을 불러왔다는 전제로 동작합니다.
+- 토스트는 `MainActivity`가 `toastMessage`(`OneTimeEvent`로 감싼 값)를 관찰해 한 번만 띄우므로 모든 탭에서 보입니다. 401일 때는 요청별 실패 토스트 없이 토큰 안내 토스트만 뜹니다.
 - `DeviceDetailActivity`는 자체 `DeviceViewModel`을 만들기 때문에 기기 목록이 비어 있습니다. 데이터는 `detailEnergyHistory`로만 읽습니다.
 
 **기기 상태 갱신.** `DeviceViewModel.updateDevice()`는 `Device`를 직접 수정한 뒤 같은 목록을 다시 내보냅니다. 따라서 상태가 바뀔 때마다 `HomeFragment`의 재정렬 및 차트 요청 로직을 포함한 모든 옵저버가 다시 실행됩니다. `Device.state`에는 서버 값(`ON`, `OFF`, `OFFLINE` 등)과 클라이언트 전용 값 `LOADING`이 들어갑니다. `LOADING`은 요청 전에 설정되고 응답이 오면 덮어씌워집니다. 커미셔닝 중인 기기는 id가 `TEMP_PAIRING`이고 `isPairing = true`인 임시 항목으로 표시되므로, 기기를 순회하며 API를 호출하는 코드는 이 항목을 건너뛰어야 합니다.

@@ -33,13 +33,15 @@ import retrofit2.Response;
 
 public class DeviceViewModel extends ViewModel {
     private final MutableLiveData<List<Device>> deviceList = new MutableLiveData<>();
-    private final MutableLiveData<String> toastMessage = new MutableLiveData<>();
+    private final MutableLiveData<OneTimeEvent<String>> toastMessage = new MutableLiveData<>();
     private MutableLiveData<List<EnergyLog>> detailEnergyHistory = new MutableLiveData<>();
 
 
     public LiveData<List<Device>> getDeviceList() { return deviceList; }
-    public LiveData<String> getToastMessage() { return toastMessage; }
+    public LiveData<OneTimeEvent<String>> getToastMessage() { return toastMessage; }
     public LiveData<List<EnergyLog>> getDetailEnergyHistory() {return detailEnergyHistory;}
+
+    private final PendingStates pendingStates = new PendingStates();
 
     // OFF 뒤 상태 재확인 예약. 기기별로 하나만 둔다.
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -67,29 +69,54 @@ public class DeviceViewModel extends ViewModel {
         super.onCleared();
     }
 
+    private void showToast(String message) {
+        toastMessage.setValue(new OneTimeEvent<>(message));
+    }
+
+    private void showFailure(String prefix, Response<?> response) {
+        if (ErrorMessages.isUnauthorized(response.code())) return;
+        showToast(prefix + ErrorMessages.describe(response));
+    }
+
+    private void beginLoading(String deviceId) {
+        pendingStates.begin(deviceId, currentState(deviceId));
+        updateDevice(deviceId, device -> device.setState(PendingStates.LOADING));
+    }
+
+    /** newState가 null이면(실패) 요청 전 상태로 되돌린다. */
+    private void finishLoading(String deviceId, String newState) {
+        String shown = pendingStates.finish(deviceId, newState);
+        updateDevice(deviceId, device -> device.setState(shown));
+    }
+
     public void fetchDevices() {
         RetrofitClient.getApi().getDeviceList().enqueue(new Callback<DeviceListResponse>() {
             @Override
             public void onResponse(Call<DeviceListResponse> call, Response<DeviceListResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    deviceList.setValue(response.body().devices);
+                    List<Device> devices = response.body().devices;
+                    if (devices != null) {
+                        for (Device device : devices) {
+                            pendingStates.remember(device.getId(), device.getState());
+                        }
+                    }
+                    deviceList.setValue(devices);
                 } else {
-                    toastMessage.setValue("목록 로드 실패: " + ErrorMessages.describe(response));
+                    showFailure("목록 로드 실패: ", response);
                 }
             }
 
             @Override
             public void onFailure(Call<DeviceListResponse> call, Throwable t) {
                 Log.d("DeviceViewModel", "fetchDevices onFailure: " + t.getMessage());
-                toastMessage.setValue("서버 연결 실패: " + t.getMessage());
+                showToast("서버 연결 실패: " + t.getMessage());
             }
         });
     }
 
     public void controlDevice(String targetId, String command) {
-        final String previousState = findState(targetId);
         cancelRecheck(targetId);
-        updateDevice(targetId, device -> device.setState("LOADING"));
+        beginLoading(targetId);
 
         ControlRequest request = new ControlRequest(targetId, command);
         RetrofitClient.getApi().controlDevice(request).enqueue(new Callback<ControlResponse>() {
@@ -97,38 +124,33 @@ public class DeviceViewModel extends ViewModel {
             public void onResponse(Call<ControlResponse> call, Response<ControlResponse> response) {
                 ControlResponse body = response.body();
                 if (response.isSuccessful() && body != null && body.isCommandSucceeded()) {
-                    toastMessage.setValue(body.message);
-                    updateDevice(targetId, device -> device.setState(stateOr(body.status, previousState)));
+                    showToast(body.message);
+                    finishLoading(targetId, body.status);
                     if (PowerOffRecheck.shouldRecheck(command, true)) {
                         scheduleRecheck(targetId);
                     }
                 } else if (response.isSuccessful() && body != null) {
                     // 서버는 명령이 실패해도 200을 준다. 이때 status는 서버가 아는 현재 상태다.
-                    toastMessage.setValue("제어 실패: " + (body.message != null ? body.message : "알 수 없는 응답"));
-                    updateDevice(targetId, device -> device.setState(stateOr(body.status, previousState)));
+                    showToast("제어 실패: " + (body.message != null ? body.message : "알 수 없는 응답"));
+                    finishLoading(targetId, body.status);
                 } else {
                     // 400은 요청 형식 오류라 기기 상태와 무관하다. 401 이동은 UnauthorizedInterceptor가 맡는다.
-                    updateDevice(targetId, device -> device.setState(previousState));
-                    toastMessage.setValue("제어 실패: " + ErrorMessages.describe(response));
+                    finishLoading(targetId, null);
+                    showFailure("제어 실패: ", response);
                 }
             }
 
             @Override
             public void onFailure(Call<ControlResponse> call, Throwable t) {
-                updateDevice(targetId, device -> device.setState(previousState));
-                toastMessage.setValue("제어 에러: " + t.getMessage());
+                finishLoading(targetId, null);
+                showToast("제어 에러: " + t.getMessage());
             }
         });
     }
 
-    // 상태를 null로 덮어쓰지 않는다.
-    private static String stateOr(String state, String fallback) {
-        return state != null ? state : fallback;
-    }
-
     public void addDevice(String type, String name, String payload, String ssid, String password, List<Integer> driver) {
         AddDeviceRequest request = new AddDeviceRequest(type, name, payload, ssid, password, driver);
-        toastMessage.setValue("기기 등록을 서버에 요청했습니다...");
+        showToast("기기 등록을 서버에 요청했습니다...");
         List<Device> currentList = deviceList.getValue();
         if (currentList == null) {
             currentList = new ArrayList<>();
@@ -150,16 +172,16 @@ public class DeviceViewModel extends ViewModel {
             @Override
             public void onResponse(Call<AddDeviceResponse> call, Response<AddDeviceResponse> response){
                 if(response.isSuccessful() && response.body() != null){
-                    toastMessage.setValue("등록 성공: " + response.body().message);
+                    showToast("등록 성공: " + response.body().message);
                     fetchDevices();
                 } else{
-                    toastMessage.setValue("등록 실패: " + ErrorMessages.describe(response));
+                    showFailure("등록 실패: ", response);
                     removeTempDevice();
                 }
             }
             @Override
             public void onFailure(Call<AddDeviceResponse> call, Throwable t){
-                toastMessage.setValue("통신 실패: " + t.getMessage());
+                showToast("통신 실패: " + t.getMessage());
                 removeTempDevice();
             }
         });
@@ -178,54 +200,50 @@ public class DeviceViewModel extends ViewModel {
         }
     }
     public void deleteDevice(String deviceId) {
-        final String previousState = findState(deviceId);
-        updateDevice(deviceId, device -> device.setState("LOADING"));
-        toastMessage.setValue("기기 삭제 중...");
+        beginLoading(deviceId);
+        showToast("기기 삭제 중...");
 
         RetrofitClient.getApi().deleteDevice(new DeleteDeviceRequest(deviceId)).enqueue(new Callback<ControlResponse>() {
             @Override
             public void onResponse(Call<ControlResponse> call, Response<ControlResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    toastMessage.setValue("삭제 성공!");
+                    finishLoading(deviceId, null);
+                    showToast("삭제 성공!");
                     fetchDevices();
                 } else {
-                    updateDevice(deviceId, device -> device.setState(previousState));
-                    toastMessage.setValue("삭제 실패: " + ErrorMessages.describe(response));
+                    finishLoading(deviceId, null);
+                    showFailure("삭제 실패: ", response);
                 }
             }
 
             @Override
             public void onFailure(Call<ControlResponse> call, Throwable t) {
-                updateDevice(deviceId, device -> device.setState(previousState));
-                toastMessage.setValue("통신 실패: " + t.getMessage());
+                finishLoading(deviceId, null);
+                showToast("통신 실패: " + t.getMessage());
             }
         });
     }
     public void syncDeviceState(String deviceId, boolean isManualRefresh) {
-        final String previousState = findState(deviceId);
-        updateDevice(deviceId, device -> device.setState("LOADING"));
+        beginLoading(deviceId);
         RetrofitClient.getApi().getDeviceState(deviceId,isManualRefresh).enqueue(new Callback<DeviceStateResponse>() {
             @Override
             public void onResponse(Call<DeviceStateResponse> call, Response<DeviceStateResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    String realState = response.body().state;
-
-                    updateDevice(deviceId, device -> device.setState(stateOr(realState, previousState)));
+                    finishLoading(deviceId, response.body().state);
                 } else {
-                    updateDevice(deviceId, device -> device.setState(previousState));
+                    finishLoading(deviceId, null);
                 }
             }
 
             @Override
             public void onFailure(Call<DeviceStateResponse> call, Throwable t) {
-                updateDevice(deviceId, device -> device.setState("OFFLINE"));
+                finishLoading(deviceId, "OFFLINE");
             }
         });
     }
     public void fetchDeviceEnergy(String deviceId) {
-        toastMessage.setValue("전력량 조회 중...");
-        final String previousState = findState(deviceId);
-        updateDevice(deviceId, device -> device.setState("LOADING"));
+        // 대시보드가 화면에 돌아올 때마다 자동으로 부르므로 진행·완료 토스트는 띄우지 않는다.
+        beginLoading(deviceId);
         RetrofitClient.getApi().getDeviceEnergy(deviceId).enqueue(new Callback<EnergyResponse>() {
             @Override
             public void onResponse(Call<EnergyResponse> call, Response<EnergyResponse> response) {
@@ -237,30 +255,26 @@ public class DeviceViewModel extends ViewModel {
 
                     String powerText = String.format("실시간: %.1f W / 누적: %.4f kWh", currentPowerW, totalEnergyKwh);
 
-                    updateDevice(deviceId, device -> {
-                        device.setPowerInfo(powerText);
-                        device.setState(stateOr(response.body().device_status, previousState));
-                    });
-                    toastMessage.setValue("전력량 업데이트 완료!");
+                    updateDevice(deviceId, device -> device.setPowerInfo(powerText));
+                    finishLoading(deviceId, response.body().device_status);
 
                 } else {
                     // 400은 없는 기기·서버 오류라 기기가 꺼졌다는 뜻이 아니다. 상태는 그대로 둔다.
-                    updateDevice(deviceId, device -> device.setState(previousState));
-                    toastMessage.setValue("전력 조회 실패: " + ErrorMessages.describe(response));
+                    finishLoading(deviceId, null);
+                    showFailure("전력 조회 실패: ", response);
                 }
             }
 
             @Override
             public void onFailure(Call<EnergyResponse> call, Throwable t) {
-                updateDevice(deviceId, device -> device.setState(previousState));
-                toastMessage.setValue("통신 실패: " + t.getMessage());
+                finishLoading(deviceId, null);
+                showToast("통신 실패: " + t.getMessage());
             }
         });
     }
 
     public void fetchDeviceEnergyHistory(String deviceId) {
-        final String previousState = findState(deviceId);
-        updateDevice(deviceId, device -> device.setState("LOADING"));
+        beginLoading(deviceId);
 
         RetrofitClient.getApi().getDeviceEnergyHistory(deviceId).enqueue(new Callback<EnergyLogResponse>() {
             @Override
@@ -268,37 +282,33 @@ public class DeviceViewModel extends ViewModel {
                 EnergyLogResponse body = response.body();
                 if (response.isSuccessful() && body != null && body.hasError()) {
                     // 이 API는 실패도 200 + {"error"}로 온다.
-                    updateDevice(deviceId, device -> device.setState(previousState));
-                    toastMessage.setValue("전력량 로그를 불러오지 못했습니다: " + body.error);
+                    finishLoading(deviceId, null);
+                    showToast("전력량 로그를 불러오지 못했습니다: " + body.error);
                 } else if (response.isSuccessful() && body != null) {
                     detailEnergyHistory.setValue(body.getLogs());
-                    updateDevice(deviceId, device -> {
-                        device.setEnergyLogs(body.getLogs());
-                        device.setState(body.stateOr(previousState));
-                    });
+                    updateDevice(deviceId, device -> device.setEnergyLogs(body.getLogs()));
+                    finishLoading(deviceId, body.stateOr(null));
                 }
                 else{
-                    updateDevice(deviceId, device -> device.setState(previousState));
-                    toastMessage.setValue("전력량 로그를 불러오지 못했습니다: " + ErrorMessages.describe(response));
+                    finishLoading(deviceId, null);
+                    showFailure("전력량 로그를 불러오지 못했습니다: ", response);
                 }
             }
 
             @Override
             public void onFailure(Call<EnergyLogResponse> call, Throwable t) {
-                updateDevice(deviceId, device -> device.setState(previousState));
-                toastMessage.setValue("전력량 로그를 불러오지 못했습니다.");
+                finishLoading(deviceId, null);
+                showToast("전력량 로그를 불러오지 못했습니다.");
             }
         });
     }
 
-    // 실패 시 되돌릴 상태. 이미 LOADING이면 null(되돌려도 LOADING이 남지 않게).
-    private String findState(String deviceId) {
+    private String currentState(String deviceId) {
         List<Device> currentList = deviceList.getValue();
         if (currentList == null) return null;
         for (Device device : currentList) {
             if (deviceId.equals(device.getId())) {
-                String state = device.getState();
-                return "LOADING".equals(state) ? null : state;
+                return device.getState();
             }
         }
         return null;

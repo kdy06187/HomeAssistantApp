@@ -41,6 +41,11 @@ public final class ErrorMessages {
         return fromServer != null ? fromServer : "HTTP " + response.code();
     }
 
+    /** 401은 MainActivity가 토큰 안내를 한 번만 띄우므로, 요청마다 실패 토스트를 띄우지 않는다. */
+    public static boolean isUnauthorized(int httpCode) {
+        return httpCode == 401;
+    }
+
     private static String stringOrNull(JsonObject obj, String key) {
         JsonElement value = obj.get(key);
         return value != null && value.isJsonPrimitive() ? value.getAsString() : null;

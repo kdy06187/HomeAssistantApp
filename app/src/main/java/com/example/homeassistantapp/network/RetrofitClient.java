@@ -44,11 +44,18 @@ public class RetrofitClient {
         return unauthorizedPending.getAndSet(false);
     }
 
+    private static final UnauthorizedNotice unauthorizedNotice = new UnauthorizedNotice();
+
+    /** 설정을 저장하면 다시 401 안내를 할 수 있게 한다. */
+    public static void resetUnauthorizedNotice() {
+        unauthorizedNotice.reset();
+    }
+
     private static void notifyUnauthorized() {
-        if (unauthorizedPending.compareAndSet(false, true)) {
-            // OkHttp 스레드에서 불리므로 postValue
-            unauthorizedSignal.postValue(true);
-        }
+        if (!unauthorizedNotice.tryClaim()) return;
+        unauthorizedPending.set(true);
+        // OkHttp 스레드에서 불리므로 postValue
+        unauthorizedSignal.postValue(true);
     }
 
     public static void rebuildClient(String ip, String port) {
@@ -57,7 +64,8 @@ public class RetrofitClient {
         Log.d("RetrofitClient", "생성된 Base URL: " + baseUrl);
 
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .connectTimeout(60, TimeUnit.SECONDS)
+                // 같은 LAN이라 연결은 금방 된다. 서버 PC가 꺼졌을 때 로딩이 1분씩 걸리지 않게 짧게 둔다.
+                .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(60, TimeUnit.SECONDS)
                 .writeTimeout(60, TimeUnit.SECONDS)
                 .addInterceptor(new AuthInterceptor(() -> apiToken))

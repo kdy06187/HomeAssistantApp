@@ -7,6 +7,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.homeassistantapp.fragment.DeviceFragment;
 import com.example.homeassistantapp.fragment.HomeFragment;
@@ -14,6 +15,7 @@ import com.example.homeassistantapp.fragment.SettingsFragment;
 import com.example.homeassistantapp.network.RetrofitClient;
 import com.example.homeassistantapp.network.ServerDefaults;
 import com.example.homeassistantapp.security.TokenStore;
+import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
@@ -60,6 +62,15 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // 어느 요청이든 401이면 설정 화면으로 보낸다. 다른 Activity에 있다 돌아와도 LiveData가 전달한다.
+        // 탭마다 따로 관찰하면 대시보드에서 토스트가 안 뜨거나 탭을 바꿀 때 다시 뜨므로, 여기서 한 번만 띄운다.
+        DeviceViewModel viewModel = new ViewModelProvider(this).get(DeviceViewModel.class);
+        viewModel.getToastMessage().observe(this, event -> {
+            String message = event != null ? event.takeIfNotHandled() : null;
+            if (message != null) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
+
         RetrofitClient.getUnauthorizedSignal().observe(this, signal -> {
             if (!RetrofitClient.consumeUnauthorized()) return;
             Toast.makeText(this, "API 토큰이 맞지 않습니다. 설정에서 다시 입력해 주세요.", Toast.LENGTH_LONG).show();
