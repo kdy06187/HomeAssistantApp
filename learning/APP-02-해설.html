@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-02 해설</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  .tag { display: inline-block; font-size: .78em; padding: 1px 8px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent); margin-left: 6px; vertical-align: middle; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .ok { fill: var(--good); } .flow .ng { fill: var(--bad); }
+  dl { margin: 0; } dt { font-weight: 700; margin-top: 10px; } dd { margin: 2px 0 0 0; color: var(--muted); }
+  ol.q li { margin-bottom: 10px; }
+  details { border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; margin-top: 8px; }
+  summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+  .task-meta { display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px; font-size: .95em; }
+  @media (max-width: 520px) { .task-meta { grid-template-columns: 1fr; } }
+  .task-meta b { color: var(--muted); }
+  .warn { background: var(--bad-soft); border-radius: 8px; padding: 8px 12px; margin-top: 10px; font-size: .92em; }
+  .mini { font-size: .9em; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>APP-02 해설 — 잘못 동작 9건 바로잡기</h1>
+  <p>HomeAssistant 앱 · 계약서 v1.0 맞추기 · 2026-11-17 · 불일치 #2~#6, #8~#11 · 실서버 확인 전</p>
+</header>
+
+<!-- 1. 한눈에 보기 -->
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>무엇이 문제였나</b>: 앱이 "HTTP 200이면 성공"이라고 믿었고, 실패하면 무조건 OFFLINE으로 바꾸거나 LOADING에 멈췄다. 기본 포트·시간대·차트 순서도 계약서와 달랐다.</li>
+    <li><b>어떻게 고쳤나</b>: 판단 로직을 작은 <b>순수 자바 클래스</b>로 떼어 내고(PC에서 테스트 가능), 공통 처리는 <b>인터셉터</b>로, 화면 상태는 <b>"요청 전 상태를 기억했다가 되돌리기"</b> 한 가지 방식으로 맞췄다.</li>
+  </ul>
+  <div class="table-wrap">
+  <table>
+    <tr><th>#</th><th>전</th><th>후</th><th>어디서</th></tr>
+    <tr><td>2</td><td>401이 와도 토스트만</td><td>설정 화면으로 이동 + 안내</td><td><code>UnauthorizedInterceptor</code>, <code>MainActivity</code></td></tr>
+    <tr><td>3</td><td>설정 화면 기본값 <code>:8080</code></td><td>기본값을 <code>ServerDefaults</code> 한 곳에(<code>:8000</code>). 저장값이 우선</td><td><code>ServerDefaults</code></td></tr>
+    <tr><td>4</td><td>모든 요청 읽기 60초</td><td>기기 등록(E3)만 150초</td><td><code>CommissionTimeoutInterceptor</code></td></tr>
+    <tr><td>5</td><td>200이면 제어 성공</td><td>200 + <code>"명령 성공!"</code>이어야 성공</td><td><code>ControlResponse.isCommandSucceeded()</code></td></tr>
+    <tr><td>6</td><td>E2 400 → OFFLINE</td><td>요청 전 상태로 되돌림</td><td><code>DeviceViewModel.controlDevice()</code></td></tr>
+    <tr><td>8</td><td>UNKNOWN도 "연결됨"</td><td>ON/OFF만 "연결됨", 나머지 "알 수 없음"</td><td><code>DeviceStateLabel</code></td></tr>
+    <tr><td>9</td><td>UTC 시각을 현지로 착각(9시간 어긋남)</td><td>UTC로 읽고 폰 시간대로 표시</td><td><code>EnergyLogTimeline</code></td></tr>
+    <tr><td>10</td><td>최신순 그대로 → 시간축 거꾸로</td><td>오래된 순으로 정렬해서 그림</td><td><code>EnergyLogTimeline</code></td></tr>
+    <tr><td>11</td><td>실패하면 LOADING에 멈춤</td><td>모든 실패 갈래에서 원래 상태로</td><td><code>DeviceViewModel</code> 5개 메서드</td></tr>
+  </table>
+  </div>
+</section>
+
+<!-- 2. 흐름 그림 -->
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림</h2>
+  <h3>요청 하나가 지나가는 길 (인터셉터 사슬)</h3>
+  <svg class="flow" viewBox="0 0 860 230" role="img" aria-label="인터셉터 사슬 흐름">
+    <rect x="10" y="20" width="150" height="56" rx="10"/>
+    <text x="85" y="44" text-anchor="middle">ViewModel</text>
+    <text x="85" y="62" text-anchor="middle" class="small">enqueue(요청)</text>
+    <rect x="190" y="20" width="150" height="56" rx="10"/>
+    <text x="265" y="44" text-anchor="middle">AuthInterceptor</text>
+    <text x="265" y="62" text-anchor="middle" class="small">Bearer 붙이기 (APP-01)</text>
+    <rect x="370" y="20" width="160" height="56" rx="10" class="hl"/>
+    <text x="450" y="44" text-anchor="middle">Unauthorized…</text>
+    <text x="450" y="62" text-anchor="middle" class="small">응답이 401이면 알림</text>
+    <rect x="560" y="20" width="160" height="56" rx="10" class="hl"/>
+    <text x="640" y="44" text-anchor="middle">CommissionTimeout…</text>
+    <text x="640" y="62" text-anchor="middle" class="small">/api/commission만 150초</text>
+    <rect x="750" y="20" width="100" height="56" rx="10"/>
+    <text x="800" y="52" text-anchor="middle">서버</text>
+    <line x1="160" y1="48" x2="190" y2="48"/><line x1="340" y1="48" x2="370" y2="48"/>
+    <line x1="530" y1="48" x2="560" y2="48"/><line x1="720" y1="48" x2="750" y2="48"/>
+    <path d="M450 76 L450 130"/>
+    <rect x="330" y="130" width="240" height="56" rx="10" class="hl"/>
+    <text x="450" y="154" text-anchor="middle">RetrofitClient 플래그 + LiveData</text>
+    <text x="450" y="172" text-anchor="middle" class="small">postValue (백그라운드 스레드)</text>
+    <path d="M570 158 L640 158"/>
+    <rect x="640" y="130" width="210" height="56" rx="10" class="hl"/>
+    <text x="745" y="154" text-anchor="middle" class="ok">MainActivity 관찰</text>
+    <text x="745" y="172" text-anchor="middle" class="small">consume → 설정 탭으로</text>
+    <text x="10" y="215" class="small">응답은 오른쪽에서 왼쪽으로 돌아오며 인터셉터를 거꾸로 지난다. 401 응답도 그대로 ViewModel까지 가서 "실패"로 처리된다.</text>
+  </svg>
+
+  <h3>LOADING이 풀리는 길 (불일치 #11)</h3>
+  <svg class="flow" viewBox="0 0 860 180" role="img" aria-label="LOADING 해제 흐름">
+    <rect x="10" y="60" width="170" height="56" rx="10" class="hl"/>
+    <text x="95" y="84" text-anchor="middle">previous = findState()</text>
+    <text x="95" y="102" text-anchor="middle" class="small">이미 LOADING이면 null</text>
+    <rect x="210" y="60" width="140" height="56" rx="10"/>
+    <text x="280" y="92" text-anchor="middle">state = LOADING</text>
+    <line x1="180" y1="88" x2="210" y2="88"/>
+    <line x1="350" y1="88" x2="400" y2="88"/>
+    <rect x="400" y="10" width="200" height="44" rx="10"/>
+    <text x="500" y="37" text-anchor="middle" class="ok">성공 → 서버가 준 상태</text>
+    <rect x="400" y="66" width="200" height="44" rx="10" class="hl"/>
+    <text x="500" y="93" text-anchor="middle" class="ng">4xx·200 실패 → previous</text>
+    <rect x="400" y="122" width="200" height="44" rx="10" class="hl"/>
+    <text x="500" y="149" text-anchor="middle" class="ng">통신 실패 → previous</text>
+    <path d="M375 88 L375 32 L400 32"/><path d="M375 88 L375 144 L400 144"/>
+    <line x1="600" y1="88" x2="650" y2="88"/>
+    <rect x="650" y="60" width="200" height="56" rx="10"/>
+    <text x="750" y="84" text-anchor="middle">updateDevice()</text>
+    <text x="750" y="102" text-anchor="middle" class="small">목록 다시 내보냄 → 화면 갱신</text>
+  </svg>
+  <p class="mini">파란 테두리 = 이번에 새로 만들거나 바꾼 부분. 어느 갈래로 가든 LOADING이 남지 않는다.</p>
+</section>
+
+<!-- 3. 코드 해설 -->
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+
+  <h3>조각 1 · 401이면 설정 화면으로 (#2) <span class="tag">인터셉터 + LiveData</span></h3>
+<pre><code>// UnauthorizedInterceptor
+Response response = chain.proceed(chain.request());
+if (response.code() == 401) onUnauthorized.run();   // 응답은 손대지 않고 그대로 넘긴다
+return response;
+
+// RetrofitClient
+if (unauthorizedPending.compareAndSet(false, true)) unauthorizedSignal.postValue(true);
+
+// MainActivity
+RetrofitClient.getUnauthorizedSignal().observe(this, s -&gt; {
+    if (!RetrofitClient.consumeUnauthorized()) return;  // 이미 처리한 401
+    bottomNav.setSelectedItemId(R.id.nav_settings);
+});</code></pre>
+  <div class="why">
+    <div><b>왜 인터셉터?</b> · 401은 7개 API 어디서나 올 수 있다. 콜백마다 검사하면 하나를 빠뜨린다. 응답을 한 곳에서 보는 인터셉터라면 한 번만 짜면 된다.</div>
+    <div><b>왜 postValue?</b> · 인터셉터는 OkHttp 백그라운드 스레드에서 돈다. <code>setValue</code>는 메인 스레드 전용이라 다른 스레드에서 부르면 앱이 죽는다.</div>
+    <div><b>왜 플래그를 따로?</b> · LiveData는 새 관찰자에게 마지막 값을 다시 준다. 화면을 돌리면 MainActivity가 새로 생기면서 옛 401로 또 이동한다. "처리했다"는 표시를 <code>AtomicBoolean</code>으로 따로 둬서 한 번만 이동한다. 요청 다섯 개가 동시에 401을 받아도 토스트는 한 번이다.</div>
+    <div class="drop"><b>빼면?</b> · 토큰이 틀려도 "목록 로드 실패: 401" 토스트만 뜨고, 사용자는 무엇을 고쳐야 할지 모른다.</div>
+  </div>
+
+  <h3>조각 2 · 기본 주소를 한 곳에 (#3)</h3>
+  <div class="ba">
+    <div class="before"><div class="label">BEFORE</div>
+<pre><code>// MainActivity, RetrofitClient
+"192.168.219.108", "8000"
+// SettingsFragment
+"192.168.129.108", "8080"   // DIY 기기 포트!</code></pre></div>
+    <div class="after"><div class="label">AFTER</div>
+<pre><code>prefs.getString(ServerDefaults.KEY_SERVER_IP,
+                ServerDefaults.IP);
+prefs.getString(ServerDefaults.KEY_SERVER_PORT,
+                ServerDefaults.PORT);  // "8000"</code></pre></div>
+  </div>
+  <div class="why">
+    <div><b>왜?</b> · 같은 값을 세 군데에 쓰면 한 곳만 고치는 실수가 생긴다(실제로 생겼다). 상수 하나로 모으면 고칠 곳도 하나다.</div>
+    <div><b>설정값 우선</b> · <code>getString(키, 기본값)</code>은 저장된 값이 있으면 그것을 쓴다. 기본값은 처음 실행할 때만 보인다. 서버 IP는 DHCP라 바뀔 수 있으니 설정 화면에서 고치는 것이 정상 흐름이다.</div>
+  </div>
+
+  <h3>조각 3 · 기기 등록만 오래 기다리기 (#4)</h3>
+<pre><code>if ("/api/commission".equals(chain.request().url().encodedPath())) {
+    return chain.withReadTimeout(150, TimeUnit.SECONDS).proceed(chain.request());
+}</code></pre>
+  <div class="why">
+    <div><b>왜 전체를 늘리지 않나?</b> · 서버가 멈췄을 때 목록 조회까지 2분 넘게 기다리게 된다. 오래 걸리는 E3만 늘린다.</div>
+    <div class="drop"><b>빼면?</b> · 페어링이 60초를 넘으면 앱은 "통신 실패"를 띄우지만 서버는 등록을 끝낼 수도 있다. 결과를 모르는 기기가 생긴다(§6 I-04).</div>
+  </div>
+
+  <h3>조각 4 · 제어 성공 판정과 400 처리 (#5, #6)</h3>
+  <div class="ba">
+    <div class="before"><div class="label">BEFORE</div>
+<pre><code>if (response.isSuccessful() &amp;&amp; body != null) {
+    setState(body.status);
+} else {
+    setState("OFFLINE");
+}
+// onFailure: 상태 그대로(LOADING)</code></pre></div>
+    <div class="after"><div class="label">AFTER</div>
+<pre><code>if (ok &amp;&amp; body.isCommandSucceeded()) {
+    setState(stateOr(body.status, previous));
+} else if (ok) {         // 200 + "명령 실패!"
+    toast("제어 실패: " + body.message);
+    setState(stateOr(body.status, previous));
+} else {                 // 400 / 401
+    setState(previous);
+}</code></pre></div>
+  </div>
+  <div class="why">
+    <div><b>왜 message를 보나?</b> · 서버 E2는 기기가 응답하지 않아도 200을 준다(§6 I-01). 판정은 <code>ControlResponse</code>의 메서드 하나에 모았다. v2.0에서 실패를 4xx로 바꾸면 이 한 줄만 고치면 된다. (#5·#6은 v2.0에서 바뀔 예정이라 최소한으로 고쳤다.)</div>
+    <div><b>왜 OFFLINE이 아닌가?</b> · 400은 "요청 모양이 틀렸다"는 뜻이지 기기가 꺼졌다는 뜻이 아니다. 새로 안 것이 없으니 원래 상태를 유지한다.</div>
+  </div>
+
+  <h3>조각 5 · 상태 글자 (#8)</h3>
+<pre><code>if ("ON".equals(state) || "OFF".equals(state)) return Kind.CONNECTED;
+if ("OFFLINE".equals(state)) return Kind.OFFLINE;
+return Kind.UNKNOWN;   // UNKNOWN, null, 처음 보는 값 → "알 수 없음"(주황)</code></pre>
+  <div class="why">
+    <div><b>왜 "나머지는 연결됨"이 위험한가?</b> · 기본값(else)이 가장 좋은 상태면 모르는 값이 모두 정상으로 보인다. 기본값은 "모른다"여야 안전하다.</div>
+  </div>
+
+  <h3>조각 6 · 차트 시간대와 순서 (#9, #10)</h3>
+  <div class="ba">
+    <div class="before"><div class="label">BEFORE</div>
+<pre><code>new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
+        Locale.getDefault());
+// 시간대 미지정 → 폰 시간대(KST)로 읽음
+// logs 순서 그대로 x = 0, 1, 2 ...</code></pre></div>
+    <div class="after"><div class="label">AFTER</div>
+<pre><code>input.setTimeZone(TimeZone.getTimeZone("UTC"));
+output.setTimeZone(localZone);
+// "09:30"(UTC) → "18:30"(서울)
+logs = EnergyLogTimeline.oldestFirst(rawLogs);</code></pre></div>
+  </div>
+  <div class="why">
+    <div><b>왜 문자열 정렬로 충분한가?</b> · <code>"yyyy-MM-dd HH:mm:ss"</code>는 큰 단위가 앞에 오고 자릿수가 고정이라, 글자 순서가 곧 시간 순서다.</div>
+    <div><b>왜 뒤집기 대신 정렬?</b> · 서버가 순서를 바꿔 보내도 안전하다. 원본을 복사해서 정렬하므로 다른 곳에서 쓰는 목록은 그대로다.</div>
+  </div>
+
+  <h3>조각 7 · LOADING 되돌리기 (#11)</h3>
+<pre><code>final String previous = findState(id);   // 이미 LOADING이면 null
+updateDevice(id, d -&gt; d.setState("LOADING"));
+// ... 모든 실패 갈래에서
+updateDevice(id, d -&gt; d.setState(previous));</code></pre>
+  <div class="why">
+    <div><b>왜 LOADING이면 null?</b> · 요청 두 개가 겹치면 두 번째 요청은 "LOADING"을 원래 상태로 기억한다. 그걸 되돌리면 다시 멈춘다. null은 "알 수 없음"으로 보이고 새로고침으로 풀 수 있다.</div>
+    <div class="drop"><b>빼면?</b> · 서버가 꺼진 상태에서 스위치를 누르면 그 기기는 앱을 다시 켤 때까지 계속 로딩 중으로 보인다.</div>
+  </div>
+</section>
+
+<!-- 4. 용어 풀이 -->
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <dl>
+    <dt>인터셉터 사슬</dt><dd>OkHttp는 인터셉터를 추가한 순서대로 요청을 넘기고, 응답은 거꾸로 돌려준다. 그래서 응답을 살피는 인터셉터도 만들 수 있다.</dd>
+    <dt>setValue / postValue</dt><dd>LiveData에 값을 넣는 두 방법. <code>setValue</code>는 메인 스레드에서 바로 넣고, <code>postValue</code>는 어느 스레드에서든 메인 스레드로 넘겨서 넣는다.</dd>
+    <dt>AtomicBoolean.compareAndSet</dt><dd>"지금 값이 A면 B로 바꾸고 true"를 한 번에(쪼개지지 않게) 한다. 여러 스레드가 동시에 불러도 한 번만 성공한다.</dd>
+    <dt>UTC / 현지 시간</dt><dd>UTC는 기준 시각이고 한국은 UTC+9다. 시간대 정보가 없는 문자열은 어느 시간대인지 직접 알려 줘야 한다.</dd>
+    <dt>순수 자바 클래스</dt><dd>Android 화면이나 Context를 쓰지 않는 클래스. 폰 없이 PC에서 JUnit으로 바로 테스트할 수 있다.</dd>
+  </dl>
+</section>
+
+<!-- 5. 이해도 질문 -->
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol class="q">
+    <li><code>UnauthorizedInterceptor</code>가 401 응답을 "삼키지" 않고 그대로 넘기는 이유는?
+      <details><summary>정답 보기</summary>ViewModel의 콜백이 평소처럼 실패 갈래를 타야 LOADING이 풀린다(#11). 인터셉터는 "알리기"만 하고, 화면 정리는 각 콜백이 한다.</details></li>
+    <li>기기 등록 요청의 읽기 타임아웃은 몇 초인가? 목록 조회는?
+      <details><summary>정답 보기</summary>경로로 정한다. <code>/api/commission</code>은 150초, <code>/api/devices</code>는 기본 60초.</details></li>
+    <li>서버가 E2에 <code>{"status": null, "message": "명령 성공!"}</code>을 주면 화면 상태는?
+      <details><summary>정답 보기</summary>성공으로 판정하지만 <code>stateOr(null, previous)</code>로 요청 전 상태를 유지한다. null로 덮어쓰지 않는다.</details></li>
+  </ol>
+</section>
+
+<!-- 6. 응용 실습 -->
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <div class="warn">새 브랜치(예: <code>git switch -c exercise/app-02</code>)에서 한다. 끝나면 브랜치를 지워도 된다.</div>
+
+  <h3>실습 A · 오류 메시지를 <code>message</code>/<code>error</code>에서 읽기 (불일치 #13) <span class="tag">조각 4 응용</span></h3>
+  <div class="task-meta">
+    <b>목표</b><span>E2·E3·E4의 400 응답에서 서버 문구(예: "허용되지 않은 명령입니다.")를 토스트에 보여 준다. 지금은 <code>"제어 실패: 400"</code>처럼 코드만 나온다.</span>
+    <b>고칠 파일</b><span><code>network/ErrorMessages.java</code>(새로 만듦), <code>viewmodel/DeviceViewModel.java</code>, 테스트 <code>network/ErrorMessagesTest.java</code></span>
+    <b>완료 기준</b><span>① <code>{"result":"error","message":"X"}</code> → "X" ② <code>{"error":"Y"}</code> → "Y" ③ JSON이 아니면 null ④ 빌드와 기존 23개 테스트 통과</span>
+  </div>
+  <details><summary>힌트</summary>
+    <ul>
+      <li>판정은 문자열을 받는 순수 함수로 만든다: <code>static String fromJson(String body)</code>. 조각 5·6과 같은 방식이라 테스트하기 쉽다.</li>
+      <li><code>JsonParser.parseString(body).getAsJsonObject()</code>로 읽고, <code>has("message")</code>를 먼저, 없으면 <code>has("error")</code>를 본다.</li>
+      <li>ViewModel에서는 <code>response.errorBody().string()</code>을 넘긴다. <code>string()</code>은 한 번만 읽을 수 있다.</li>
+    </ul>
+  </details>
+  <details><summary>정답 보기</summary>
+<pre><code>public final class ErrorMessages {
+    private ErrorMessages() {}
+    /** 계약서 §4.3: message 또는 error 중 있는 키에서 읽는다. 없거나 JSON이 아니면 null. */
+    public static String fromJson(String body) {
+        if (body == null) return null;
+        try {
+            JsonObject o = JsonParser.parseString(body).getAsJsonObject();
+            if (o.has("message")) return o.get("message").getAsString();
+            if (o.has("error")) return o.get("error").getAsString();
+        } catch (RuntimeException ignored) { }
+        return null;
+    }
+}
+
+// DeviceViewModel.controlDevice()의 else 갈래
+String detail = null;
+try { if (response.errorBody() != null) detail = ErrorMessages.fromJson(response.errorBody().string()); }
+catch (IOException ignored) { }
+toastMessage.setValue("제어 실패: " + (detail != null ? detail : String.valueOf(response.code())));
+
+// 테스트
+// message 키에서 읽는다
+@Test
+public void messageKey_isRead() {
+    assertEquals("X", ErrorMessages.fromJson("{\"result\":\"error\",\"message\":\"X\"}"));
+}</code></pre>
+  </details>
+
+  <h3>실습 B · 차트를 구간 사용량으로 (불일치 #14) <span class="tag">조각 6 응용</span></h3>
+  <div class="task-meta">
+    <b>목표</b><span>E7의 <code>totalEnergy_mWh</code>는 누적값이라 그래프가 계속 오르기만 한다. 이웃한 두 기록의 차이(구간 사용량)를 그린다.</span>
+    <b>고칠 파일</b><span><code>view/EnergyLogTimeline.java</code>에 <code>intervalUsage()</code> 추가, <code>view/EnergyLineChartView.java</code>, 테스트</span>
+    <b>완료 기준</b><span>① 오래된 순 [100, 200, 350] → [100, 150] ② 기록이 1개 이하면 빈 목록 ③ 차이가 음수(계량기 초기화)면 0 ④ 테스트 통과</span>
+  </div>
+  <details><summary>힌트</summary>
+    <ul>
+      <li>반드시 <code>oldestFirst()</code>로 정렬한 <b>뒤에</b> 차이를 구한다. 순서가 거꾸로면 모두 음수가 된다.</li>
+      <li>점 개수가 하나 줄어든다. X축 라벨은 구간이 끝난 시각(i번째 기록)을 쓴다.</li>
+    </ul>
+  </details>
+  <details><summary>정답 보기</summary>
+<pre><code>/** 오래된 순 로그에서 이웃한 두 값의 차이. 음수면 0(계량기 초기화 등). */
+public static List&lt;Long&gt; intervalUsage(List&lt;EnergyLog&gt; oldestFirst) {
+    List&lt;Long&gt; result = new ArrayList&lt;&gt;();
+    for (int i = 1; i &lt; oldestFirst.size(); i++) {
+        long diff = oldestFirst.get(i).getTotalEnergy_mWh() - oldestFirst.get(i - 1).getTotalEnergy_mWh();
+        result.add(Math.max(0, diff));
+    }
+    return result;
+}
+
+// 테스트
+// 누적값을 구간 사용량으로 바꾼다
+@Test
+public void cumulative_becomesIntervalUsage() {
+    List&lt;EnergyLog&gt; logs = Arrays.asList(log("2026-11-16 09:00:00", 100),
+            log("2026-11-16 09:10:00", 200), log("2026-11-16 09:20:00", 350));
+    assertEquals(Arrays.asList(100L, 150L), EnergyLogTimeline.intervalUsage(logs));
+}</code></pre>
+  </details>
+</section>
+
+</main>
+</body>
+</html>

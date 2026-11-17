@@ -58,7 +58,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `HomeAssistantPrefs`: `SERVER_IP`, `SERVER_PORT`, `WIFI_SSID`, `WIFI_PASSWORD`. Wi-Fi 값은 커미셔닝 요청에 함께 전송되며, SSID가 설정되기 전에는 기기를 추가할 수 없습니다.
 - `DashboardPrefs`: `device_order`와 `<deviceId>_widget_order`. 둘 다 쉼표로 구분합니다.
 
-서버 기본 주소는 파일마다 다릅니다. `MainActivity`와 `RetrofitClient`는 `192.168.219.108:8000`을 쓰고, `SettingsFragment`는 `192.168.129.108:8080`을 표시합니다. 이 기본값을 수정할 때는 함께 바꿔야 합니다.
+서버 기본 주소(`192.168.219.108:8000`)와 prefs 키는 `network/ServerDefaults`에 한 곳으로 모여 있습니다. 저장된 설정값이 항상 우선이고, 기본값은 처음 실행할 때만 쓰입니다.
 
 ## 규칙
 
