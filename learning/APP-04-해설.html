@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-04 해설</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  .tag { display: inline-block; font-size: .78em; padding: 1px 8px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent); margin-left: 6px; vertical-align: middle; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .ok { fill: var(--good); } .flow .ng { fill: var(--bad); }
+  dl { margin: 0; } dt { font-weight: 700; margin-top: 10px; } dd { margin: 2px 0 0 0; color: var(--muted); }
+  ol.q li { margin-bottom: 10px; }
+  details { border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; margin-top: 8px; }
+  summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+  .task-meta { display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px; font-size: .95em; }
+  @media (max-width: 520px) { .task-meta { grid-template-columns: 1fr; } }
+  .task-meta b { color: var(--muted); }
+  .warn { background: var(--bad-soft); border-radius: 8px; padding: 8px 12px; margin-top: 10px; font-size: .92em; }
+  .mini { font-size: .9em; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>APP-04 해설 — 좋은 주석, 나쁜 주석</h1>
+  <p>HomeAssistant 앱 · 주석 정리 · 2026-11-17 · 동작 변경 없음 (38개 파일)</p>
+</header>
+
+<!-- 1. 한눈에 보기 -->
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>규칙</b>: 주석은 코드만 보고 알기 어려운 곳에만, 1~2줄로 짧고 명확하게 단다. 계약서 절, 불일치 번호, REQ-ID 같은 문서 참조는 코드에 쓰지 않는다.</li>
+    <li><b>긴 "왜"는 어디로?</b> 이 학습 페이지(<code>learning/</code>)와 <code>docs/</code>로 간다. 코드는 코드를 설명하고, 결정의 배경은 문서가 맡는다.</li>
+    <li><b>어떻게 확인했나</b>: 바뀐 38개 파일에서 주석을 모두 지운 코드를 비교해 이전과 글자 하나 다르지 않음을 확인했다. 빌드와 단위 테스트 34개도 통과했다.</li>
+  </ul>
+  <div class="table-wrap">
+  <table>
+    <tr><th>남긴다</th><th>지운다</th></tr>
+    <tr><td>예외 처리 이유 (왜 이 실패를 무시하나)</td><td>코드를 말로 다시 읽어 주는 주석 (<code>// 뷰모델 가져오기</code>)</td></tr>
+    <tr><td>경계값 (음수, 빈 목록, null)</td><td>번호 매긴 단계 (<code>// 1. … 2. …</code>)</td></tr>
+    <tr><td>스레드 (<code>volatile</code>, <code>postValue</code>)</td><td>문서 참조 (<code>계약서 §4.1</code>, <code>불일치 #5</code>)</td></tr>
+    <tr><td>숨은 제약 (한 번만 읽을 수 있는 errorBody)</td><td>이모지 강조, 감탄문 (<code>// 🌟 … 갱신!</code>)</td></tr>
+    <tr><td>TODO (짧게, 할 일만)</td><td>주석 처리된 옛 코드 (git 기록에 남아 있다)</td></tr>
+  </table>
+  </div>
+</section>
+
+<!-- 2. 흐름 그림 -->
+<section class="card">
+  <h2><span class="num">2</span>판단 흐름</h2>
+  <svg class="flow" viewBox="0 0 860 210" role="img" aria-label="주석을 달지 판단하는 흐름">
+    <rect x="10" y="20" width="200" height="56" rx="10"/>
+    <text x="110" y="44" text-anchor="middle">주석을 달고 싶다</text>
+    <text x="110" y="62" text-anchor="middle" class="small">이 줄을 처음 보는 사람이라면?</text>
+    <line x1="210" y1="48" x2="250" y2="48"/>
+    <rect x="250" y="20" width="230" height="56" rx="10" class="hl"/>
+    <text x="365" y="44" text-anchor="middle">이름만 보고 알 수 있나?</text>
+    <text x="365" y="62" text-anchor="middle" class="small">메서드·변수 이름, 테스트 이름</text>
+    <path d="M365 76 L365 120"/>
+    <text x="375" y="104" class="small">예 → 지운다 (이름을 더 낫게 고칠 수도)</text>
+    <line x1="480" y1="48" x2="520" y2="48"/>
+    <text x="490" y="40" class="small">아니오</text>
+    <rect x="520" y="20" width="320" height="56" rx="10" class="hl"/>
+    <text x="680" y="44" text-anchor="middle">"왜"를 1~2줄로 쓸 수 있나?</text>
+    <text x="680" y="62" text-anchor="middle" class="small">예외 이유 · 경계값 · 스레드 · 숨은 제약</text>
+    <path d="M680 76 L680 120"/>
+    <rect x="520" y="120" width="320" height="56" rx="10"/>
+    <text x="680" y="144" text-anchor="middle" class="ok">예 → 짧은 주석으로 남긴다</text>
+    <text x="680" y="162" text-anchor="middle" class="small">아니오(배경이 길다) → 학습 페이지·docs로</text>
+    <rect x="250" y="120" width="230" height="56" rx="10"/>
+    <text x="365" y="152" text-anchor="middle" class="ng">주석 없음</text>
+  </svg>
+</section>
+
+<!-- 3. 예시 -->
+<section class="card">
+  <h2><span class="num">3</span>실제로 바꾼 예시</h2>
+
+  <h3>예시 1 · 경계값은 남기고, 배경 설명은 뺀다 <span class="tag">EnergyLogTimeline</span></h3>
+  <div class="ba">
+    <div class="before"><div class="label">BEFORE (10줄)</div>
+<pre><code>/**
+ * 누적 전력량을 구간 사용량으로 바꾼다 (계약서 E7, 불일치 #14).
+ * 반드시 oldestFirst()로 정렬한 목록을 넣는다. ...
+ * 경계 처리:
+ * - 기록이 0~1개: 차이를 낼 이웃이 없으므로 빈 목록.
+ * - 차이가 음수: 기기 초기화·교체 등으로 ...
+ *   (리셋 뒤 값 자체를 그 구간 사용량으로 ...)
+ */</code></pre></div>
+    <div class="after"><div class="label">AFTER (2줄)</div>
+<pre><code>// 오래된 순 목록에서 이웃 기록의 차이를 구한다. 결과는 입력보다 하나 적다.
+// 기록이 1개 이하면 빈 목록, 누적값이 줄면(기기 초기화) 사용량 0으로 처리</code></pre></div>
+  </div>
+
+  <h3>예시 2 · 코드를 다시 읽어 주는 주석은 지운다 <span class="tag">DeviceViewModel</span></h3>
+  <div class="ba">
+    <div class="before"><div class="label">BEFORE</div>
+<pre><code>// 1. 전달받은 구체적인 데이터 변경 작업 실행
+updateAction.accept(currentList.get(i));
+// 2. 리스트 갱신 알림 (공통)
+deviceList.setValue(currentList);</code></pre></div>
+    <div class="after"><div class="label">AFTER</div>
+<pre><code>updateAction.accept(currentList.get(i));
+// 같은 리스트를 다시 넣어 옵저버를 깨운다.
+deviceList.setValue(currentList);</code></pre></div>
+  </div>
+  <p class="mini">"같은 리스트를 왜 다시 넣지?"는 코드만 봐서는 알기 어렵다. 그래서 그 한 줄에만 주석을 남겼다.</p>
+
+  <h3>예시 3 · 스레드 주석은 남긴다 <span class="tag">RetrofitClient</span></h3>
+  <div class="ba">
+    <div class="before"><div class="label">BEFORE</div>
+<pre><code>// ── 401 알림 (불일치 #2) ──
+// 왜 LiveData와 플래그를 같이 쓰는가: LiveData는 마지막 값을
+// 새 관찰자에게 다시 준다. 화면 회전으로 MainActivity가 ...
+// "아직 처리 안 한 401이 있는가"는 플래그로 따로 들고, ...</code></pre></div>
+    <div class="after"><div class="label">AFTER</div>
+<pre><code>// LiveData는 새 관찰자에게 마지막 값을 다시 주므로(화면 회전 등),
+// 처리 여부는 플래그로 따로 관리해 401 이동이 한 번만 일어나게 한다.</code></pre></div>
+  </div>
+
+  <h3>예시 4 · 테스트는 이름이 곧 설명이다</h3>
+  <div class="ba">
+    <div class="before"><div class="label">BEFORE</div>
+<pre><code>// 200으로 와도 "명령 실패!"면 실패다 (§6 I-01)
+@Test
+public void failureMessageWith200_isNotSucceeded() {</code></pre></div>
+    <div class="after"><div class="label">AFTER</div>
+<pre><code>@Test
+public void failureMessageWith200_isNotSucceeded() {</code></pre></div>
+  </div>
+</section>
+
+<!-- 4. 이해도 질문 -->
+<section class="card">
+  <h2><span class="num">4</span>이해도 질문</h2>
+  <ol class="q">
+    <li><code>isManualRefresh = false; // 즉시 잠금</code>을 <code>// 상태 갱신이 목록을 다시 내보내도 반복 요청하지 않게</code>로 바꾼 이유는?
+      <details><summary>정답 보기</summary>"즉시 잠금"은 코드가 하는 일(false 대입)을 다시 말할 뿐이다. 바꾼 주석은 이 줄이 없으면 생기는 문제(syncDeviceState → 목록 갱신 → 다시 sync 반복)를 알려 준다.</details></li>
+    <li>주석에 "불일치 #5"라고 쓰면 생기는 문제는?
+      <details><summary>정답 보기</summary>문서를 열어야만 뜻을 알 수 있고, 문서 번호가 바뀌거나 문서가 사라지면 주석이 틀린 정보가 된다. 코드 리뷰어나 나중의 나에게 도움이 되지 않는다.</details></li>
+  </ol>
+</section>
+
+<!-- 5. 응용 실습 -->
+<section class="card">
+  <h2><span class="num">5</span>응용 실습</h2>
+  <div class="warn">새 브랜치(예: <code>git switch -c exercise/app-04</code>)에서 한다.</div>
+  <h3>실습 · <code>androidTest</code>의 템플릿 주석 정리하기</h3>
+  <div class="task-meta">
+    <b>목표</b><span>이번 범위에서 뺀 <code>app/src/androidTest/.../ExampleInstrumentedTest.java</code>의 주석을 같은 규칙으로 정리한다.</span>
+    <b>완료 기준</b><span>① 남은 주석마다 "코드만 보고 알기 어려운가?"에 예라고 답할 수 있다 ② 빌드 성공</span>
+  </div>
+  <details><summary>힌트</summary>
+    <ul>
+      <li>클래스 위 javadoc은 Android Studio 템플릿 설명이다. 테스트 이름 <code>useAppContext</code>로 충분한가?</li>
+      <li><code>// Context of the app under test.</code>는 바로 아래 줄 <code>getInstrumentation().getTargetContext()</code>를 다시 말하는가?</li>
+    </ul>
+  </details>
+  <details><summary>정답 보기</summary>
+<pre><code>@RunWith(AndroidJUnit4.class)
+public class ExampleInstrumentedTest {
+    @Test
+    public void useAppContext() {
+        Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        assertEquals("com.example.homeassistantapp", appContext.getPackageName());
+    }
+}</code></pre>
+  <p class="mini">둘 다 지운다. 남길 만한 "왜"가 없다.</p>
+  </details>
+</section>
+
+</main>
+</body>
+</html>

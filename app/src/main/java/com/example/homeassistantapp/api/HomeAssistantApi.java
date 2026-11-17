@@ -25,9 +25,9 @@ import retrofit2.http.Query;
 
 public interface HomeAssistantApi {
     @GET("/api/devices")
-    Call<DeviceListResponse> getDeviceList(); // <DeviceListResponse>
+    Call<DeviceListResponse> getDeviceList();
     @POST("/api/control")
-    Call<ControlResponse> controlDevice(@Body ControlRequest request); // <ControlResponse>
+    Call<ControlResponse> controlDevice(@Body ControlRequest request);
     @POST("/api/commission")
     Call<AddDeviceResponse> addDevice(@Body AddDeviceRequest request);
     @POST("/api/devices/delete")

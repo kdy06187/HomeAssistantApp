@@ -32,44 +32,40 @@ public class EnergyLineChartView extends LineChart {
 
     private void initChart(){
         getDescription().setEnabled(false);
-        getLegend().setEnabled(false);         // 범례 숨김
-        getAxisRight().setEnabled(false);      // 우측 Y축 숨김
-        getXAxis().setDrawGridLines(false);    // 세로 눈금선 숨김
-        getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM); // X축을 아래로
+        getLegend().setEnabled(false);
+        getAxisRight().setEnabled(false);
+        getXAxis().setDrawGridLines(false);
+        getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
         setTouchEnabled(true);
     }
     public void setEnergyData(List<EnergyLog> rawLogs) {
         List<Entry> entries = new ArrayList<>();
 
-        // 불일치 #10: 서버는 최신순으로 보내므로, 시간축이 왼쪽→오른쪽으로 흐르게 오래된 순으로 바꾼다.
+        // 서버는 최신순으로 준다.
         List<EnergyLog> logs = EnergyLogTimeline.oldestFirst(rawLogs);
         TimeZone localZone = TimeZone.getDefault();
 
-        // 불일치 #14: 누적값은 계속 오르기만 하므로, 이웃한 두 기록의 차이(구간 사용량)를 그린다.
-        // usage[i]는 logs[i] → logs[i+1] 구간이라 점이 하나 줄어든다.
+        // 누적값 대신 이웃 기록의 차이를 그린다. usage[i]는 logs[i]~logs[i+1] 구간.
         List<Long> usage = EnergyLogTimeline.intervalUsage(logs);
         if (usage.isEmpty()) {
-            // 기록이 0~1개면 구간을 만들 수 없다. 빈 선 대신 안내 문구를 보여 준다.
             setNoDataText("구간 사용량을 그리려면 기록이 2개 이상 필요합니다.");
-            clear(); // 데이터를 비우고 다시 그린다
+            clear();
             return;
         }
 
         final String[] timeLabels = new String[usage.size()];
         for (int i = 0; i < usage.size(); i++) {
-            // Y축 값: 구간 사용량(mWh), X축 값: 인덱스 순서
             entries.add(new Entry(i, (float) usage.get(i)));
-            // X축 라벨은 구간이 끝난 시각(i+1번째 기록).
-            // 불일치 #9: 서버 시각은 UTC라서 폰의 현지 시간으로 바꿔 표시한다(읽기 실패 시 빈칸).
+            // 라벨은 구간이 끝난 시각, UTC를 현지 시간으로
             timeLabels[i] = EnergyLogTimeline.toLocalTimeLabel(logs.get(i + 1).getTimestamp(), localZone);
         }
 
         LineDataSet dataSet = new LineDataSet(entries, "구간 사용량 (mWh)");
-        dataSet.setColor(Color.parseColor("#4CAF50")); // 메인 그린 색상
+        dataSet.setColor(Color.parseColor("#4CAF50"));
         dataSet.setLineWidth(2.5f);
-        dataSet.setDrawCircles(false);                 // 부드러운 선을 위해 점 숨김
-        dataSet.setMode(LineDataSet.Mode.LINEAR); // 직각 대신 곡선 처리
-        dataSet.setDrawValues(false);                  // 차트 위 숫자 텍스트 숨김
+        dataSet.setDrawCircles(false);
+        dataSet.setMode(LineDataSet.Mode.LINEAR);
+        dataSet.setDrawValues(false);
 
         LineData lineData = new LineData(dataSet);
         this.setData(lineData);
@@ -78,7 +74,6 @@ public class EnergyLineChartView extends LineChart {
             @Override
             public String getFormattedValue(float value) {
                 int index = (int) value;
-                // value(X축 좌표)를 인덱스로 삼아, 저장해둔 시간 배열에서 꺼내옵니다.
                 if (index >= 0 && index < timeLabels.length) {
                     return timeLabels[index];
                 }
@@ -87,6 +82,6 @@ public class EnergyLineChartView extends LineChart {
         });
 
         xAxis.setGranularity(1f);
-        this.invalidate(); // 화면에 렌더링(새로고침)
+        this.invalidate();
     }
 }

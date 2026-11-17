@@ -11,7 +11,6 @@ public class EnergyLog {
     private long totalEnergy_mWh;
 
 
-    // Getter & Setter
     public String getTimestamp() {
         return timestamp;
     }

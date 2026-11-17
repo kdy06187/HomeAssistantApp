@@ -38,14 +38,13 @@ public class ToggleViewHolder extends RecyclerView.ViewHolder{
         if (isEditMode) {
             itemView.setOnTouchListener((v, event) -> {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    touchHelper.startDrag(this); // 터치하자마자 드래그 모드 진입
-                    return true; // 터치 이벤트를 소모하여 스위치 조작 등을 막음
+                    touchHelper.startDrag(this);
+                    return true; // 드래그 중 스위치가 눌리지 않게 이벤트를 소비
                 }
 
-                return false; // 터치 이벤트를 소모하여 스위치 조작 등을 막음
+                return false;
             });
         } else {
-            // 편집 모드가 아니면 기존 스위치 조작 허용
             itemView.setOnTouchListener(null);
 
             switchControl.setChecked("ON".equalsIgnoreCase(device.getState()));

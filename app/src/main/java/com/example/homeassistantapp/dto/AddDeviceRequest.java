@@ -10,7 +10,7 @@ public class AddDeviceRequest {
     @SerializedName("deviceName")
     public String deviceName;
     @SerializedName("payload")
-    public String payload; // ip 주소 또는 Matter Pincode
+    public String payload; // TCP_DIY: 서버 IP, MATTER: 페어링 코드
     @SerializedName("ssid")
     public String ssid;
 

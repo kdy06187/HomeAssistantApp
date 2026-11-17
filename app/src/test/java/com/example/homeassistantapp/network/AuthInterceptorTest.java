@@ -14,11 +14,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
-/**
- * 불일치 #1: 모든 요청에 Bearer 헤더가 붙는지 확인한다.
- * 실제 서버 없이 시험하려고, 마지막 인터셉터가 요청을 붙잡아 두고 가짜 응답을 돌려준다.
- * (테스트용 가짜 토큰이며 실제 토큰이 아니다.)
- */
+// 마지막 인터셉터가 요청을 붙잡고 가짜 응답을 돌려줘 서버 없이 시험한다. 토큰은 테스트용 가짜 값.
 public class AuthInterceptorTest {
 
     private Request send(String token) throws Exception {
@@ -41,21 +37,18 @@ public class AuthInterceptorTest {
         return captured.get();
     }
 
-    // 토큰이 있으면 Bearer 헤더를 붙인다
     @Test
     public void tokenPresent_addsBearerHeader() throws Exception {
         assertEquals("Bearer test-token-0123456789abcdef0123456789",
                 send("test-token-0123456789abcdef0123456789").header("Authorization"));
     }
 
-    // 토큰이 없으면 헤더를 붙이지 않는다
     @Test
     public void tokenMissing_omitsAuthorizationHeader() throws Exception {
         assertNull(send(null).header("Authorization"));
         assertNull(send("").header("Authorization"));
     }
 
-    // 토큰을 바꾸면 다음 요청부터 새 토큰을 쓴다
     @Test
     public void tokenChanged_nextRequestUsesNewToken() throws Exception {
         AtomicReference<String> token = new AtomicReference<>("old-token");

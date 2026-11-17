@@ -11,9 +11,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.TimeZone;
 
-/**
- * 불일치 #9(UTC → 현지 시간), #10(최신순 → 오래된 순)을 확인한다.
- */
 public class EnergyLogTimelineTest {
     private static final TimeZone SEOUL = TimeZone.getTimeZone("Asia/Seoul"); // UTC+9
 
@@ -24,26 +21,22 @@ public class EnergyLogTimelineTest {
         return l;
     }
 
-    // 서버 UTC 09:30은 서울 시간 18:30이다
     @Test
     public void utcTimestamp_isShownInLocalTime() {
         assertEquals("18:30", EnergyLogTimeline.toLocalTimeLabel("2026-11-16 09:30:00", SEOUL));
     }
 
-    // 날짜가 넘어가도 시간이 맞다(UTC 20:00 → 서울 다음 날 05:00)
     @Test
     public void utcTimestamp_crossesMidnight() {
         assertEquals("05:00", EnergyLogTimeline.toLocalTimeLabel("2026-11-16 20:00:00", SEOUL));
     }
 
-    // 읽을 수 없는 값은 빈 문자열이다
     @Test
     public void badTimestamp_returnsEmpty() {
         assertEquals("", EnergyLogTimeline.toLocalTimeLabel("어제", SEOUL));
         assertEquals("", EnergyLogTimeline.toLocalTimeLabel(null, SEOUL));
     }
 
-    // 서버가 최신순으로 보내도 오래된 순으로 바꾼다
     @Test
     public void newestFirstLogs_areSortedOldestFirst() {
         List<EnergyLog> fromServer = Arrays.asList(
@@ -57,7 +50,6 @@ public class EnergyLogTimelineTest {
         assertEquals(300, fromServer.get(0).getTotalEnergy_mWh());
     }
 
-    // 누적값을 이웃 값 차이(구간 사용량)로 바꾼다 (#14)
     @Test
     public void cumulative_becomesIntervalUsage() {
         List<EnergyLog> logs = Arrays.asList(
@@ -67,7 +59,6 @@ public class EnergyLogTimelineTest {
         assertEquals(Arrays.asList(100L, 150L), EnergyLogTimeline.intervalUsage(logs));
     }
 
-    // 누적값이 줄면(리셋) 그 구간은 0이다 (#14)
     @Test
     public void counterReset_becomesZero() {
         List<EnergyLog> logs = Arrays.asList(
@@ -77,7 +68,6 @@ public class EnergyLogTimelineTest {
         assertEquals(Arrays.asList(0L, 50L), EnergyLogTimeline.intervalUsage(logs));
     }
 
-    // 기록이 1개 이하면 구간이 없다 (#14)
     @Test
     public void oneOrNoLog_hasNoInterval() {
         assertTrue(EnergyLogTimeline.intervalUsage(Arrays.asList(log("2026-11-16 09:00:00", 100))).isEmpty());
@@ -85,7 +75,6 @@ public class EnergyLogTimelineTest {
         assertTrue(EnergyLogTimeline.intervalUsage(null).isEmpty());
     }
 
-    // null이나 빈 목록이어도 죽지 않는다
     @Test
     public void nullOrEmpty_returnsEmptyList() {
         assertTrue(EnergyLogTimeline.oldestFirst(null).isEmpty());

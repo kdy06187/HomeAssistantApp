@@ -27,13 +27,10 @@ public class ChartViewHolder extends RecyclerView.ViewHolder{
     }
     public void bind(Device device, DashboardAdapter.OnDeviceControlListener listener
             , boolean isEditMode, ItemTouchHelper touchHelper, WidgetAdapter adapter){
-        // 1. 편집 모드에 따른 삭제 버튼 표시 처리
         btnDeleteWidget.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
-        // 4. 기존 정상 동작 로직
         if (device.getEnergyLogs() != null && !device.getEnergyLogs().isEmpty()) {
             chartView.setEnergyData(device.getEnergyLogs());
         }
-        // 2. 삭제 버튼 클릭 이벤트
         btnDeleteWidget.setOnClickListener(v -> {
             int pos = getAdapterPosition();
             if (pos != RecyclerView.NO_POSITION) {
@@ -41,13 +38,12 @@ public class ChartViewHolder extends RecyclerView.ViewHolder{
             }
         });
 
-        // 3. 편집 모드일 때의 터치 및 UI 동작 제어
         if (isEditMode) {
-            btnRefresh.setEnabled(false); // 드래그 중 오작동 방지
+            btnRefresh.setEnabled(false);
             itemView.setOnTouchListener((v, event) -> {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    touchHelper.startDrag(this); // 즉시 드래그 시작
-                    return true; // 터치 이벤트 소비
+                    touchHelper.startDrag(this);
+                    return true;
                 }
                 return false;
             });

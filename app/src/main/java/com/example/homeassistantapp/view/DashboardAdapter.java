@@ -46,7 +46,6 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
         notifyDataSetChanged();
     }
     public boolean isAnyDeviceEditing() {
-        // editingDeviceIds 주머니가 비어있지 않으면(편집 중이면) true 반환
         return !editingDeviceIds.isEmpty();
     }
     @NonNull
@@ -70,27 +69,25 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
         }
         holder.btnEditWidgets.setOnClickListener(v -> {
             if (editingDeviceIds.contains(device.getId())) {
-                editingDeviceIds.remove(device.getId()); // 편집 모드 끄기
+                editingDeviceIds.remove(device.getId());
             } else {
-                editingDeviceIds.add(device.getId()); // 편집 모드 켜기
+                editingDeviceIds.add(device.getId());
             }
-            notifyItemChanged(position); // 변경된 상태로 이 기기만 다시 그리기
+            notifyItemChanged(position);
         });
 
         holder.tvDeviceName.setText(device.getName());
         String status = device.getState();
 
-        // UI 기본 상태 초기화
         holder.pbDeviceLoading.setVisibility(View.GONE);
         holder.btnRefreshStatus.setVisibility(View.VISIBLE);
         holder.btnRefreshStatus.setEnabled(true);
         holder.widgetContainer.setVisibility(View.VISIBLE);
 
         if ("TEMP_PAIRING".equals(device.getId()) || device.isPairing()) {
-            // [페어링 중]
             holder.tvDeviceStatus.setText("페어링중");
-            holder.tvDeviceStatus.setTextColor(Color.parseColor("#888888")); // 회색
-            holder.widgetContainer.setVisibility(View.GONE); // 조작 위젯 숨김
+            holder.tvDeviceStatus.setTextColor(Color.parseColor("#888888"));
+            holder.widgetContainer.setVisibility(View.GONE);
             holder.itemView.setAlpha(0.5f);
 
         } else if ("LOADING".equals(status)) {
@@ -99,21 +96,19 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
             holder.btnRefreshStatus.setEnabled(false); // 로딩 중 중복 클릭 방지
             holder.itemView.setAlpha(0.7f);
         } else {
-            // 불일치 #8: ON/OFF만 "연결됨". UNKNOWN·null·처음 보는 값은 "알 수 없음"으로 보여 준다.
-            // (DeviceStateLabel은 상수 쪽에서 equals를 불러 null이어도 안전하다 — 불일치 #7)
             holder.tvDeviceStatus.setText(DeviceStateLabel.textOf(status));
             holder.widgetContainer.setVisibility(View.VISIBLE);
             switch (DeviceStateLabel.kindOf(status)) {
                 case CONNECTED:
-                    holder.tvDeviceStatus.setTextColor(Color.parseColor("#4CAF50")); // 녹색
+                    holder.tvDeviceStatus.setTextColor(Color.parseColor("#4CAF50"));
                     holder.itemView.setAlpha(1.0f);
                     break;
                 case OFFLINE:
-                    holder.tvDeviceStatus.setTextColor(Color.parseColor("#F44336")); // 빨간색
-                    holder.itemView.setAlpha(0.5f); // 비활성화된 느낌 부여
+                    holder.tvDeviceStatus.setTextColor(Color.parseColor("#F44336"));
+                    holder.itemView.setAlpha(0.5f);
                     break;
                 default:
-                    holder.tvDeviceStatus.setTextColor(Color.parseColor("#FF9800")); // 주황색: 확인 필요
+                    holder.tvDeviceStatus.setTextColor(Color.parseColor("#FF9800"));
                     holder.itemView.setAlpha(0.8f);
                     break;
             }
@@ -126,7 +121,7 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
 
         List<String> activeWidgets = new ArrayList<>();
 
-        // (나중에는 이 activeWidgets 리스트를 SharedPreferences에서 불러와서 세팅하게 됩니다)
+        // TODO: 위젯 목록을 기기 타입이 아니라 저장값에서 불러오기
         if (device.getType().equals("MATTER") || device.getType().equals("TCP_DIY")) {
             activeWidgets.add("TOGGLE");
         }
@@ -142,34 +137,28 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
             List<String> sortedWidgets = new ArrayList<>();
             String[] savedArray = savedOrder.split(",");
 
-            // 저장된 순서대로 새 리스트에 넣기
             for (String type : savedArray) {
                 if (activeWidgets.contains(type)) {
                     sortedWidgets.add(type);
-                    activeWidgets.remove(type); // 이미 넣은 건 원본에서 제거
+                    activeWidgets.remove(type);
                 }
             }
-            // 혹시 앱 업데이트 등으로 새로 생긴 위젯이 있다면 맨 뒤에 마저 붙이기
+            // 저장된 순서에 없는 새 위젯은 맨 뒤에 붙인다.
             sortedWidgets.addAll(activeWidgets);
 
-            activeWidgets = sortedWidgets; // 정렬된 리스트로 교체
+            activeWidgets = sortedWidgets;
         }
 
-        // 위젯 어댑터에 리스트 전달 -> 자동으로 화면에 렌더링됨
         holder.widgetAdapter.setWidgets(activeWidgets, device, listener);
 
 
     }
     public void moveItem(int fromPosition, int toPosition) {
-        // 1. 리스트에서 원래 있던 자리의 기기를 뽑아냅니다.
         Device movedDevice = deviceList.remove(fromPosition);
-        // 2. 새로운 자리에 그 기기를 밀어 넣습니다.
         deviceList.add(toPosition, movedDevice);
-        // 3. UI에 "이 두 자리 순서가 바뀌었어!"라고 알려주어 애니메이션을 실행시킵니다.
         notifyItemMoved(fromPosition, toPosition);
     }
 
-    // 나중에 순서가 바뀐 최종 리스트를 가져오기 위한 Getter 메서드
     public List<Device> getCurrentList() {
         return deviceList;
     }
@@ -189,7 +178,6 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
 
         public DashboardViewHolder(@NonNull View itemView) {
             super(itemView);
-            // item_device_section.xml에 있는 뷰들의 ID와 연결
             tvDeviceName = itemView.findViewById(R.id.tvSectionDeviceName);
             tvDeviceStatus = itemView.findViewById(R.id.tvDeviceStatus);
             pbDeviceLoading = itemView.findViewById(R.id.pbDeviceLoading);
@@ -208,13 +196,12 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
                 }
                 @Override
                 public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-                    // 손가락으로 드래그 시 위젯 어댑터의 위치 변경 로직 호출
                     widgetAdapter.moveItem(viewHolder.getAdapterPosition(), target.getAdapterPosition());
                     return true;
                 }
                 @Override
                 public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                    // 스와이프 삭제는 추후 편집 모드에서 구현
+                    // 스와이프는 쓰지 않는다.
                 }
                 @Override
                 public void onSelectedChanged(@Nullable RecyclerView.ViewHolder viewHolder, int actionState) {
@@ -224,7 +211,7 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
                     }
                 }
 
-                // 🌟 추가: 드래그 종료 시 바깥쪽 목록 스크롤 다시 켜기
+                // 드래그가 끝나면 바깥 목록 스크롤을 다시 허용한다.
                 @Override
                 public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
                     super.clearView(recyclerView, viewHolder);

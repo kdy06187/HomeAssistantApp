@@ -22,12 +22,7 @@ import java.util.List;
 
 public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceViewHolder>{
     private List<Device> deviceList = new ArrayList<>();
-//    private OnDeviceControlListener listener;
 
-//    public interface OnDeviceControlListener{
-//        void onControlClick(String deviceId, String command);
-//        void onEnergyClick(String deviceId);
-//    }
 
     public interface OnDeviceLongClickListener{
         void onDeviceLongClick(Device device);
@@ -58,21 +53,18 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         boolean isPairing = "TEMP_PAIRING".equals(device.getId()) || device.isPairing();
 
         if (isPairing) {
-            // [페어링 중 상태 UI]
             holder.progressBar.setVisibility(View.VISIBLE);
-            holder.tvDeviceType.setVisibility(View.GONE); // 타입 텍스트 대신 로딩바 노출 (기획에 따라 유지 가능)
-            holder.itemView.setAlpha(0.5f); // 전체를 약간 투명하게 처리
+            holder.tvDeviceType.setVisibility(View.GONE);
+            holder.itemView.setAlpha(0.5f);
 
-            // 임시 기기이므로 클릭 이벤트 차단
+            // 등록 중인 임시 항목은 누를 수 없게 한다.
             holder.itemView.setOnClickListener(null);
             holder.itemView.setOnLongClickListener(null);
         } else {
-            // [정상 기기 상태 UI]
             holder.progressBar.setVisibility(View.GONE);
             holder.tvDeviceType.setVisibility(View.VISIBLE);
             holder.itemView.setAlpha(1.0f);
 
-            // 정상 기기 클릭 이벤트 활성화
             holder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(v.getContext(), DeviceDetailActivity.class);
                 intent.putExtra("EXTRA_DEVICE_ID", device.getId());
@@ -88,33 +80,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
                 return true;
             });
         }
-//        if (device.getPowerInfo() != null) {
-//            holder.textPowerInfo.setText(device.getPowerInfo());
-//        } else {
-//            holder.textPowerInfo.setText("전력 정보 없음");
-//        }
-//        if (device.getEnergyLogs() != null && !device.getEnergyLogs().isEmpty()) {
-//            holder.chartView.setVisibility(View.VISIBLE); // 차트 보이기
-//            holder.chartView.setEnergyData(device.getEnergyLogs()); // 커스텀 뷰에 데이터 쏙!
-//        } else {
-//            holder.chartView.setVisibility(View.GONE); // 아직 조회 안 했으면 숨기기
-//        }
-//        holder.btnOn.setOnClickListener(v -> {
-//            if(listener != null){
-//                listener.onControlClick(device.id, "ON");
-//            }
-//        });
-//        holder.btnOff.setOnClickListener(v -> {
-//            if(listener != null){
-//                listener.onControlClick(device.id, "OFF");
-//            }
-//        });
 
-//        holder.btnEnergy.setOnClickListener(v -> {
-//            if(listener != null){
-//                listener.onEnergyClick(device.id); // 메인 액티비티로 이벤트 전달
-//            }
-//        });
 
     }
     @Override

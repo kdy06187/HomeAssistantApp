@@ -45,7 +45,6 @@ public class WidgetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         this.touchHelper = touchHelper;
     }
 
-    // 🌟 위젯 삭제 메서드
     public void removeWidget(int position) {
         widgetTypes.remove(position);
         notifyItemRemoved(position);
@@ -54,19 +53,17 @@ public class WidgetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     public void setWidgets(List<String> widgets, Device device, DashboardAdapter.OnDeviceControlListener listener) {
         this.device = device;
         this.listener = listener;
-        // 1. 위젯이 한 번도 세팅되지 않은 최초 상태
         if (this.widgetTypes.isEmpty()) {
             this.widgetTypes = new ArrayList<>(widgets);
             notifyDataSetChanged();
             return;
         }
 
-        // 2. 편집 모드일 때는 백그라운드 새로고침으로 인한 화면 깜빡임과 터치 초기화를 완전히 차단!
+        // 편집(드래그) 중에는 새로고침이 순서와 터치를 초기화하지 않게 무시한다.
         if (isEditMode) {
             return;
         }
 
-        // 3. 평상시 상태 갱신
         if (!this.widgetTypes.equals(widgets)) {
             this.widgetTypes = new ArrayList<>(widgets);
             notifyDataSetChanged();
