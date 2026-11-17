@@ -13,6 +13,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.network.RetrofitClient;
+import com.example.homeassistantapp.network.ServerDefaults;
 
 import com.example.homeassistantapp.security.TokenStore;
 import com.google.android.material.textfield.TextInputEditText;
@@ -41,11 +42,12 @@ public class SettingsFragment extends Fragment {
         btnSaveSettings = view.findViewById(R.id.btnSaveSettings);
 
         // 2. SharedPreferences 초기화 (앱 전역에서 공유할 설정 파일 이름 지정)
-        prefs = requireActivity().getSharedPreferences("HomeAssistantPrefs", Context.MODE_PRIVATE);
+        prefs = requireActivity().getSharedPreferences(ServerDefaults.PREFS_NAME, Context.MODE_PRIVATE);
 
-        // 3. 기존 저장값 불러오기 (값이 없으면 두 번째 인자인 기본값을 띄웁니다)
-        etServerIp.setText(prefs.getString("SERVER_IP", "192.168.129.108"));
-        etServerPort.setText(prefs.getString("SERVER_PORT", "8080"));
+        // 3. 기존 저장값 불러오기 (값이 없으면 ServerDefaults의 기본값을 띄웁니다)
+        // 불일치 #3: 예전 기본값 :8080은 DIY 기기 전용 포트라 앱이 쓰면 안 된다(계약서 §1).
+        etServerIp.setText(prefs.getString(ServerDefaults.KEY_SERVER_IP, ServerDefaults.IP));
+        etServerPort.setText(prefs.getString(ServerDefaults.KEY_SERVER_PORT, ServerDefaults.PORT));
         etWifiSsid.setText(prefs.getString("WIFI_SSID", ""));
         etWifiPassword.setText(prefs.getString("WIFI_PASSWORD", ""));
 
@@ -82,8 +84,8 @@ public class SettingsFragment extends Fragment {
 
         // 입력받은 정보를 기기 내부에 안전하게 저장
         prefs.edit()
-                .putString("SERVER_IP", ip)
-                .putString("SERVER_PORT", port)
+                .putString(ServerDefaults.KEY_SERVER_IP, ip)
+                .putString(ServerDefaults.KEY_SERVER_PORT, port)
                 .putString("WIFI_SSID", ssid)
                 .putString("WIFI_PASSWORD", password)
                 .apply(); // commit()보다 비동기로 처리되는 apply()가 UI 버벅임을 막아줍니다.

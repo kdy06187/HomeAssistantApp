@@ -12,12 +12,9 @@ import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
+import java.util.TimeZone;
 
 public class EnergyLineChartView extends LineChart {
     public EnergyLineChartView(Context context){
@@ -41,22 +38,20 @@ public class EnergyLineChartView extends LineChart {
         getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM); // X축을 아래로
         setTouchEnabled(true);
     }
-    public void setEnergyData(List<EnergyLog> logs) {
+    public void setEnergyData(List<EnergyLog> rawLogs) {
         List<Entry> entries = new ArrayList<>();
 
+        // 불일치 #10: 서버는 최신순으로 보내므로, 시간축이 왼쪽→오른쪽으로 흐르게 오래된 순으로 바꾼다.
+        List<EnergyLog> logs = EnergyLogTimeline.oldestFirst(rawLogs);
+        TimeZone localZone = TimeZone.getDefault();
+
         final String[] timeLabels = new String[logs.size()];
-        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-        SimpleDateFormat outputFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
         for (int i = 0; i < logs.size(); i++) {
             // Y축 값: 전력량, X축 값: 인덱스 순서
             float energy = (float) logs.get(i).getTotalEnergy_mWh();
             entries.add(new Entry(i, energy));
-            try {
-                Date date = inputFormat.parse(logs.get(i).getTimestamp());
-                timeLabels[i] = outputFormat.format(date);
-            } catch (ParseException e) {
-                timeLabels[i] = ""; // 파싱 에러 시 빈칸 처리
-            }
+            // 불일치 #9: 서버 시각은 UTC라서 폰의 현지 시간으로 바꿔 표시한다(읽기 실패 시 빈칸).
+            timeLabels[i] = EnergyLogTimeline.toLocalTimeLabel(logs.get(i).getTimestamp(), localZone);
         }
 
         LineDataSet dataSet = new LineDataSet(entries, "전력 사용량");

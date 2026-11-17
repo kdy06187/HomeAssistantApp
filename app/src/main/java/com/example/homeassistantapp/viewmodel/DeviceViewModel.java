@@ -57,26 +57,42 @@ public class DeviceViewModel extends ViewModel {
 
     // 제어 명령 전송 로직
     public void controlDevice(String targetId, String command) {
+        // 실패하면 LOADING을 풀고 원래 상태로 돌리기 위해 미리 기억해 둔다(불일치 #11).
+        final String previousState = findState(targetId);
         updateDevice(targetId, device -> device.setState("LOADING")); // 제어 시작 시 상태를 LOADING으로 표시
 
         ControlRequest request = new ControlRequest(targetId, command);
         RetrofitClient.getApi().controlDevice(request).enqueue(new Callback<ControlResponse>() {
             @Override
             public void onResponse(Call<ControlResponse> call, Response<ControlResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    toastMessage.setValue(response.body().message);
-                    updateDevice(targetId, device -> device.setState(response.body().status)); // 성공 시 상태 업데이트
+                ControlResponse body = response.body();
+                if (response.isSuccessful() && body != null && body.isCommandSucceeded()) {
+                    // 성공: 2xx + "명령 성공!" (계약서 §4.1, 불일치 #5)
+                    toastMessage.setValue(body.message);
+                    updateDevice(targetId, device -> device.setState(stateOr(body.status, previousState)));
+                } else if (response.isSuccessful() && body != null) {
+                    // 명령 실패인데 200으로 온 경우(§6 I-01). status는 서버가 아는 현재 상태(또는 UNKNOWN)다.
+                    toastMessage.setValue("제어 실패: " + (body.message != null ? body.message : "알 수 없는 응답"));
+                    updateDevice(targetId, device -> device.setState(stateOr(body.status, previousState)));
                 } else {
-                    updateDevice(targetId,device -> device.setState("OFFLINE")); // 실패 시 상태 롤백
-                    toastMessage.setValue("제어 실패");
+                    // 400은 명령/JSON 형식 오류일 뿐 기기 상태와 상관없다. OFFLINE으로 바꾸지 않고 되돌린다(불일치 #6).
+                    // 401이면 UnauthorizedInterceptor가 설정 화면으로 보낸다.
+                    updateDevice(targetId, device -> device.setState(previousState));
+                    toastMessage.setValue("제어 실패: " + response.code());
                 }
             }
 
             @Override
             public void onFailure(Call<ControlResponse> call, Throwable t) {
+                updateDevice(targetId, device -> device.setState(previousState)); // LOADING 해제(불일치 #11)
                 toastMessage.setValue("제어 에러: " + t.getMessage());
             }
         });
+    }
+
+    /** 서버가 준 상태가 비어 있으면(null) 대신 쓸 값을 고른다. null로 덮어쓰면 화면 판정이 꼬인다. */
+    private static String stateOr(String state, String fallback) {
+        return state != null ? state : fallback;
     }
     // 커미셔닝 요청
     public void addDevice(String type, String name, String payload, String ssid, String password, List<Integer> driver) {
@@ -133,6 +149,7 @@ public class DeviceViewModel extends ViewModel {
         }
     }
     public void deleteDevice(String deviceId) {
+        final String previousState = findState(deviceId); // 실패 시 LOADING 해제용(불일치 #11)
         updateDevice(deviceId, device -> device.setState("LOADING"));
         toastMessage.setValue("기기 삭제 중...");
 
@@ -143,26 +160,32 @@ public class DeviceViewModel extends ViewModel {
                     toastMessage.setValue("삭제 성공!");
                     fetchDevices(); // 🌟 삭제가 완료되면 서버에서 최신 리스트를 다시 불러와 갱신!
                 } else {
+                    updateDevice(deviceId, device -> device.setState(previousState));
                     toastMessage.setValue("삭제 실패: 서버 오류");
                 }
             }
 
             @Override
             public void onFailure(Call<ControlResponse> call, Throwable t) {
+                updateDevice(deviceId, device -> device.setState(previousState));
                 toastMessage.setValue("통신 실패: " + t.getMessage());
             }
         });
     }
     public void syncDeviceState(String deviceId, boolean isManualRefresh) {
+        final String previousState = findState(deviceId); // 실패 시 LOADING 해제용(불일치 #11)
         updateDevice(deviceId, device -> device.setState("LOADING")); // 상태 동기화 시작 시 LOADING 표시
         RetrofitClient.getApi().getDeviceState(deviceId,isManualRefresh).enqueue(new Callback<DeviceStateResponse>() {
             @Override
             public void onResponse(Call<DeviceStateResponse> call, Response<DeviceStateResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    String realState = response.body().state; // "ON" 또는 "OFF"
+                    String realState = response.body().state; // "ON", "OFF", "UNKNOWN" 등
 
                     // 🌟 현재 LiveData에 있는 기기 리스트를 꺼내서, 상태가 바뀐 기기만 업데이트!
-                    updateDevice(deviceId, device -> device.setState(realState));
+                    updateDevice(deviceId, device -> device.setState(stateOr(realState, previousState)));
+                } else {
+                    // 예전에는 이 경우 아무것도 안 해서 LOADING이 그대로 남았다(불일치 #11).
+                    updateDevice(deviceId, device -> device.setState(previousState));
                 }
             }
 
@@ -175,6 +198,7 @@ public class DeviceViewModel extends ViewModel {
     }
     public void fetchDeviceEnergy(String deviceId) {
         toastMessage.setValue("전력량 조회 중...");
+        final String previousState = findState(deviceId); // 실패 시 LOADING 해제용(불일치 #11)
         updateDevice(deviceId, device -> device.setState("LOADING"));
         RetrofitClient.getApi().getDeviceEnergy(deviceId).enqueue(new Callback<EnergyResponse>() {
             @Override
@@ -191,11 +215,12 @@ public class DeviceViewModel extends ViewModel {
                     // 3. 현재 LiveData의 리스트를 꺼내서 해당 기기의 전력 텍스트만 업데이트!
                     updateDevice(deviceId, device -> {
                         device.setPowerInfo(powerText);
-                        device.setState(response.body().device_status); // 전력 조회 성공 시 상태를 ONLINE으로 표시
+                        device.setState(stateOr(response.body().device_status, previousState)); // 서버가 알려 준 기기 상태
                     });
                     toastMessage.setValue("전력량 업데이트 완료!");
 
                 } else {
+                    // E6의 400 처리(OFFLINE 표시)는 개선 항목 #12에서 다룬다. 지금은 그대로 둔다.
                     updateDevice(deviceId,device -> device.setState("OFFLINE"));
                     toastMessage.setValue("전력 조회 실패: " + response.code());
                 }
@@ -203,6 +228,7 @@ public class DeviceViewModel extends ViewModel {
 
             @Override
             public void onFailure(Call<EnergyResponse> call, Throwable t) {
+                updateDevice(deviceId, device -> device.setState(previousState)); // LOADING 해제(불일치 #11)
                 toastMessage.setValue("통신 실패: " + t.getMessage());
             }
         });
@@ -238,16 +264,24 @@ public class DeviceViewModel extends ViewModel {
 
             @Override
             public void onFailure(Call<EnergyLogResponse> call, Throwable t) {
+                updateDevice(deviceId, device -> device.setState(previousState)); // LOADING 해제(불일치 #11)
                 toastMessage.setValue("전력량 로그를 불러오지 못했습니다.");
             }
         });
     }
-    /** 목록에서 기기의 현재 상태를 찾는다. 없으면(예: DeviceDetailActivity 의 빈 목록) null. */
+    /**
+     * 목록에서 기기의 현재 상태를 찾는다. 없으면(예: DeviceDetailActivity 의 빈 목록) null.
+     * 이미 LOADING이면(다른 요청이 진행 중) null을 돌려준다. LOADING을 "원래 상태"로 기억했다가
+     * 되돌리면 실패 뒤에도 LOADING이 남기 때문이다(불일치 #11). null은 화면에서 "알 수 없음"으로 보인다.
+     */
     private String findState(String deviceId) {
         List<Device> currentList = deviceList.getValue();
         if (currentList == null) return null;
         for (Device device : currentList) {
-            if (deviceId.equals(device.getId())) return device.getState();
+            if (deviceId.equals(device.getId())) {
+                String state = device.getState();
+                return "LOADING".equals(state) ? null : state;
+            }
         }
         return null;
     }

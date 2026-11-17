@@ -98,19 +98,25 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
             holder.pbDeviceLoading.setVisibility(View.VISIBLE);
             holder.btnRefreshStatus.setEnabled(false); // 로딩 중 중복 클릭 방지
             holder.itemView.setAlpha(0.7f);
-        } else if ("OFFLINE".equals(status)) {
-            // 왜 상수 쪽에서 equals를 부르는가: 상태가 null이어도 NullPointerException 없이 false가 된다(불일치 #7).
-            holder.tvDeviceStatus.setText("오프라인");
-            holder.tvDeviceStatus.setTextColor(Color.parseColor("#F44336")); // 빨간색
-            holder.widgetContainer.setVisibility(View.VISIBLE);
-            holder.itemView.setAlpha(0.5f); // 비활성화된 느낌 부여
-
         } else {
-            // [연결됨]
-            holder.tvDeviceStatus.setText("연결됨");
-            holder.tvDeviceStatus.setTextColor(Color.parseColor("#4CAF50")); // 녹색
+            // 불일치 #8: ON/OFF만 "연결됨". UNKNOWN·null·처음 보는 값은 "알 수 없음"으로 보여 준다.
+            // (DeviceStateLabel은 상수 쪽에서 equals를 불러 null이어도 안전하다 — 불일치 #7)
+            holder.tvDeviceStatus.setText(DeviceStateLabel.textOf(status));
             holder.widgetContainer.setVisibility(View.VISIBLE);
-            holder.itemView.setAlpha(1.0f);
+            switch (DeviceStateLabel.kindOf(status)) {
+                case CONNECTED:
+                    holder.tvDeviceStatus.setTextColor(Color.parseColor("#4CAF50")); // 녹색
+                    holder.itemView.setAlpha(1.0f);
+                    break;
+                case OFFLINE:
+                    holder.tvDeviceStatus.setTextColor(Color.parseColor("#F44336")); // 빨간색
+                    holder.itemView.setAlpha(0.5f); // 비활성화된 느낌 부여
+                    break;
+                default:
+                    holder.tvDeviceStatus.setTextColor(Color.parseColor("#FF9800")); // 주황색: 확인 필요
+                    holder.itemView.setAlpha(0.8f);
+                    break;
+            }
         }
         holder.btnRefreshStatus.setOnClickListener(v -> {
             if (listener != null) {
