@@ -18,7 +18,6 @@ import com.example.homeassistantapp.dto.DeleteDeviceResponse;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.dto.DeviceListResponse;
 import com.example.homeassistantapp.dto.DeviceStateResponse;
-import com.example.homeassistantapp.dto.EnergyLog;
 import com.example.homeassistantapp.dto.EnergyLogResponse;
 import com.example.homeassistantapp.dto.EnergyResponse;
 import com.example.homeassistantapp.network.ApiError;
@@ -38,12 +37,9 @@ import retrofit2.Response;
 public class DeviceViewModel extends ViewModel {
     private final MutableLiveData<List<Device>> deviceList = new MutableLiveData<>();
     private final MutableLiveData<OneTimeEvent<String>> toastMessage = new MutableLiveData<>();
-    private MutableLiveData<List<EnergyLog>> detailEnergyHistory = new MutableLiveData<>();
-
 
     public LiveData<List<Device>> getDeviceList() { return deviceList; }
     public LiveData<OneTimeEvent<String>> getToastMessage() { return toastMessage; }
-    public LiveData<List<EnergyLog>> getDetailEnergyHistory() {return detailEnergyHistory;}
 
     // 삭제는 됐지만 기기 쪽 해제가 실패했을 때의 경고. 토스트보다 오래 보이도록 대화상자로 띄운다.
     private final MutableLiveData<OneTimeEvent<String>> deleteWarning = new MutableLiveData<>();
@@ -581,36 +577,6 @@ public class DeviceViewModel extends ViewModel {
     private void scheduleNextDetailPoll() {
         long delay = detailPoll.finished(SystemClock.elapsedRealtime());
         if (delay != EnergyPollSchedule.NONE) mainHandler.postDelayed(detailPollTick, delay);
-    }
-
-    public void fetchDeviceEnergyHistory(String deviceId) {
-        beginLoading(deviceId);
-
-        RetrofitClient.getApi().getDeviceEnergyHistory(deviceId).enqueue(new Callback<EnergyLogResponse>() {
-            @Override
-            public void onResponse(Call<EnergyLogResponse> call, Response<EnergyLogResponse> response) {
-                EnergyLogResponse body = response.body();
-                if (response.isSuccessful() && body != null) {
-                    detailEnergyHistory.setValue(body.getLogs());
-                    finishLoading(deviceId, body.stateOr(null));
-                }
-                else{
-                    finishLoading(deviceId, null);
-                    ApiError error = ApiError.from(response);
-                    if (isDeviceGone(error)) {
-                        scheduleListRefresh();
-                    } else {
-                        showFailure("전력량 로그를 불러오지 못했습니다: ", error);
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(Call<EnergyLogResponse> call, Throwable t) {
-                finishLoading(deviceId, null);
-                showToast("전력량 로그를 불러오지 못했습니다.");
-            }
-        });
     }
 
     private String currentState(String deviceId) {
