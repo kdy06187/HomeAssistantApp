@@ -22,6 +22,11 @@ public final class WifiPasswordStore {
 
     public static WifiPassword read(Context context) {
         boolean stored = STORE.has(context);
+        if (!stored) {
+            // 옮기기가 실패해 평문이 남아 있으면 다음 실행에 옮길 때까지 그 값을 쓴다.
+            SharedPreferences legacy = context.getSharedPreferences(LEGACY_PREFS, Context.MODE_PRIVATE);
+            if (legacy.contains(LEGACY_KEY)) return WifiPassword.of(true, legacy.getString(LEGACY_KEY, ""));
+        }
         return WifiPassword.of(stored, stored ? STORE.load(context) : null);
     }
 

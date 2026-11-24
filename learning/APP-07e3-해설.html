@@ -142,7 +142,7 @@ return OK;</code></pre>
 <section class="card">
   <h2><span class="num">5</span>이해도 질문</h2>
   <ol><li>백업에서 SecretPrefs를 빼지 않으면 새 폰으로 복원했을 때 어떻게 되나?</li><li>옮기기가 실패한 상태에서 기기 등록을 하면 비밀번호는 어디서 오나?</li></ol>
-  <details><summary>정답 보기</summary><ol><li>암호문은 복원되지만 키가 없어 풀 수 없다(UNREADABLE). 빼 두면 처음부터 "저장한 적 없음"이라 안내가 분명하다.</li><li>암호문이 없으니 NONE으로 보고 ""를 보낸다. 평문은 남아 있으므로 다음 실행에 옮겨진다(실패가 계속되면 설정에서 다시 저장하면 됨). Studio에서 확인할 항목이다.</li></ol></details>
+  <details><summary>정답 보기</summary><ol><li>암호문은 복원되지만 키가 없어 풀 수 없다(UNREADABLE). 빼 두면 처음부터 "저장한 적 없음"이라 안내가 분명하다.</li><li>남아 있는 평문에서 읽는다(<code>WifiPasswordStore.read</code>가 암호문이 없을 때 평문을 본다). 다음 실행에 옮겨지면 그때부터 암호문을 쓴다. 이 처리가 없으면 빈 비밀번호가 나가 등록이 실패한다.</li></ol></details>
 </section>
 <section class="card">
   <h2><span class="num">6</span>응용 실습</h2>
