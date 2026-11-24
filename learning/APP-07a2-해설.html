@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-07a-2 해설</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07a-2 해설 — 직접 쓴 색을 토큰·테마 속성으로 바꾸기</h1>
+  <p>ui-1 브랜치 · UI 1차 07a · 2026-11-24 · 07a-1의 토큰을 실제 화면에 연결</p>
+</header>
+
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>전</b>: 레이아웃 11개 파일과 Java 2개 파일에 <code>#333333</code>, <code>Color.parseColor("#4CAF50")</code> 같은 값이 있었다. 다크 모드에서 흰 카드·검은 아이콘이 그대로 남는다. 12·13sp 글자도 있었다.</li>
+    <li><b>후</b>: 레이아웃은 <code>?attr/colorOnSurface</code> 같은 <b>테마 속성</b>, 상태 색은 <code>@color/state_*_fg</code> <b>토큰</b>을 쓴다. Java는 <code>MaterialColors.getColor(view, attr)</code>·<code>ContextCompat.getColor(ctx, R.color.…)</code>로 읽는다. 글자는 모두 14sp 이상.</li>
+    <li><b>지킴이 테스트</b>: <code>HardcodedStyleTest</code>가 레이아웃·아이콘·Java를 읽어 색 값이나 14sp 미만 글자가 다시 들어오면 실패한다.</li>
+  </ul>
+  <div class="table-wrap"><table>
+    <tr><th>원래 값</th><th>뜻</th><th>바꾼 값</th></tr>
+    <tr><td><code>#F3F4F6</code>, <code>#F4F6F8</code></td><td>화면 배경</td><td><code>?android:attr/colorBackground</code></td></tr>
+    <tr><td><code>#FFFFFF</code>, <code>#FAFAFA</code></td><td>카드·하단 탭</td><td><code>?attr/colorSurfaceContainer</code> (+ CardView <code>cardBackgroundColor</code>)</td></tr>
+    <tr><td><code>#333333</code>, <code>#1D1D1D</code></td><td>주 글자</td><td><code>?attr/colorOnSurface</code></td></tr>
+    <tr><td><code>#888888</code>, <code>#555555</code>, <code>#5F6368</code>, <code>#9AA0A6</code>, <code>#CCCCCC</code></td><td>보조 글자·아이콘</td><td><code>?attr/colorOnSurfaceVariant</code></td></tr>
+    <tr><td><code>#E0E0E0</code></td><td>카드 테두리</td><td><code>?attr/colorOutlineVariant</code></td></tr>
+    <tr><td><code>#0066FF</code>, <code>#2196F3</code>, 편집 중 <code>#FF9800</code></td><td>강조</td><td><code>?attr/colorPrimary</code></td></tr>
+    <tr><td><code>#4CAF50</code> / <code>#F44336</code> / <code>#FF9800</code></td><td>연결·오프라인·알 수 없음 글자</td><td><code>@color/state_on_fg</code> / <code>state_offline_fg</code> / <code>state_unknown_fg</code></td></tr>
+    <tr><td>아이콘 <code>android:tint="#000000"</code>, 닫기 <code>#FF0000</code></td><td>벡터 아이콘 6개</td><td><code>?attr/colorOnSurface</code>, 닫기는 <code>?attr/colorError</code></td></tr>
+    <tr><td>차트 선 <code>#4CAF50</code>, 축 글자(라이브러리 기본 검정)</td><td>선 차트</td><td>선 <code>colorPrimary</code>, 축·격자 <code>colorOnSurfaceVariant</code>·<code>colorOutlineVariant</code></td></tr>
+  </table></div>
+</section>
+
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림 — 어디서 색을 읽나</h2>
+  <svg class="flow" viewBox="0 0 760 250" role="img" aria-label="레이아웃과 Java가 테마 속성 또는 토큰에서 색을 읽는 두 갈래">
+    <rect x="10" y="20" width="200" height="54" rx="8"/><text x="110" y="43" text-anchor="middle">레이아웃 XML</text><text class="small" x="110" y="62" text-anchor="middle">?attr/colorOnSurface</text>
+    <rect x="10" y="150" width="200" height="54" rx="8"/><text x="110" y="173" text-anchor="middle">Java (어댑터·차트)</text><text class="small" x="110" y="192" text-anchor="middle">MaterialColors / ContextCompat</text>
+    <rect class="hl" x="290" y="20" width="190" height="54" rx="8"/><text x="385" y="43" text-anchor="middle">테마 속성</text><text class="small" x="385" y="62" text-anchor="middle">위젯 공통 역할(표면·글자)</text>
+    <rect class="hl" x="290" y="150" width="190" height="54" rx="8"/><text x="385" y="173" text-anchor="middle">색 토큰 직접</text><text class="small" x="385" y="192" text-anchor="middle">상태 칩처럼 앱 전용 역할</text>
+    <line x1="210" y1="47" x2="290" y2="47"/><line x1="210" y1="177" x2="290" y2="177"/><path d="M210 170 L250 60 L290 55"/>
+    <rect x="560" y="85" width="190" height="54" rx="8"/><text x="655" y="108" text-anchor="middle">colors.xml</text><text class="small" x="655" y="126" text-anchor="middle">values / values-night</text>
+    <path d="M480 47 L520 47 L520 105 L560 105"/><path d="M480 177 L520 177 L520 120 L560 120"/>
+    <text class="small" x="20" y="235">테마 속성은 "역할", 토큰은 "값". 둘 다 결국 라이트·다크 colors.xml에 닿는다.</text>
+  </svg>
+</section>
+
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+  <h3>① 레이아웃: 값 → 역할</h3>
+  <div class="ba">
+    <div class="before"><div class="label">BEFORE</div><pre><code>android:textSize="12sp"
+android:textColor="#888888"</code></pre></div>
+    <div class="after"><div class="label">AFTER</div><pre><code>android:textSize="14sp"
+android:textColor="?attr/colorOnSurfaceVariant"</code></pre></div>
+  </div>
+  <div class="why">
+    <div><b>왜</b> <code>#888888</code>은 흰 배경에서 대비가 약 3.5:1이라 기준(4.5:1)에 못 미친다. <code>colorOnSurfaceVariant</code>는 라이트 #49454F, 다크 #CAC4D0이라 두 테마 모두 기준을 넘는다(07a-1 테스트).</div>
+  </div>
+
+  <h3>② Java: 뷰가 속한 테마에서 읽기</h3>
+  <div class="ba">
+    <div class="before"><div class="label">BEFORE</div><pre><code>holder.tvDeviceStatus.setTextColor(
+    Color.parseColor("#4CAF50"));</code></pre></div>
+    <div class="after"><div class="label">AFTER</div><pre><code>holder.tvDeviceStatus.setTextColor(
+    ContextCompat.getColor(holder.itemView.getContext(),
+        R.color.state_on_fg));</code></pre></div>
+  </div>
+  <div class="why">
+    <div><b>무엇을</b> <code>ContextCompat.getColor</code>는 지금 설정(다크 여부)에 맞는 <code>colors.xml</code> 값을 준다. 테마 속성은 <code>MaterialColors.getColor(view, R.attr.colorOnSurfaceVariant)</code>로 읽는다.</div>
+    <div><b>주의</b> <code>colorPrimary</code>는 AppCompat이 정의한 속성이라 <code>androidx.appcompat.R.attr.colorPrimary</code>, <code>colorOnSurfaceVariant</code>는 Material이 정의해서 <code>com.google.android.material.R.attr…</code>이다. 라이브러리마다 자기 <code>R</code>이 따로 있다.</div>
+  </div>
+
+  <h3>③ 차트는 테마를 모른다</h3>
+  <pre><code>int labelColor = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurfaceVariant);
+getXAxis().setTextColor(labelColor);
+getAxisLeft().setTextColor(labelColor);
+setNoDataTextColor(labelColor);</code></pre>
+  <div class="why">
+    <div><b>왜</b> MPAndroidChart는 Android 테마를 읽지 않고 축 글자를 검정으로 그린다. 다크 배경에서 축이 사라지므로 직접 넣는다.</div>
+    <div class="drop"><b>빼면</b> 다크 모드에서 차트 축 시간·숫자가 보이지 않는다.</div>
+  </div>
+
+  <h3>④ 지킴이 테스트</h3>
+  <pre><code>Pattern XML_COLOR = Pattern.compile("=\"#[0-9A-Fa-f]{3,8}\"");
+Pattern JAVA_COLOR = Pattern.compile("Color\\.(parseColor|rgb|argb|[A-Z]+\\b)");</code></pre>
+  <div class="why">
+    <div><b>왜</b> 색 값 하나는 리뷰에서 놓치기 쉽다. 파일을 읽는 단위 테스트가 있으면 새 화면(07b~07f)에서 실수해도 바로 빨간불이 켜진다. 런처 아이콘은 브랜드 색이라 뺐다.</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b><code>?attr/…</code></b>: "지금 테마가 정한 값"을 가리키는 참조. <code>@color/…</code>는 색 리소스를 바로 가리킨다.</li>
+    <li><b><code>cardBackgroundColor</code></b>: androidx CardView의 바탕색. 안쪽 레이아웃 바탕만 바꾸면 모서리에 CardView 기본색이 보일 수 있어 함께 정했다.</li>
+    <li><b>sp</b>: 사용자 글꼴 크기 설정을 따르는 글자 단위. 14sp는 본문 최소 크기로 잡았다.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol>
+    <li>상태 글자색은 왜 테마 속성이 아니라 <code>@color/state_on_fg</code> 토큰을 직접 쓸까?</li>
+    <li>벡터 아이콘의 <code>android:tint="?attr/colorOnSurface"</code>는 왜 minSdk 26에서 문제없이 동작할까?</li>
+    <li><code>HardcodedStyleTest</code>가 있는데도 Studio 화면 확인이 필요한 이유는?</li>
+  </ol>
+  <details><summary>정답 보기</summary>
+    <ol>
+      <li>Material 3에는 "켜짐 초록" 같은 역할이 없다. 앱만의 역할이라 토큰으로 둔다(라이트·다크 값은 토큰 파일이 고른다).</li>
+      <li>벡터 드로어블의 테마 속성 tint는 Android 7.0(API 24)부터 지원된다. 최소 버전이 8.0이라 안전하다.</li>
+      <li>테스트는 "직접 쓴 값이 없다"만 안다. 실제 겹침·그림자·라이브러리 기본색(예: 대화상자, 스피너)은 화면에서 봐야 한다.</li>
+    </ol>
+  </details>
+</section>
+
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <p>새 브랜치에서 한다.</p>
+  <h3>실습 1. 지킴이 테스트 깨 보기</h3>
+  <ul>
+    <li><b>목표</b>: <code>item_device.xml</code>의 이름 글자색을 <code>#333333</code>으로 되돌리고 테스트를 돌린다.</li>
+    <li><b>완료 기준</b>: <code>layouts_useTokensInsteadOfColorValues</code>가 파일 이름과 값을 보여 주며 실패한다. 되돌리면 통과.</li>
+  </ul>
+  <h3>실습 2. 차트 선 색을 상태 초록으로</h3>
+  <ul>
+    <li><b>목표</b>: <code>EnergyLineChartView</code>의 선 색을 <code>R.color.state_on_fg</code>로 바꿔 본다.</li>
+    <li><b>고칠 파일</b>: <code>EnergyLineChartView.java</code></li>
+  </ul>
+  <details><summary>정답</summary><pre><code>dataSet.setColor(ContextCompat.getColor(getContext(), R.color.state_on_fg));</code></pre>
+  import 두 줄(<code>androidx.core.content.ContextCompat</code>, <code>com.example.homeassistantapp.R</code>)이 필요하다.</details>
+</section>
+</main>
+</body>
+</html>

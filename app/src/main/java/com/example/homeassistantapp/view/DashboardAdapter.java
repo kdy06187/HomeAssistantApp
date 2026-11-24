@@ -2,7 +2,6 @@ package com.example.homeassistantapp.view;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +12,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.R;
+import com.google.android.material.color.MaterialColors;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -63,7 +64,7 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
         boolean isEditing = editingDeviceIds.contains(device.getId());
         holder.widgetAdapter.setEditMode(isEditing);
         if (isEditing) {
-            holder.btnEditWidgets.setColorFilter(Color.parseColor("#FF9800"));
+            holder.btnEditWidgets.setColorFilter(MaterialColors.getColor(holder.itemView, androidx.appcompat.R.attr.colorPrimary));
         } else {
             holder.btnEditWidgets.clearColorFilter();
         }
@@ -86,12 +87,12 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
 
         if ("TEMP_PAIRING".equals(device.getId()) || device.isPairing()) {
             holder.tvDeviceStatus.setText("페어링중");
-            holder.tvDeviceStatus.setTextColor(Color.parseColor("#888888"));
+            holder.tvDeviceStatus.setTextColor(MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurfaceVariant));
             holder.widgetContainer.setVisibility(View.GONE);
             holder.itemView.setAlpha(0.5f);
 
         } else if ("LOADING".equals(status)) {
-            holder.tvDeviceStatus.setTextColor(Color.parseColor("#888888"));
+            holder.tvDeviceStatus.setTextColor(MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurfaceVariant));
             holder.pbDeviceLoading.setVisibility(View.VISIBLE);
             holder.btnRefreshStatus.setEnabled(false); // 로딩 중 중복 클릭 방지
             holder.itemView.setAlpha(0.7f);
@@ -100,15 +101,15 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
             holder.widgetContainer.setVisibility(View.VISIBLE);
             switch (DeviceStateLabel.kindOf(status)) {
                 case CONNECTED:
-                    holder.tvDeviceStatus.setTextColor(Color.parseColor("#4CAF50"));
+                    holder.tvDeviceStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.state_on_fg));
                     holder.itemView.setAlpha(1.0f);
                     break;
                 case OFFLINE:
-                    holder.tvDeviceStatus.setTextColor(Color.parseColor("#F44336"));
+                    holder.tvDeviceStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.state_offline_fg));
                     holder.itemView.setAlpha(0.5f);
                     break;
                 default:
-                    holder.tvDeviceStatus.setTextColor(Color.parseColor("#FF9800"));
+                    holder.tvDeviceStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.state_unknown_fg));
                     holder.itemView.setAlpha(0.8f);
                     break;
             }

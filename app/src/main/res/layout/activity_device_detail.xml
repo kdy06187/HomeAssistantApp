@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F3F4F6"
+    android:background="?android:attr/colorBackground"
     android:padding="16dp">
 
     <!-- 상단 타이틀 영역 -->
@@ -30,21 +30,22 @@
             android:text="기기 이름"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:textColor="#333333" />
+            android:textColor="?attr/colorOnSurface" />
     </LinearLayout>
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         app:cardCornerRadius="12dp"
-        app:cardElevation="1dp">
+        app:cardElevation="1dp"
+        app:cardBackgroundColor="?attr/colorSurfaceContainer">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp"
-            android:background="#FAFAFA">
+            android:background="?attr/colorSurfaceContainer">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -52,7 +53,7 @@
                 android:text="네트워크 및 기기 정보"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:textColor="#555555"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginBottom="12dp" />
 
             <TextView
@@ -61,7 +62,7 @@
                 android:layout_height="wrap_content"
                 android:text="프로토콜: -"
                 android:textSize="14sp"
-                android:textColor="#333333"
+                android:textColor="?attr/colorOnSurface"
                 android:layout_marginBottom="4dp" />
 
             <TextView
@@ -70,7 +71,7 @@
                 android:layout_height="wrap_content"
                 android:text="연결 상태: 확인 중..."
                 android:textSize="14sp"
-                android:textColor="#4CAF50" />
+                android:textColor="@color/state_on_fg" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
     <!-- 🌟 전력량 차트 영역 (카드 뷰 안에서 300dp로 큼직하게 렌더링) -->
@@ -78,7 +79,8 @@
         android:layout_width="match_parent"
         android:layout_height="300dp"
         app:cardCornerRadius="16dp"
-        app:cardElevation="2dp">
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="?attr/colorSurfaceContainer">
 
         <!-- 본인의 패키지명으로 꼭 수정해 주세요! -->
         <com.example.homeassistantapp.view.EnergyLineChartView

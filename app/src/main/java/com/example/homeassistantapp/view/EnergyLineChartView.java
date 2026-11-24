@@ -1,10 +1,10 @@
 package com.example.homeassistantapp.view;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.util.AttributeSet;
 
 import com.example.homeassistantapp.dto.EnergyLog;
+import com.google.android.material.color.MaterialColors;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.LineData;
@@ -37,6 +37,16 @@ public class EnergyLineChartView extends LineChart {
         getXAxis().setDrawGridLines(false);
         getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
         setTouchEnabled(true);
+
+        // 차트 라이브러리는 테마를 모르므로 축 글자·격자·안내 문구 색을 직접 넣는다.
+        int labelColor = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurfaceVariant);
+        int gridColor = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOutlineVariant);
+        getXAxis().setTextColor(labelColor);
+        getXAxis().setAxisLineColor(gridColor);
+        getAxisLeft().setTextColor(labelColor);
+        getAxisLeft().setAxisLineColor(gridColor);
+        getAxisLeft().setGridColor(gridColor);
+        setNoDataTextColor(labelColor);
     }
     public void setEnergyData(List<EnergyLog> rawLogs) {
         List<Entry> entries = new ArrayList<>();
@@ -61,7 +71,7 @@ public class EnergyLineChartView extends LineChart {
         }
 
         LineDataSet dataSet = new LineDataSet(entries, "구간 사용량 (mWh)");
-        dataSet.setColor(Color.parseColor("#4CAF50"));
+        dataSet.setColor(MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary));
         dataSet.setLineWidth(2.5f);
         dataSet.setDrawCircles(false);
         dataSet.setMode(LineDataSet.Mode.LINEAR);

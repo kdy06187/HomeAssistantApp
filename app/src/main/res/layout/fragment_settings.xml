@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F4F6F8"> <!-- 상용 앱 특유의 차분한 라이트 그레이 배경 -->
+    android:background="?android:attr/colorBackground">
 
     <!-- 상단 앱바 (타이틀) -->
     <com.google.android.material.appbar.AppBarLayout
@@ -17,7 +17,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="설정"
-            app:titleTextColor="#1D1D1D" />
+            app:titleTextColor="?attr/colorOnSurface" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -40,8 +40,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="로컬 서버 연결"
-                android:textColor="#5F6368"
-                android:textSize="13sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 android:layout_marginStart="4dp"
                 android:layout_marginBottom="8dp"/>
@@ -52,14 +52,14 @@
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="#E0E0E0"
+                app:strokeColor="?attr/colorOutlineVariant"
                 android:layout_marginBottom="28dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:background="#FFFFFF"
+                    android:background="?attr/colorSurfaceContainer"
                     android:padding="20dp">
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -82,7 +82,7 @@
 
                             android:drawableStart="@drawable/ic_router"
                             android:drawablePadding="12dp"
-                            android:drawableTint="#9AA0A6"/>
+                            android:drawableTint="?attr/colorOnSurfaceVariant"/>
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -105,7 +105,7 @@
                             android:maxLines="1"
                             android:drawableStart="@drawable/ic_settings"
                             android:drawablePadding="12dp"
-                            android:drawableTint="#9AA0A6"/>
+                            android:drawableTint="?attr/colorOnSurfaceVariant"/>
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <!-- 힌트는 토큰 저장 여부에 따라 SettingsFragment가 바꾼다. 값은 가리고 눈 아이콘으로만 확인한다. -->
@@ -131,7 +131,7 @@
                             android:maxLines="1"
                             android:drawableStart="@drawable/ic_lock"
                             android:drawablePadding="12dp"
-                            android:drawableTint="#9AA0A6"/>
+                            android:drawableTint="?attr/colorOnSurfaceVariant"/>
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -143,8 +143,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="기기 등록 네트워크 (2.4GHz 권장)"
-                android:textColor="#5F6368"
-                android:textSize="13sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 android:layout_marginStart="4dp"
                 android:layout_marginBottom="8dp"/>
@@ -155,14 +155,14 @@
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="#E0E0E0"
+                app:strokeColor="?attr/colorOutlineVariant"
                 android:layout_marginBottom="32dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:background="#FFFFFF"
+                    android:background="?attr/colorSurfaceContainer"
                     android:padding="20dp">
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -183,7 +183,7 @@
                             android:maxLines="1"
                             android:drawableStart="@drawable/ic_wifi"
                             android:drawablePadding="12dp"
-                            android:drawableTint="#9AA0A6"/>
+                            android:drawableTint="?attr/colorOnSurfaceVariant"/>
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -206,7 +206,7 @@
                             android:maxLines="1"
                             android:drawableStart="@drawable/ic_lock"
                             android:drawablePadding="12dp"
-                            android:drawableTint="#9AA0A6"/>
+                            android:drawableTint="?attr/colorOnSurfaceVariant"/>
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -220,7 +220,7 @@
                 android:textSize="16sp"
                 android:textStyle="bold"
                 app:cornerRadius="14dp"
-                app:backgroundTint="#0066FF" /> <!-- 상용 앱에서 자주 쓰는 신뢰감 있는 블루 -->
+                app:backgroundTint="?attr/colorPrimary" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

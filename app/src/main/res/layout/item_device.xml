@@ -20,7 +20,7 @@
             android:text="기기 이름"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="#333333" />
+            android:textColor="?attr/colorOnSurface" />
 
         <TextView
             android:id="@+id/tvDeviceType"
@@ -29,7 +29,7 @@
             android:layout_marginTop="4dp"
             android:text="MATTER / TCP_DIY"
             android:textSize="14sp"
-            android:textColor="#888888" />
+            android:textColor="?attr/colorOnSurfaceVariant" />
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="16dp"
@@ -45,5 +45,5 @@
         android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
         android:src="@android:drawable/ic_media_next"
-        app:tint="#CCCCCC" />
+        app:tint="?attr/colorOnSurfaceVariant" />
 </RelativeLayout>

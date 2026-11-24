@@ -19,7 +19,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="15.0 W"
-        android:textColor="#2196F3"
+        android:textColor="?attr/colorPrimary"
         android:textStyle="bold"
         android:layout_marginEnd="8dp"/>
     <ImageView
@@ -30,7 +30,7 @@
         android:clickable="true"
         android:focusable="true"
         android:src="@android:drawable/ic_popup_sync"
-        app:tint="#888888" />
+        app:tint="?attr/colorOnSurfaceVariant" />
     <ImageButton
         android:id="@+id/btnDeleteWidget"
         android:layout_width="32dp"

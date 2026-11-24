@@ -5,13 +5,14 @@
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
     app:cardCornerRadius="16dp"
-    app:cardElevation="2dp">
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="?attr/colorSurfaceContainer">
 
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp"
-        android:background="#FFFFFF">
+        android:background="?attr/colorSurfaceContainer">
 
         <!-- 좌측 상단: 기기 아이콘 -->
         <ImageView
@@ -19,7 +20,7 @@
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:src="@android:drawable/ic_dialog_info"
-            app:tint="#4CAF50" />
+            app:tint="@color/state_on_fg" />
 
         <!-- 🌟 우측 상단: 직관적인 ON/OFF 토글 스위치 -->
         <androidx.appcompat.widget.SwitchCompat
@@ -39,7 +40,7 @@
             android:text="거실 조명"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="#333333" />
+            android:textColor="?attr/colorOnSurface" />
 
         <!-- 기기 이름 아래: 상태 표시 (예: 켜짐/꺼짐) -->
         <TextView
@@ -49,8 +50,8 @@
             android:layout_below="@id/tvDashboardDeviceName"
             android:layout_marginTop="4dp"
             android:text="꺼짐"
-            android:textSize="12sp"
-            android:textColor="#888888" />
+            android:textSize="14sp"
+            android:textColor="?attr/colorOnSurfaceVariant" />
 
     </RelativeLayout>
 </androidx.cardview.widget.CardView>
