@@ -1,26 +1,25 @@
 package com.example.homeassistantapp.viewmodel;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
 public class PowerOffRecheckTest {
 
     @Test
-    public void successfulOff_rechecks() {
-        assertTrue(PowerOffRecheck.shouldRecheck("OFF", true));
+    public void delay_isServerSecondsPlusFiveSeconds() {
+        assertEquals(50_000L, PowerOffRecheck.delayMs(45));
+        assertEquals(15_000L, PowerOffRecheck.delayMs(10));
     }
 
     @Test
-    public void onOrFailed_doesNotRecheck() {
-        assertFalse(PowerOffRecheck.shouldRecheck("ON", true));
-        assertFalse(PowerOffRecheck.shouldRecheck("OFF", false));
-        assertFalse(PowerOffRecheck.shouldRecheck(null, true));
+    public void zeroDelay_stillWaitsMargin() {
+        assertEquals(5_000L, PowerOffRecheck.delayMs(0));
     }
 
     @Test
-    public void delay_isLongerThanServerPowerCut() {
-        assertTrue(PowerOffRecheck.DELAY_MS > 45_000L);
+    public void missingOrNegativeDelay_usesFallback() {
+        assertEquals(50_000L, PowerOffRecheck.delayMs(null));
+        assertEquals(50_000L, PowerOffRecheck.delayMs(-3));
     }
 }

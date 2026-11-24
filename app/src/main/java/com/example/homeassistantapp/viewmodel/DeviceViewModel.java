@@ -19,6 +19,7 @@ import com.example.homeassistantapp.dto.DeviceStateResponse;
 import com.example.homeassistantapp.dto.EnergyLog;
 import com.example.homeassistantapp.dto.EnergyLogResponse;
 import com.example.homeassistantapp.dto.EnergyResponse;
+import com.example.homeassistantapp.network.ApiError;
 import com.example.homeassistantapp.network.ErrorMessages;
 import com.example.homeassistantapp.network.RetrofitClient;
 
@@ -43,7 +44,7 @@ public class DeviceViewModel extends ViewModel {
 
     private final PendingStates pendingStates = new PendingStates();
 
-    // OFF 뒤 상태 재확인 예약. 기기별로 하나만 둔다.
+    // 지연 수락(202) 뒤 상태 재확인 예약. 기기별로 하나만 둔다.
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final Map<String, Runnable> pendingRechecks = new HashMap<>();
 
@@ -52,14 +53,14 @@ public class DeviceViewModel extends ViewModel {
         if (pending != null) mainHandler.removeCallbacks(pending);
     }
 
-    private void scheduleRecheck(String deviceId) {
+    private void scheduleRecheck(String deviceId, long delayMs) {
         cancelRecheck(deviceId);
         Runnable recheck = () -> {
             pendingRechecks.remove(deviceId);
             syncDeviceState(deviceId, true); // true: 서버 저장값이 아니라 기기에 직접 조회
         };
         pendingRechecks.put(deviceId, recheck);
-        mainHandler.postDelayed(recheck, PowerOffRecheck.DELAY_MS);
+        mainHandler.postDelayed(recheck, delayMs);
     }
 
     @Override
@@ -74,8 +75,13 @@ public class DeviceViewModel extends ViewModel {
     }
 
     private void showFailure(String prefix, Response<?> response) {
-        if (ErrorMessages.isUnauthorized(response.code())) return;
-        showToast(prefix + ErrorMessages.describe(response));
+        showFailure(prefix, ApiError.from(response));
+    }
+
+    /** 응답 본문을 이미 읽었으면 이쪽을 쓴다(errorBody는 한 번만 읽힌다). */
+    private void showFailure(String prefix, ApiError error) {
+        if (ErrorMessages.isUnauthorized(error.httpCode)) return;
+        showToast(prefix + ErrorMessages.describe(error));
     }
 
     private void beginLoading(String deviceId) {
@@ -123,16 +129,30 @@ public class DeviceViewModel extends ViewModel {
             @Override
             public void onResponse(Call<ControlResponse> call, Response<ControlResponse> response) {
                 ControlResponse body = response.body();
-                if (response.isSuccessful()) {
-                    showToast("명령 성공!");
-                    finishLoading(targetId, body != null ? body.state : null);
-                    if (PowerOffRecheck.shouldRecheck(command, true)) {
-                        scheduleRecheck(targetId);
-                    }
-                } else {
-                    // 실패면 요청 전 상태로 되돌린다. 401 이동은 UnauthorizedInterceptor가 맡는다.
-                    finishLoading(targetId, null);
-                    showFailure("제어 실패: ", response);
+                ApiError error = response.isSuccessful() ? null : ApiError.from(response);
+                ControlOutcome outcome = ControlOutcome.of(response.code(), error);
+                switch (outcome) {
+                    case DONE:
+                        showToast("명령 성공!");
+                        finishLoading(targetId, body != null ? body.state : null);
+                        break;
+                    case ACCEPTED:
+                        // state는 바뀌기 전 상태다. 실제 결과는 응답으로 오지 않아 나중에 E5로 확인한다.
+                        Integer delay = body != null ? body.delaySeconds : null;
+                        showToast(ControlOutcome.acceptedMessage(body != null ? body.pendingCommand : null, delay));
+                        finishLoading(targetId, body != null ? body.state : null);
+                        scheduleRecheck(targetId, PowerOffRecheck.delayMs(delay));
+                        break;
+                    case DEVICE_GONE:
+                        finishLoading(targetId, null);
+                        showFailure("제어 실패: ", error);
+                        fetchDevices();
+                        break;
+                    default:
+                        // 401 이동은 UnauthorizedInterceptor가 맡는다.
+                        finishLoading(targetId, outcome.failedState());
+                        showFailure("제어 실패: ", error);
+                        break;
                 }
             }
 
