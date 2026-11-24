@@ -51,6 +51,11 @@ public class RetrofitClient {
         unauthorizedNotice.reset();
     }
 
+    /** 마지막으로 설정을 저장한 뒤 401을 받은 적 있으면 true. 설정 화면이 토큰 칸에 오류를 보인다. */
+    public static boolean hadUnauthorizedSinceSave() {
+        return unauthorizedNotice.isShown();
+    }
+
     private static void notifyUnauthorized() {
         if (!unauthorizedNotice.tryClaim()) return;
         unauthorizedPending.set(true);

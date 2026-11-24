@@ -14,6 +14,10 @@ final class UnauthorizedNotice {
         return shown.compareAndSet(false, true);
     }
 
+    boolean isShown() {
+        return shown.get();
+    }
+
     void reset() {
         shown.set(false);
     }
