@@ -1,7 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.HomeAssistantApp" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+    <!-- 다크: 상태 바 아이콘을 밝게. 색 역할 연결은 values/themes.xml 한 곳에 있다. -->
+    <style name="Platform.Theme.HomeAssistantApp" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

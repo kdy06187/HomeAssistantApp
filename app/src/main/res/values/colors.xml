@@ -2,4 +2,40 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- 라이트 테마 색 토큰. values-night/colors.xml과 이름이 같아야 한다. -->
+    <color name="color_surface">#FFFEF7FF</color>
+    <color name="color_surface_container">#FFF3EDF7</color>
+    <color name="color_surface_container_high">#FFECE6F0</color>
+    <color name="color_on_surface">#FF1D1B20</color>
+    <color name="color_on_surface_variant">#FF49454F</color>
+    <color name="color_outline">#FF79747E</color>
+    <color name="color_divider">#FFCAC4D0</color>
+
+    <color name="color_primary">#FF0B57D0</color>
+    <color name="color_on_primary">#FFFFFFFF</color>
+    <color name="color_primary_container">#FFD3E3FD</color>
+    <color name="color_on_primary_container">#FF041E49</color>
+
+    <color name="color_error">#FFB3261C</color>
+    <color name="color_on_error">#FFFFFFFF</color>
+    <color name="color_error_container">#FFF9DEDC</color>
+    <color name="color_on_error_container">#FF8C1D18</color>
+
+    <color name="color_warning_container">#FFFFDF9E</color>
+    <color name="color_on_warning_container">#FF5C4300</color>
+
+    <color name="color_inverse_surface">#FF322F35</color>
+    <color name="color_inverse_on_surface">#FFF5EFF7</color>
+    <color name="color_inverse_primary">#FFA8C7FA</color>
+
+    <!-- 기기 상태 칩: 배경(bg) + 글자(fg) 쌍 -->
+    <color name="state_on_bg">#FFC4EED0</color>
+    <color name="state_on_fg">#FF0D652D</color>
+    <color name="state_off_bg">#FFE3E3E3</color>
+    <color name="state_off_fg">#FF444746</color>
+    <color name="state_offline_bg">#FFF9DEDC</color>
+    <color name="state_offline_fg">#FF8C1D18</color>
+    <color name="state_unknown_bg">#FFFFDF9E</color>
+    <color name="state_unknown_fg">#FF5C4300</color>
 </resources>
