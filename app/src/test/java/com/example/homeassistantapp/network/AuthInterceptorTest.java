@@ -1,10 +1,13 @@
 package com.example.homeassistantapp.network;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import okhttp3.MediaType;
@@ -47,6 +50,45 @@ public class AuthInterceptorTest {
     public void tokenMissing_omitsAuthorizationHeader() throws Exception {
         assertNull(send(null).header("Authorization"));
         assertNull(send("").header("Authorization"));
+    }
+
+    @Test
+    public void tokenWithNewline_returns401WithoutCrashingOrSending() throws Exception {
+        AtomicBoolean reachedServer = new AtomicBoolean(false);
+        AtomicInteger unauthorizedCalls = new AtomicInteger();
+        // RetrofitClient와 같은 순서: 401 감시가 바깥, 토큰 헤더가 안쪽
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new UnauthorizedInterceptor(unauthorizedCalls::incrementAndGet))
+                .addInterceptor(new AuthInterceptor(() -> "test-token\nabc"))
+                .addInterceptor(chain -> {
+                    reachedServer.set(true);
+                    return new Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1)
+                            .code(200).message("OK")
+                            .body(ResponseBody.create(MediaType.get("application/json"), "{}")).build();
+                })
+                .build();
+
+        Response response = client.newCall(
+                new Request.Builder().url("http://localhost:8000/api/devices").build()).execute();
+
+        assertEquals(401, response.code());
+        assertEquals(AuthInterceptor.INVALID_TOKEN_BODY, response.body().string());
+        assertEquals(1, unauthorizedCalls.get());
+        assertFalse(reachedServer.get());
+    }
+
+    @Test
+    public void tokenWithNonAscii_returns401() throws Exception {
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new AuthInterceptor(() -> "토큰"))
+                .addInterceptor(chain -> {
+                    throw new AssertionError("서버로 보내면 안 된다");
+                })
+                .build();
+        Response response = client.newCall(
+                new Request.Builder().url("http://localhost:8000/api/devices").build()).execute();
+        assertEquals(401, response.code());
+        response.close();
     }
 
     @Test
