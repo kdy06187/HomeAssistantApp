@@ -33,6 +33,17 @@ public class Device {
         return totalEnergyKwh;
     }
 
+    // 보낸 제어 명령("ON"/"OFF"). 응답이 올 때까지 스위치를 이 값에 두고 잠근다.
+    private transient String pendingCommand;
+
+    public String getPendingCommand() {
+        return pendingCommand;
+    }
+
+    public void setPendingCommand(String pendingCommand) {
+        this.pendingCommand = pendingCommand;
+    }
+
     public void setEnergy(Double activePowerW, Double totalEnergyKwh) {
         this.activePowerW = activePowerW;
         this.totalEnergyKwh = totalEnergyKwh;

@@ -78,4 +78,17 @@ public class PendingStatesTest {
         assertEquals("OFF", states.finish("B", null));
         assertEquals("ON", states.finish("A", null));
     }
+
+    @Test
+    public void isPending_untilLastRequestEnds() {
+        PendingStates states = new PendingStates();
+        org.junit.Assert.assertFalse(states.isPending("A"));
+        states.begin("A", "ON");
+        states.begin("A", PendingStates.LOADING);
+        org.junit.Assert.assertTrue(states.isPending("A"));
+        states.finish("A", null);
+        org.junit.Assert.assertTrue(states.isPending("A"));
+        states.finish("A", null);
+        org.junit.Assert.assertFalse(states.isPending("A"));
+    }
 }

@@ -2,6 +2,7 @@ package com.example.homeassistantapp.view;
 
 import com.example.homeassistantapp.dto.Device;
 
+import java.util.List;
 import java.util.Locale;
 
 /** 홈 타일 하나에 보일 값. Android 없이 기기 값만으로 정해 단위 테스트한다. */
@@ -41,12 +42,21 @@ public final class HomeTile {
             return;
         }
 
-        chipText = kind.text;
-        tone = kind.tone;
+        String pending = device.getPendingCommand();
+        if (pending != null) {
+            // 응답이 올 때까지 사용자가 고른 위치에 두고 잠근다(되돌아갔다 다시 바뀌는 깜빡임 방지).
+            chipText = "ON".equals(pending) ? "켜는 중…" : "끄는 중…";
+            tone = DeviceStateLabel.Tone.WARNING;
+            switchChecked = "ON".equals(pending);
+            switchEnabled = false;
+        } else {
+            chipText = kind.text;
+            tone = kind.tone;
+            switchChecked = kind == DeviceStateLabel.Kind.ON;
+            switchEnabled = kind.canToggle;
+        }
         switchVisible = true;
-        switchChecked = kind == DeviceStateLabel.Kind.ON;
-        switchEnabled = kind.canToggle;
-        showsRefresh = false;
+        showsRefresh = pending == null && kind == DeviceStateLabel.Kind.UNKNOWN;
         showsPower = matter;
         powerText = matter && kind == DeviceStateLabel.Kind.ON ? watts(device.getActivePowerW()) : NO_VALUE;
         if (kind == DeviceStateLabel.Kind.OFFLINE) {
@@ -61,6 +71,11 @@ public final class HomeTile {
 
     public static HomeTile of(Device device) {
         return new HomeTile(device);
+    }
+
+    /** 목록을 받았는데 기기가 하나도 없을 때만 빈 화면. 아직 못 받았으면(null) 빈 화면을 보이지 않는다. */
+    public static boolean isEmptyHome(List<Device> devices) {
+        return devices != null && devices.isEmpty();
     }
 
     static String watts(Double value) {

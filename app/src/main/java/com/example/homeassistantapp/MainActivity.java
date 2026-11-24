@@ -16,8 +16,10 @@ import com.example.homeassistantapp.fragment.SettingsFragment;
 import com.example.homeassistantapp.network.RetrofitClient;
 import com.example.homeassistantapp.network.ServerDefaults;
 import com.example.homeassistantapp.security.TokenStore;
+import com.example.homeassistantapp.viewmodel.ControlFailure;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.snackbar.Snackbar;
 
 public class MainActivity extends AppCompatActivity {
     @Override
@@ -70,6 +72,16 @@ public class MainActivity extends AppCompatActivity {
             if (message != null) {
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
             }
+        });
+
+        // 제어 실패는 누른 자리 가까이(하단 탭 위)에 Snackbar로 보이고 같은 명령을 다시 보낼 수 있게 한다.
+        viewModel.getControlFailure().observe(this, event -> {
+            ControlFailure failure = event != null ? event.takeIfNotHandled() : null;
+            if (failure == null) return;
+            Snackbar.make(findViewById(R.id.fragmentContainer), failure.message, Snackbar.LENGTH_LONG)
+                    .setAnchorView(bottomNav)
+                    .setAction("다시 시도", v -> viewModel.controlDevice(failure.deviceId, failure.command))
+                    .show();
         });
 
         viewModel.getDeleteWarning().observe(this, event -> {

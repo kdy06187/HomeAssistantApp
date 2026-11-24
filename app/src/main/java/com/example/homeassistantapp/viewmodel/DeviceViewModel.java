@@ -50,6 +50,10 @@ public class DeviceViewModel extends ViewModel {
 
     private final PendingStates pendingStates = new PendingStates();
 
+    // 제어 실패. 토스트 대신 MainActivity가 Snackbar + "다시 시도"로 보인다.
+    private final MutableLiveData<OneTimeEvent<ControlFailure>> controlFailure = new MutableLiveData<>();
+    public LiveData<OneTimeEvent<ControlFailure>> getControlFailure() { return controlFailure; }
+
     // 등록 작업 폴링 상태. 메인 스레드에서만 바뀐다.
     private final MutableLiveData<Boolean> commissioning = new MutableLiveData<>(false);
     private Device pairingDevice;
@@ -160,6 +164,7 @@ public class DeviceViewModel extends ViewModel {
 
     public void controlDevice(String targetId, String command) {
         cancelRecheck(targetId);
+        updateDevice(targetId, device -> device.setPendingCommand(command));
         beginLoading(targetId);
 
         ControlRequest request = new ControlRequest(targetId, command);
@@ -169,6 +174,7 @@ public class DeviceViewModel extends ViewModel {
                 ControlResponse body = response.body();
                 ApiError error = response.isSuccessful() ? null : ApiError.from(response);
                 ControlOutcome outcome = ControlOutcome.of(response.code(), error);
+                updateDevice(targetId, device -> device.setPendingCommand(null));
                 switch (outcome) {
                     case DONE:
                         showToast("명령 성공!");
@@ -187,19 +193,27 @@ public class DeviceViewModel extends ViewModel {
                         scheduleListRefresh();
                         break;
                     default:
-                        // 401 이동은 UnauthorizedInterceptor가 맡는다.
                         finishLoading(targetId, outcome.failedState());
-                        showFailure("제어 실패: ", error);
+                        // 401 이동은 UnauthorizedInterceptor가 맡는다.
+                        if (!ErrorMessages.isUnauthorized(error.httpCode)) {
+                            reportControlFailure(targetId, command, ErrorMessages.describe(error));
+                        }
                         break;
                 }
             }
 
             @Override
             public void onFailure(Call<ControlResponse> call, Throwable t) {
+                updateDevice(targetId, device -> device.setPendingCommand(null));
                 finishLoading(targetId, null);
-                showToast("제어 에러: " + t.getMessage());
+                reportControlFailure(targetId, command, ControlFailure.UNREACHABLE_SERVER);
             }
         });
+    }
+
+    private void reportControlFailure(String deviceId, String command, String reason) {
+        controlFailure.setValue(new OneTimeEvent<>(
+                new ControlFailure(deviceId, currentName(deviceId), command, reason)));
     }
 
     /** 등록 작업이 진행 중이면 true. 기기 추가 버튼을 잠그는 데 쓴다(서버도 동시에 1개만 받는다). */
@@ -392,8 +406,7 @@ public class DeviceViewModel extends ViewModel {
         });
     }
     public void fetchDeviceEnergy(String deviceId) {
-        // 대시보드가 화면에 돌아올 때마다 자동으로 부르므로 진행·완료 토스트는 띄우지 않는다.
-        beginLoading(deviceId);
+        // 홈에 들어올 때마다 자동으로 부르므로 LOADING으로 바꾸지 않고(타일이 깜빡이지 않게) 토스트도 띄우지 않는다.
         RetrofitClient.getApi().getDeviceEnergy(deviceId).enqueue(new Callback<EnergyResponse>() {
             @Override
             public void onResponse(Call<EnergyResponse> call, Response<EnergyResponse> response) {
@@ -405,15 +418,17 @@ public class DeviceViewModel extends ViewModel {
 
                     String powerText = String.format("실시간: %.1f W / 누적: %.4f kWh", currentPowerW, totalEnergyKwh);
 
+                    String state = response.body().state;
+                    pendingStates.remember(deviceId, state);
                     updateDevice(deviceId, device -> {
                         device.setPowerInfo(powerText);
                         device.setEnergy(currentPowerW, totalEnergyKwh);
+                        // 제어 등 다른 요청이 진행 중이면 그 결과가 상태를 정한다.
+                        if (state != null && !pendingStates.isPending(deviceId)) device.setState(state);
                     });
-                    finishLoading(deviceId, response.body().state);
 
                 } else {
                     // 실패는 기기가 꺼졌다는 뜻이 아니다(502도 서버 상태는 그대로). 상태는 그대로 둔다.
-                    finishLoading(deviceId, null);
                     ApiError error = ApiError.from(response);
                     if (isDeviceGone(error)) {
                         scheduleListRefresh();
@@ -425,7 +440,6 @@ public class DeviceViewModel extends ViewModel {
 
             @Override
             public void onFailure(Call<EnergyResponse> call, Throwable t) {
-                finishLoading(deviceId, null);
                 showToast("통신 실패: " + t.getMessage());
             }
         });
@@ -469,6 +483,15 @@ public class DeviceViewModel extends ViewModel {
             if (deviceId.equals(device.getId())) {
                 return device.getState();
             }
+        }
+        return null;
+    }
+
+    private String currentName(String deviceId) {
+        List<Device> currentList = deviceList.getValue();
+        if (currentList == null) return null;
+        for (Device device : currentList) {
+            if (deviceId.equals(device.getId())) return device.getName();
         }
         return null;
     }

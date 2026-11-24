@@ -75,4 +75,48 @@ public class HomeTileTest {
         assertFalse(tile.opensDetail);
         assertEquals("등록 중…", tile.chipText);
     }
+
+    @Test
+    public void turningOn_keepsRequestedPositionAndLocks() {
+        Device d = device("MATTER", "LOADING");
+        d.setPendingCommand("ON");
+        HomeTile tile = HomeTile.of(d);
+        assertTrue(tile.switchChecked);
+        assertFalse(tile.switchEnabled);
+        assertEquals("켜는 중…", tile.chipText);
+        assertEquals(DeviceStateLabel.Tone.WARNING, tile.tone);
+        assertFalse(tile.showsRefresh);
+    }
+
+    @Test
+    public void turningOff_showsTurningOff() {
+        Device d = device("TCP_DIY", "LOADING");
+        d.setPendingCommand("OFF");
+        HomeTile tile = HomeTile.of(d);
+        assertFalse(tile.switchChecked);
+        assertFalse(tile.switchEnabled);
+        assertEquals("끄는 중…", tile.chipText);
+    }
+
+    @Test
+    public void unknown_showsRefreshButton() {
+        HomeTile tile = HomeTile.of(device("MATTER", "UNKNOWN"));
+        assertTrue(tile.showsRefresh);
+        assertFalse(tile.switchEnabled);
+        assertEquals("알 수 없음", tile.chipText);
+    }
+
+    @Test
+    public void loadingAndKnownStates_haveNoRefreshButton() {
+        assertFalse(HomeTile.of(device("MATTER", "LOADING")).showsRefresh);
+        assertFalse(HomeTile.of(device("MATTER", "ON")).showsRefresh);
+        assertFalse(HomeTile.of(device("MATTER", "OFFLINE")).showsRefresh);
+    }
+
+    @Test
+    public void emptyHome_onlyWhenListArrivedEmpty() {
+        assertTrue(HomeTile.isEmptyHome(new java.util.ArrayList<>()));
+        assertFalse(HomeTile.isEmptyHome(null));
+        assertFalse(HomeTile.isEmptyHome(java.util.Collections.singletonList(DeviceOrderTest.pairing())));
+    }
 }

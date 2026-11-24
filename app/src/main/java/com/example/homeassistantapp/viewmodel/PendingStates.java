@@ -36,6 +36,11 @@ final class PendingStates {
         return lastKnown.get(deviceId);
     }
 
+    /** 이 기기에 끝나지 않은 요청이 있으면 true. */
+    boolean isPending(String deviceId) {
+        return counts.containsKey(deviceId);
+    }
+
     /** 목록을 새로 받았을 때처럼 진행 중인 요청과 상관없이 실제 상태를 알게 된 경우. */
     void remember(String deviceId, String state) {
         if (state != null && !LOADING.equals(state)) {

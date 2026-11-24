@@ -18,6 +18,7 @@ import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.activity.DeviceDetailActivity;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.view.DeviceOrder;
+import com.example.homeassistantapp.view.HomeTile;
 import com.example.homeassistantapp.view.HomeTileAdapter;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
@@ -66,17 +67,27 @@ public class HomeFragment extends Fragment {
         // 성공이면 목록이, 실패면 토스트가 온다. 어느 쪽이든 당겨서 새로고침 표시를 끈다.
         viewModel.getToastMessage().observe(getViewLifecycleOwner(), event -> swipeRefresh.setRefreshing(false));
 
+        ExtendedFloatingActionButton fab = view.findViewById(R.id.fabHomeAddDevice);
+        View emptyView = view.findViewById(R.id.emptyHome);
+        View emptyAdd = view.findViewById(R.id.btnEmptyAddDevice);
+        fab.setOnClickListener(v -> AddDeviceDialog.show(this, viewModel));
+        emptyAdd.setOnClickListener(v -> AddDeviceDialog.show(this, viewModel));
+
         viewModel.getDeviceList().observe(getViewLifecycleOwner(), devices -> {
             swipeRefresh.setRefreshing(false);
             if (devices == null) return;
+            boolean empty = HomeTile.isEmptyHome(devices);
+            emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
+            fab.setVisibility(empty ? View.GONE : View.VISIBLE);
             adapter.setDevices(sorted(devices));
         });
 
-        ExtendedFloatingActionButton fab = view.findViewById(R.id.fabHomeAddDevice);
-        fab.setOnClickListener(v -> AddDeviceDialog.show(this, viewModel));
         // 등록 작업이 끝날 때까지 새 등록을 막는다(서버도 동시에 1개만 받는다).
-        viewModel.getCommissioning().observe(getViewLifecycleOwner(),
-                running -> fab.setEnabled(!Boolean.TRUE.equals(running)));
+        viewModel.getCommissioning().observe(getViewLifecycleOwner(), running -> {
+            boolean idle = !Boolean.TRUE.equals(running);
+            fab.setEnabled(idle);
+            emptyAdd.setEnabled(idle);
+        });
     }
 
     @Override

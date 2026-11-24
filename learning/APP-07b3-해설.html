@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-07b-3 해설</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07b-3 해설 — 켜는 중·실패·빈 화면을 분명하게</h1>
+  <p>ui-1 브랜치 · UI 1차 07b · UI-01·UI-02·UI-10, 사용자 결정(UNKNOWN 새로고침) · 2026-11-24</p>
+</header>
+
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>켜는 동안</b>: 스위치를 누르면 응답이 올 때까지 <b>누른 위치 그대로 잠그고</b> 칩에 "켜는 중…/끄는 중…"을 보인다. 예전에는 LOADING이 되며 스위치가 원래 위치로 튀었다(UI-10).</li>
+    <li><b>실패</b>: 제어 실패는 토스트 대신 <b>Snackbar</b>로, "‘거실 전등’을 켜지 못했어요. (이유)" + <b>다시 시도</b>(UI-01). 통신 실패의 영어 예외 문구 대신 "서버에 연결할 수 없어요."</li>
+    <li><b>알 수 없음</b>: UNKNOWN 타일에는 <b>새로고침 버튼</b>(48dp)이 생기고, 누르면 E5를 기기에 직접 묻는다(<code>isManualRefresh=true</code>).</li>
+    <li><b>빈 화면</b>: 기기가 0개면 안내 + "기기 추가" 버튼(UI-02). 아직 목록을 못 받았을 때(null)는 빈 화면을 보이지 않는다.</li>
+    <li><b>깜빡임 줄이기</b>: 홈이 들어올 때마다 부르는 전력 조회(E6)는 더 이상 타일을 LOADING("확인 중…")으로 바꾸지 않는다. 값만 조용히 바꾼다.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림 — 스위치 한 번</h2>
+  <svg class="flow" viewBox="0 0 760 250" role="img" aria-label="스위치를 누른 뒤 성공 또는 실패까지의 흐름">
+    <rect x="10" y="20" width="150" height="54" rx="8"/><text x="85" y="43" text-anchor="middle">스위치 누름</text><text class="small" x="85" y="62" text-anchor="middle">onToggle(ON)</text>
+    <rect class="hl" x="200" y="20" width="180" height="54" rx="8"/><text x="290" y="43" text-anchor="middle">pendingCommand = ON</text><text class="small" x="290" y="62" text-anchor="middle">"켜는 중…" · 잠금 · 켜진 위치</text>
+    <rect x="420" y="20" width="140" height="54" rx="8"/><text x="490" y="43" text-anchor="middle">E2 응답</text><text class="small" x="490" y="62" text-anchor="middle">pendingCommand = null</text>
+    <line x1="160" y1="47" x2="200" y2="47"/><line x1="380" y1="47" x2="420" y2="47"/>
+    <rect x="600" y="10" width="150" height="44" rx="8"/><text x="675" y="37" text-anchor="middle">200 → 켜짐</text>
+    <rect x="600" y="64" width="150" height="44" rx="8"/><text x="675" y="91" text-anchor="middle">202 → 안내 토스트</text>
+    <path d="M560 40 L600 32"/><path d="M560 55 L600 86"/>
+    <rect class="hl" x="420" y="150" width="330" height="54" rx="8"/><text x="585" y="173" text-anchor="middle">실패(409·502·500·통신) → 요청 전 상태</text><text class="small" x="585" y="192" text-anchor="middle">ControlFailure → MainActivity Snackbar [다시 시도]</text>
+    <path d="M490 74 L490 150"/>
+    <text class="small" x="10" y="180">401은 Snackbar 없이 토큰 안내만,</text>
+    <text class="small" x="10" y="198">404(기기 사라짐)는 토스트 + 목록 새로고침(그대로).</text>
+  </svg>
+</section>
+
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+  <h3>① 보낸 명령을 기억해 두기</h3>
+  <pre><code>// DeviceViewModel.controlDevice
+updateDevice(targetId, device -&gt; device.setPendingCommand(command));
+beginLoading(targetId);
+…응답(성공·실패 모두)
+updateDevice(targetId, device -&gt; device.setPendingCommand(null));
+
+// HomeTile
+if (pending != null) {
+    chipText = "ON".equals(pending) ? "켜는 중…" : "끄는 중…";
+    switchChecked = "ON".equals(pending);
+    switchEnabled = false;
+}</code></pre>
+  <div class="why">
+    <div><b>왜 state가 아니라 따로</b> <code>state</code>는 LOADING이 되는 순간 "무엇을 요청했는지"를 잃는다. LOADING은 상태 조회·삭제에도 쓰여서 "켜는 중"인지 알 수 없다. 그래서 명령만 따로 <code>transient</code> 필드에 둔다.</div>
+    <div class="drop"><b>빼면</b> 켜기를 누르자마자 스위치가 꺼짐으로 돌아갔다가 성공하면 다시 켜진다. 사용자는 "안 눌렸나?" 하고 또 누른다.</div>
+  </div>
+
+  <h3>② 실패를 "이벤트"로 보내고 화면이 고르기</h3>
+  <pre><code>private void reportControlFailure(String deviceId, String command, String reason) {
+    controlFailure.setValue(new OneTimeEvent&lt;&gt;(
+            new ControlFailure(deviceId, currentName(deviceId), command, reason)));
+}
+// MainActivity
+Snackbar.make(container, failure.message, Snackbar.LENGTH_LONG)
+        .setAnchorView(bottomNav)
+        .setAction("다시 시도", v -&gt; viewModel.controlDevice(failure.deviceId, failure.command))
+        .show();</code></pre>
+  <div class="why">
+    <div><b>왜</b> 토스트는 문구만 보낼 수 있다. "다시 시도"를 하려면 <b>어느 기기에 어떤 명령</b>이었는지가 함께 있어야 한다. <code>OneTimeEvent</code>로 감싸 화면 회전·탭 이동 때 다시 뜨지 않게 한다(APP-05와 같은 방법).</div>
+    <div><b>조사</b> "‘전등’을 / ‘플러그’를"처럼 마지막 글자 받침으로 을·를을 고른다. 한글 음절은 <code>(글자 − 0xAC00) % 28 == 0</code>이면 받침이 없다.</div>
+  </div>
+
+  <h3>③ 조용한 전력 조회</h3>
+  <div class="ba">
+    <div class="before"><div class="label">BEFORE</div><pre><code>beginLoading(deviceId);   // "확인 중…"
+… finishLoading(deviceId, body.state);</code></pre></div>
+    <div class="after"><div class="label">AFTER</div><pre><code>pendingStates.remember(deviceId, state);
+if (state != null &amp;&amp; !pendingStates.isPending(deviceId))
+    device.setState(state);</code></pre></div>
+  </div>
+  <div class="why">
+    <div><b>왜</b> 홈에 올 때마다 Matter 타일이 모두 "확인 중…"으로 바뀌었다 돌아오면 정신없다(목업: 로딩 대신 이전 값 유지). 다만 제어가 진행 중이면 그 결과가 우선이므로 <code>isPending</code>일 때는 상태를 건드리지 않는다.</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b>Snackbar</b>: 화면 아래에 잠깐 뜨는 알림 막대. 토스트와 달리 버튼(동작)을 하나 넣을 수 있다.</li>
+    <li><b>anchorView</b>: Snackbar를 어느 뷰 위에 띄울지. 하단 탭을 가리지 않게 탭 위로 올린다.</li>
+    <li><b>빈 상태(empty state)</b>: 보여 줄 것이 없을 때의 화면. 다음에 할 일(기기 추가)을 바로 누를 수 있게 한다.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol>
+    <li>켜기를 누르고 202(지연 수락)를 받으면 스위치는 어디에 있을까?</li>
+    <li>목록이 아직 안 왔을 때 빈 화면을 보이면 어떤 문제가 있을까?</li>
+    <li>Snackbar의 "다시 시도"를 눌렀는데 기기가 그사이 오프라인이 됐다면?</li>
+  </ol>
+  <details><summary>정답 보기</summary>
+    <ol>
+      <li>202의 <code>state</code>는 바뀌기 전 상태라 꺼짐 위치로 돌아가고, "약 N초 뒤 켜집니다" 안내와 예약된 E5가 결과를 알려 준다(06b 그대로).</li>
+      <li>기기가 있는데도 잠깐 "등록된 기기가 없어요"가 보였다 사라져 사용자를 놀라게 한다. 그래서 <code>null</code>은 빈 화면이 아니다.</li>
+      <li>다시 E2를 보내고, 502면 OFFLINE + 새 Snackbar가 뜬다. 스위치는 오프라인이라 잠긴다.</li>
+    </ol>
+  </details>
+</section>
+
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <h3>실습. 202 동안 "꺼지는 중" 유지</h3>
+  <ul>
+    <li><b>목표</b>: 202를 받으면 예약한 E5 재확인이 끝날 때까지 칩을 "끄는 중…"으로 둔다.</li>
+    <li><b>고칠 파일</b>: <code>DeviceViewModel.java</code>(ACCEPTED에서 <code>pendingCommand</code>를 지우지 않고, 재확인 응답에서 지움), <code>HomeTileTest</code></li>
+    <li><b>완료 기준</b>: 재확인 전까지 스위치 잠금, 재확인 뒤 실제 상태.</li>
+  </ul>
+  <details><summary>힌트</summary>ACCEPTED 분기에서 <code>setPendingCommand(command)</code>를 다시 넣고, <code>scheduleRecheck</code>의 Runnable 안에서 <code>syncDeviceState</code> 전에 지우면 된다. 지금은 06b 동작을 바꾸지 않으려고 하지 않았다.</details>
+</section>
+</main>
+</body>
+</html>
