@@ -100,7 +100,7 @@ public class SettingsFragment extends Fragment {
         renderWifiPasswordState();
 
         // 401로 이 탭에 왔으면 무엇을 고쳐야 하는지 토큰 칸에 바로 보인다.
-        if (RetrofitClient.hadUnauthorizedSinceSave()) {
+        if (RetrofitClient.isTokenRejected()) {
             tilApiToken.setError("서버가 이 토큰을 거절했어요. 새 토큰을 입력해 주세요.");
             etApiToken.requestFocus();
         }
@@ -243,7 +243,7 @@ public class SettingsFragment extends Fragment {
         renderTokenState();
 
         // 저장한 값이 또 틀리면 다시 알려 줘야 하므로, 저장할 때마다 401 안내를 되살린다.
-        RetrofitClient.resetUnauthorizedNotice();
+        RetrofitClient.onSettingsSaved();
         Toast.makeText(getContext(), "설정을 저장했어요.", Toast.LENGTH_SHORT).show();
         // 첫 실행이면 연결을 확인했으니 바로 홈으로 간다.
         if (firstRun) {
