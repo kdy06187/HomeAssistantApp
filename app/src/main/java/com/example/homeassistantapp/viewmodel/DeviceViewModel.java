@@ -2,6 +2,7 @@ package com.example.homeassistantapp.viewmodel;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.lifecycle.LiveData;
@@ -9,7 +10,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.example.homeassistantapp.dto.AddDeviceRequest;
-import com.example.homeassistantapp.dto.AddDeviceResponse;
+import com.example.homeassistantapp.dto.CommissionJobResponse;
 import com.example.homeassistantapp.dto.ControlRequest;
 import com.example.homeassistantapp.dto.ControlResponse;
 import com.example.homeassistantapp.dto.DeleteDeviceRequest;
@@ -48,6 +49,12 @@ public class DeviceViewModel extends ViewModel {
     public LiveData<OneTimeEvent<String>> getDeleteWarning() { return deleteWarning; }
 
     private final PendingStates pendingStates = new PendingStates();
+
+    // 등록 작업 폴링 상태. 메인 스레드에서만 바뀐다.
+    private final MutableLiveData<Boolean> commissioning = new MutableLiveData<>(false);
+    private Device pairingDevice;
+    private Runnable pollRunnable;
+    private long commissionStartedAt;
 
     private static final long LIST_REFRESH_DELAY_MS = 500L;
     private final RefreshGate listRefreshGate = new RefreshGate();
@@ -127,7 +134,7 @@ public class DeviceViewModel extends ViewModel {
                             pendingStates.remember(device.getId(), device.getState());
                         }
                     }
-                    deviceList.setValue(devices);
+                    deviceList.setValue(withPairingItem(devices));
                 } else {
                     showFailure("목록 로드 실패: ", response);
                 }
@@ -185,15 +192,16 @@ public class DeviceViewModel extends ViewModel {
         });
     }
 
+    /** 등록 작업이 진행 중이면 true. 기기 추가 버튼을 잠그는 데 쓴다(서버도 동시에 1개만 받는다). */
+    public LiveData<Boolean> getCommissioning() { return commissioning; }
+
     public void addDevice(String type, String name, String payload, String ssid, String password, List<Integer> driver) {
+        if (pairingDevice != null) {
+            showToast("다른 기기 등록이 진행 중입니다.");
+            return;
+        }
         AddDeviceRequest request = new AddDeviceRequest(type, name, payload, ssid, password, driver);
         showToast("기기 등록을 서버에 요청했습니다...");
-        List<Device> currentList = deviceList.getValue();
-        if (currentList == null) {
-            currentList = new ArrayList<>();
-        } else {
-            currentList = new ArrayList<>(currentList);
-        }
 
         // 등록이 끝날 때까지 목록 맨 위에 보여 줄 임시 항목
         Device tempDevice = new Device();
@@ -201,28 +209,110 @@ public class DeviceViewModel extends ViewModel {
         tempDevice.setName(name);
         tempDevice.setPairing(true);
         tempDevice.setType(type);
-        currentList.add(0, tempDevice);
+        pairingDevice = tempDevice;
+        commissioning.setValue(true);
+        deviceList.setValue(withPairingItem(deviceList.getValue()));
 
-        deviceList.setValue(currentList);
-
-        RetrofitClient.getApi().addDevice(request).enqueue(new Callback<AddDeviceResponse>() {
+        RetrofitClient.getApi().addDevice(request).enqueue(new Callback<CommissionJobResponse>() {
             @Override
-            public void onResponse(Call<AddDeviceResponse> call, Response<AddDeviceResponse> response){
-                if(response.isSuccessful()){
-                    showToast("기기 등록 성공!");
+            public void onResponse(Call<CommissionJobResponse> call, Response<CommissionJobResponse> response){
+                CommissionJobResponse body = response.body();
+                if (response.isSuccessful() && body != null && body.jobId != null) {
+                    showToast("기기 등록을 시작했습니다. 완료되면 알려 드립니다.");
+                    commissionStartedAt = SystemClock.elapsedRealtime();
+                    schedulePoll(body.jobId);
+                } else if (response.isSuccessful()) {
+                    // 작업 ID가 없으면 결과를 물을 수 없어 목록으로 확인한다.
+                    endCommission();
+                    showToast("등록 결과를 확인하지 못했습니다. 기기 목록을 확인해 주세요.");
                     fetchDevices();
-                } else{
+                } else {
+                    // 409 COMMISSION_BUSY, 400 INVALID_REQUEST 등
+                    endCommission();
                     showFailure("등록 실패: ", response);
-                    removeTempDevice();
                 }
             }
             @Override
-            public void onFailure(Call<AddDeviceResponse> call, Throwable t){
+            public void onFailure(Call<CommissionJobResponse> call, Throwable t){
+                endCommission();
                 showToast("통신 실패: " + t.getMessage());
-                removeTempDevice();
             }
         });
     }
+
+    private void schedulePoll(String jobId) {
+        pollRunnable = () -> pollCommission(jobId);
+        mainHandler.postDelayed(pollRunnable, CommissionPoller.INTERVAL_MS);
+    }
+
+    private void pollCommission(String jobId) {
+        RetrofitClient.getApi().getCommissionJob(jobId).enqueue(new Callback<CommissionJobResponse>() {
+            @Override
+            public void onResponse(Call<CommissionJobResponse> call, Response<CommissionJobResponse> response) {
+                if (pairingDevice == null) return; // 이미 끝냄
+                CommissionJobResponse body = response.body();
+                handlePoll(jobId, CommissionPoller.afterResponse(elapsedSinceCommission(), response.code(), body), body);
+            }
+
+            @Override
+            public void onFailure(Call<CommissionJobResponse> call, Throwable t) {
+                if (pairingDevice == null) return;
+                handlePoll(jobId, CommissionPoller.afterNetworkFailure(elapsedSinceCommission()), null);
+            }
+        });
+    }
+
+    private void handlePoll(String jobId, CommissionPoller.Next next, CommissionJobResponse body) {
+        switch (next) {
+            case POLL_AGAIN:
+                schedulePoll(jobId);
+                break;
+            case SUCCEEDED:
+                endCommission();
+                showToast(CommissionPoller.successMessage(body != null && body.isRestored()));
+                fetchDevices();
+                break;
+            case FAILED:
+                CommissionJobResponse.JobError error = body != null ? body.error : null;
+                endCommission();
+                showToast(CommissionPoller.failureMessage(error));
+                if (CommissionPoller.shouldRefreshListAfterFailure(error)) fetchDevices();
+                break;
+            case LOST:
+                endCommission();
+                showToast("등록 작업을 찾을 수 없습니다. 기기 목록에서 결과를 확인해 주세요.");
+                fetchDevices();
+                break;
+            case TIMED_OUT:
+                endCommission();
+                showToast("등록 결과를 확인하지 못했습니다. 기기 목록을 확인해 주세요.");
+                fetchDevices();
+                break;
+        }
+    }
+
+    private long elapsedSinceCommission() {
+        return SystemClock.elapsedRealtime() - commissionStartedAt;
+    }
+
+    /** 폴링을 멈추고 임시 항목을 지운다. jobId는 저장하지 않으므로 앱이 꺼지면 목록으로만 확인한다. */
+    private void endCommission() {
+        if (pollRunnable != null) {
+            mainHandler.removeCallbacks(pollRunnable);
+            pollRunnable = null;
+        }
+        pairingDevice = null;
+        commissioning.setValue(false);
+        removeTempDevice();
+    }
+
+    /** 목록을 새로 받아도 등록 중인 임시 항목이 사라지지 않게 맨 위에 다시 붙인다. */
+    private List<Device> withPairingItem(List<Device> devices) {
+        List<Device> result = devices == null ? new ArrayList<>() : new ArrayList<>(devices);
+        if (pairingDevice != null && !result.contains(pairingDevice)) result.add(0, pairingDevice);
+        return result;
+    }
+
     private void removeTempDevice() {
         List<Device> currentList = deviceList.getValue();
         if (currentList != null) {

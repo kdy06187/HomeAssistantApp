@@ -1,0 +1,60 @@
+package com.example.homeassistantapp.viewmodel;
+
+import com.example.homeassistantapp.dto.CommissionJobResponse;
+
+/**
+ * 등록 작업(E8) 폴링에서 다음에 할 일을 정한다. 시간과 응답만 받아 결정하므로 Android 없이 시험할 수 있다.
+ * 간격·상한은 서버 13b·계약 14번 확정 뒤 다시 맞춘다.
+ */
+final class CommissionPoller {
+    static final long INTERVAL_MS = 2_000L;
+    // 서버 상한(Matter 190초) + 여유 20초. 넘으면 폴링을 멈추고 목록으로 확인한다.
+    static final long LIMIT_MS = 210_000L;
+
+    enum Next {
+        /** 아직 진행 중이거나 일시적 오류: 2초 뒤 다시 묻는다 */
+        POLL_AGAIN,
+        SUCCEEDED,
+        FAILED,
+        /** 작업이 없어짐(서버 재시작 등) 또는 인증 실패: 멈추고 목록으로 확인 */
+        LOST,
+        /** 상한 초과: 멈추고 목록으로 확인 */
+        TIMED_OUT
+    }
+
+    private CommissionPoller() {}
+
+    /** 응답을 받은 뒤. body는 2xx일 때만 의미가 있다. */
+    static Next afterResponse(long elapsedMs, int httpCode, CommissionJobResponse body) {
+        if (httpCode >= 200 && httpCode < 300 && body != null) {
+            if (CommissionJobResponse.SUCCEEDED.equals(body.state)) return Next.SUCCEEDED;
+            if (CommissionJobResponse.FAILED.equals(body.state)) return Next.FAILED;
+        }
+        if (httpCode == 404 || httpCode == 401) return Next.LOST;
+        return continueOrTimeOut(elapsedMs);
+    }
+
+    /** 통신 실패 뒤. 일시적일 수 있어 상한 전까지는 다시 묻는다. */
+    static Next afterNetworkFailure(long elapsedMs) {
+        return continueOrTimeOut(elapsedMs);
+    }
+
+    private static Next continueOrTimeOut(long elapsedMs) {
+        return elapsedMs + INTERVAL_MS > LIMIT_MS ? Next.TIMED_OUT : Next.POLL_AGAIN;
+    }
+
+    static String successMessage(boolean restored) {
+        return restored ? "기기 등록 성공! 이전 기록을 이어받았습니다." : "기기 등록 성공!";
+    }
+
+    /** ALREADY_REGISTERED는 실패지만 이미 목록에 있으므로 목록을 새로고침한다. */
+    static boolean shouldRefreshListAfterFailure(CommissionJobResponse.JobError error) {
+        return error != null && "ALREADY_REGISTERED".equals(error.code);
+    }
+
+    static String failureMessage(CommissionJobResponse.JobError error) {
+        if (error != null && "ALREADY_REGISTERED".equals(error.code)) return "이미 등록된 기기입니다.";
+        if (error != null && error.message != null && !error.message.isEmpty()) return "등록 실패: " + error.message;
+        return "등록 실패: 기기 등록에 실패했습니다.";
+    }
+}

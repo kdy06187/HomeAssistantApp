@@ -84,6 +84,9 @@ public class DeviceFragment extends Fragment {
         viewModel.fetchDevices();
         FloatingActionButton fabAddDevice = view.findViewById(R.id.fabAddDevice);
         fabAddDevice.setOnClickListener(v -> showAddDeviceDialog());
+        // 등록 작업이 끝날 때까지 새 등록을 막는다(서버도 동시에 1개만 받는다).
+        viewModel.getCommissioning().observe(getViewLifecycleOwner(),
+                running -> fabAddDevice.setEnabled(!Boolean.TRUE.equals(running)));
     }
     private void showAddDeviceDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
