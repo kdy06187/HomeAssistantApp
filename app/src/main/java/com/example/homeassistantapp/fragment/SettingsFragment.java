@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import com.example.homeassistantapp.R;
+import com.example.homeassistantapp.network.CommissionInputValidator;
 import com.example.homeassistantapp.network.RetrofitClient;
 import com.example.homeassistantapp.network.ServerDefaults;
 
@@ -61,8 +62,9 @@ public class SettingsFragment extends Fragment {
     private void saveSettings() {
         String ip = etServerIp.getText() != null ? etServerIp.getText().toString().trim() : "";
         String port = etServerPort.getText() != null ? etServerPort.getText().toString().trim() : "";
-        String ssid = etWifiSsid.getText() != null ? etWifiSsid.getText().toString().trim() : "";
-        String password = etWifiPassword.getText() != null ? etWifiPassword.getText().toString().trim() : "";
+        // Wi-Fi 값은 앞뒤 공백도 실제 값일 수 있어 trim하지 않는다.
+        String ssid = etWifiSsid.getText() != null ? etWifiSsid.getText().toString() : "";
+        String password = etWifiPassword.getText() != null ? etWifiPassword.getText().toString() : "";
         String token = TokenFormat.normalize(etApiToken.getText() != null ? etApiToken.getText().toString() : null);
 
         // 저장된 토큰도 입력도 없으면 모든 요청이 401이 되므로 막는다.
@@ -78,6 +80,12 @@ public class SettingsFragment extends Fragment {
 
         if (ip.isEmpty() || port.isEmpty()) {
             Toast.makeText(getContext(), "서버 IP와 포트 번호를 모두 입력해주세요.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String wifiError = CommissionInputValidator.checkWifi(ssid, password);
+        if (wifiError != null) {
+            Toast.makeText(getContext(), wifiError, Toast.LENGTH_LONG).show();
             return;
         }
 

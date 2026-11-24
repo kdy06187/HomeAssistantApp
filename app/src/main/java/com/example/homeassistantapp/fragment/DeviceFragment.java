@@ -21,6 +21,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.dto.Device;
+import com.example.homeassistantapp.network.CommissionInputValidator;
 import com.example.homeassistantapp.view.DeviceAdapter;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -118,7 +119,13 @@ public class DeviceFragment extends Fragment {
                     Toast.makeText(getContext(), "설정 탭에서 와이파이를 먼저 설정해주세요.", Toast.LENGTH_LONG).show();
                     return;
                 }
-                viewModel.addDevice(type, name, payload, ssid, password,driverTypes);
+                CommissionInputValidator.Result checked =
+                        CommissionInputValidator.validate(type, name, payload, ssid, password);
+                if (!checked.isValid()) {
+                    Toast.makeText(getContext(), checked.error, Toast.LENGTH_LONG).show();
+                    return;
+                }
+                viewModel.addDevice(type, name, checked.payload, ssid, password, driverTypes);
             } else {
                 Toast.makeText(getContext(), "정보를 모두 입력해주세요.", Toast.LENGTH_SHORT).show();
             }
