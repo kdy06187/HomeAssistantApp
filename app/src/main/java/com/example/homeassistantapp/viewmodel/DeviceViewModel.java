@@ -24,8 +24,10 @@ import com.example.homeassistantapp.network.ApiError;
 import com.example.homeassistantapp.network.ErrorMessages;
 import com.example.homeassistantapp.network.RetrofitClient;
 import com.example.homeassistantapp.view.PeriodRange;
+import com.example.homeassistantapp.view.TrendValues;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -572,6 +574,44 @@ public class DeviceViewModel extends ViewModel {
     private boolean isLatestHistory(String deviceId, String period) {
         return deviceId.equals(historyDeviceId)
                 && (period == null ? historyPeriod == null : period.equals(historyPeriod));
+    }
+
+    // 홈 타일 추이선(최근 7일 일별). 추이선을 켠 기기만, 캐시로 요청 수를 줄인다.
+    private final MutableLiveData<Map<String, TrendValues>> tileTrends = new MutableLiveData<>(new HashMap<>());
+    private final TrendCache trendCache = new TrendCache();
+
+    public LiveData<Map<String, TrendValues>> getTileTrends() { return tileTrends; }
+
+    /** 실패는 조용히 넘긴다(타일에 "–"). 기기가 사라졌으면 목록만 맞춘다. */
+    public void fetchTileTrends(Collection<String> deviceIds) {
+        long now = SystemClock.elapsedRealtime();
+        for (String deviceId : deviceIds) {
+            if (!trendCache.needsFetch(deviceId, now)) continue;
+            trendCache.started(deviceId);
+            PeriodRange range = PeriodRange.of(PeriodRange.DAY, PeriodRange.today());
+            RetrofitClient.getApi()
+                    .getDeviceEnergySummary(deviceId, range.fromText(), range.toText(), PeriodRange.DAY)
+                    .enqueue(new Callback<EnergyLogResponse>() {
+                        @Override
+                        public void onResponse(Call<EnergyLogResponse> call, Response<EnergyLogResponse> response) {
+                            EnergyLogResponse body = response.body();
+                            if (response.isSuccessful() && body != null) {
+                                trendCache.succeeded(deviceId, SystemClock.elapsedRealtime());
+                                Map<String, TrendValues> next = new HashMap<>(tileTrends.getValue());
+                                next.put(deviceId, TrendValues.fromBuckets(body.buckets));
+                                tileTrends.setValue(next);
+                                return;
+                            }
+                            trendCache.failed(deviceId, SystemClock.elapsedRealtime());
+                            if (isDeviceGone(ApiError.from(response))) scheduleListRefresh();
+                        }
+
+                        @Override
+                        public void onFailure(Call<EnergyLogResponse> call, Throwable t) {
+                            trendCache.failed(deviceId, SystemClock.elapsedRealtime());
+                        }
+                    });
+        }
     }
 
     private void scheduleNextDetailPoll() {

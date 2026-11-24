@@ -24,6 +24,7 @@ import com.example.homeassistantapp.view.TileConfigStore;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,8 +93,12 @@ public class HomeFragment extends Fragment {
             emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
             fab.setVisibility(empty ? View.GONE : View.VISIBLE);
             List<Device> ordered = sorted(devices);
-            adapter.setDevices(ordered, configsFor(ordered));
+            Map<String, TileConfig> configs = configsFor(ordered);
+            adapter.setDevices(ordered, configs);
+            viewModel.fetchTileTrends(trendDeviceIds(ordered, configs));
         });
+
+        viewModel.getTileTrends().observe(getViewLifecycleOwner(), adapter::setTrends);
 
         // 등록 작업이 끝날 때까지 새 등록을 막는다(서버도 동시에 1개만 받는다).
         viewModel.getCommissioning().observe(getViewLifecycleOwner(), running -> {
@@ -117,6 +122,15 @@ public class HomeFragment extends Fragment {
             if (!DeviceOrder.isPairing(device)) result.put(device.getId(), tileConfigs.load(device.getId()));
         }
         return result;
+    }
+
+    /** 추이선을 켠 Matter 기기만 E7을 묻는다. */
+    private static List<String> trendDeviceIds(List<Device> devices, Map<String, TileConfig> configs) {
+        List<String> ids = new ArrayList<>();
+        for (Device device : devices) {
+            if (HomeTile.of(device, configs.get(device.getId())).showsTrend) ids.add(device.getId());
+        }
+        return ids;
     }
 
     private List<Device> sorted(List<Device> devices) {

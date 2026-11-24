@@ -30,6 +30,7 @@ public class HomeTileAdapter extends RecyclerView.Adapter<HomeTileAdapter.TileVi
     private final Listener listener;
     private List<Device> devices = new ArrayList<>();
     private Map<String, TileConfig> configs = new HashMap<>();
+    private Map<String, TrendValues> trends = new HashMap<>();
 
     public HomeTileAdapter(Listener listener) {
         this.listener = listener;
@@ -39,6 +40,11 @@ public class HomeTileAdapter extends RecyclerView.Adapter<HomeTileAdapter.TileVi
     public void setDevices(List<Device> devices, Map<String, TileConfig> configs) {
         this.devices = new ArrayList<>(devices);
         this.configs = new HashMap<>(configs);
+        notifyDataSetChanged();
+    }
+
+    public void setTrends(Map<String, TrendValues> trends) {
+        this.trends = new HashMap<>(trends);
         notifyDataSetChanged();
     }
 
@@ -87,6 +93,13 @@ public class HomeTileAdapter extends RecyclerView.Adapter<HomeTileAdapter.TileVi
         holder.meta.setVisibility(tile.metaText.isEmpty() ? View.GONE : View.VISIBLE);
         holder.meta.setText(tile.metaText);
 
+        holder.trend.setVisibility(tile.showsTrend ? View.VISIBLE : View.GONE);
+        TrendValues trend = tile.showsTrend ? trends.get(device.getId()) : null;
+        // 아직 못 받았으면 빈 자리, 받았는데 기록이 없으면 "–".
+        boolean empty = trend != null && trend.isEmpty();
+        holder.spark.setTrend(empty ? null : trend);
+        holder.trendEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
+
         holder.main.setClickable(tile.opensDetail);
         holder.main.setContentDescription(tile.opensDetail ? tile.name + ", " + tile.chipText + ", 상세 열기" : null);
         holder.main.setOnClickListener(tile.opensDetail ? v -> listener.onOpen(device) : null);
@@ -101,6 +114,8 @@ public class HomeTileAdapter extends RecyclerView.Adapter<HomeTileAdapter.TileVi
         final TextView name, state, power, meta;
         final MaterialSwitch toggle;
         final ImageButton refresh;
+        final View trend, trendEmpty;
+        final SparklineView spark;
         final View main;
 
         TileViewHolder(@NonNull View itemView) {
@@ -112,6 +127,9 @@ public class HomeTileAdapter extends RecyclerView.Adapter<HomeTileAdapter.TileVi
             toggle = itemView.findViewById(R.id.switchTile);
             refresh = itemView.findViewById(R.id.btnTileRefresh);
             main = itemView.findViewById(R.id.tileMain);
+            trend = itemView.findViewById(R.id.tileTrend);
+            trendEmpty = itemView.findViewById(R.id.tvTileTrendEmpty);
+            spark = itemView.findViewById(R.id.sparkTile);
         }
     }
 }

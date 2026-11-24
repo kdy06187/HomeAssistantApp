@@ -96,5 +96,31 @@
             android:layout_height="wrap_content"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="14sp" />
+
+        <!-- 추이선(최근 7일). 켠 기기만 보이고, 기록이 없으면 선 대신 "–". -->
+        <FrameLayout
+            android:id="@+id/tileTrend"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:layout_marginTop="4dp"
+            android:visibility="gone">
+
+            <com.example.homeassistantapp.view.SparklineView
+                android:id="@+id/sparkTile"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:importantForAccessibility="no" />
+
+            <TextView
+                android:id="@+id/tvTileTrendEmpty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:importantForAccessibility="no"
+                android:text="–"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="14sp"
+                android:visibility="gone" />
+        </FrameLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
