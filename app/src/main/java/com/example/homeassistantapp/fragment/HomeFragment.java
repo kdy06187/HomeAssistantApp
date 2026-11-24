@@ -83,8 +83,8 @@ public class HomeFragment extends Fragment {
         ExtendedFloatingActionButton fab = view.findViewById(R.id.fabHomeAddDevice);
         View emptyView = view.findViewById(R.id.emptyHome);
         View emptyAdd = view.findViewById(R.id.btnEmptyAddDevice);
-        fab.setOnClickListener(v -> AddDeviceDialog.show(this, viewModel));
-        emptyAdd.setOnClickListener(v -> AddDeviceDialog.show(this, viewModel));
+        fab.setOnClickListener(v -> AddDeviceFragment.open(requireActivity()));
+        emptyAdd.setOnClickListener(v -> AddDeviceFragment.open(requireActivity()));
 
         viewModel.getDeviceList().observe(getViewLifecycleOwner(), devices -> {
             swipeRefresh.setRefreshing(false);

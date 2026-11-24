@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-07d-1 해설 — 기기 추가 입력 화면</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07d-1 해설 — 기기 추가 입력 화면</h1>
+  <p>ui-1 브랜치 · UI 1차 07d · D5(전체 화면) · 2026-11-24</p>
+</header>
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>대화상자 → 전체 화면</b>: 기기 추가를 <code>AddDeviceFragment</code>(상세 화면처럼 뒤로 스택에 쌓이고 하단 탭이 숨는다)로 옮겼다. 홈·기기 탭의 추가 버튼이 모두 이 화면을 연다.</li>
+    <li><b>칸별 오류</b>: 검사기가 "무엇이 틀렸나"뿐 아니라 "어느 칸인가"(<code>Field</code>)도 돌려준다. 화면은 그 칸 아래에 빨간 글자를 보이고 커서를 옮긴다. 토스트는 쓰지 않는다.</li>
+    <li><b>서버 새 규칙 반영</b>: 직접 연결(TCP_DIY)에서 IP를 비우면 서버가 "앱이 접속한 서버 주소"를 기기에 알려 준다. 그 주소가 집 안(사설) IPv4가 아니면 서버가 400으로 거절하므로, 앱이 보내기 전에 먼저 막는다.</li>
+    <li>Wi-Fi가 설정되지 않았으면 입력 전에 빨간 카드 + "설정으로" 버튼을 보인다.</li>
+  </ul>
+  <div class="table-wrap"><table>
+    <tr><th>파일</th><th>역할</th><th>변경</th></tr>
+    <tr><td><code>network/CommissionInputValidator.java</code></td><td>등록 입력 검사(순수 함수)</td><td><code>Field</code> 추가, 서버 주소를 받는 <code>validate</code>, <code>isLanIpv4</code></td></tr>
+    <tr><td><code>fragment/AddDeviceFragment.java</code> (새)</td><td>입력 화면</td><td>종류 토글, 이름·코드·IP 칸, 드라이버, 칸별 오류, Wi-Fi 안내</td></tr>
+    <tr><td><code>res/layout/fragment_add_device.xml</code> (새)</td><td>화면 모양</td><td>앱바, Material 입력칸, 48dp 이상 버튼</td></tr>
+    <tr><td><code>res/drawable/ic_qr_code.xml</code> (새)</td><td>QR 아이콘</td><td>07d-2에서 스캔 버튼이 쓴다(지금은 숨김)</td></tr>
+    <tr><td><code>HomeFragment</code>·<code>DeviceFragment</code></td><td>추가 버튼</td><td>대화상자 대신 새 화면을 연다</td></tr>
+  </table></div>
+</section>
+
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림 — "등록 시작"을 누르면</h2>
+  <svg class="flow" viewBox="0 0 760 230" role="img" aria-label="입력 화면이 검사기를 부르고, 통과하면 ViewModel이 E3를 보내고, 실패하면 해당 칸에 오류를 보이는 흐름">
+    <rect x="10" y="20" width="160" height="56" rx="10" class="hl"/><text x="90" y="44" text-anchor="middle">AddDeviceFragment</text><text x="90" y="62" text-anchor="middle" class="small">등록 시작</text>
+    <rect x="250" y="20" width="220" height="56" rx="10"/><text x="360" y="44" text-anchor="middle">CommissionInputValidator</text><text x="360" y="62" text-anchor="middle" class="small">validate(…, serverHost)</text>
+    <rect x="550" y="20" width="200" height="56" rx="10"/><text x="650" y="44" text-anchor="middle">DeviceViewModel.addDevice</text><text x="650" y="62" text-anchor="middle" class="small">E3 POST /api/commission</text>
+    <rect x="250" y="140" width="220" height="56" rx="10"/><text x="360" y="164" text-anchor="middle">칸 아래 오류</text><text x="360" y="182" text-anchor="middle" class="small">NAME · PAYLOAD · WIFI</text>
+    <line x1="170" y1="48" x2="250" y2="48"/><line x1="470" y1="48" x2="550" y2="48"/>
+    <text x="510" y="40" text-anchor="middle" class="small">통과</text>
+    <path d="M360,76 L360,140" class="no"/><text x="400" y="112" class="small">실패: field로 칸 고름</text>
+  </svg>
+</section>
+
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+  <h3>① 결과에 "어느 칸"을 담는다</h3>
+  <div class="ba">
+    <div class="before"><div class="label">전</div><pre><code>static Result fail(String error) {
+    return new Result(error, null);
+}</code></pre></div>
+    <div class="after"><div class="label">후</div><pre><code>public enum Field { NAME, PAYLOAD, WIFI, TYPE }
+
+static Result fail(Field field, String error) {
+    return new Result(error, field, null);
+}</code></pre></div>
+  </div>
+  <div class="why">
+    <div><b>무엇을</b> 실패 결과가 문구와 함께 칸 이름을 갖는다.</div>
+    <div><b>왜</b> 화면이 문구를 보고 칸을 추측하지 않아도 된다. 규칙은 검사기 한 곳에만 있다.</div>
+    <div class="drop"><b>빼면</b> 예전처럼 토스트 한 줄만 뜨고, 사용자는 어느 칸을 고쳐야 할지 찾아야 한다.</div>
+  </div>
+
+  <h3>② IP를 비웠을 때 서버 주소 검사</h3>
+<pre><code>if (ip.isEmpty()) {
+    if (serverHost != null &amp;&amp; !isLanIpv4(serverHost.trim())) {
+        return Result.fail(Field.PAYLOAD, "지금 서버 주소가 집 안 IP가 아니라 …");
+    }
+    return Result.ok("");
+}</code></pre>
+  <div class="why">
+    <div><b>무엇을</b> 빈 IP는 "지금 서버 주소를 써 달라"는 뜻이다. 그 주소가 10.x, 172.16~31.x, 192.168.x, 169.254.x가 아니면 막는다.</div>
+    <div><b>왜</b> 기기는 집 Wi-Fi 안에서 서버에 접속해야 하므로 서버도 같은 범위만 받는다. 서버 오류 문구는 "요청 형식이 올바르지 않습니다" 하나라서, 앱이 미리 이유를 알려 주는 편이 친절하다.</div>
+    <div class="drop"><b>빼면</b> 이름을 <code>myserver.local</code>로 적어 둔 사람은 "요청 형식" 오류만 보고 원인을 알기 어렵다.</div>
+  </div>
+
+  <h3>③ 오류를 칸에 붙이기</h3>
+<pre><code>switch (result.field) {
+    case NAME:    layoutName.setError(result.error); editName.requestFocus(); break;
+    case PAYLOAD: (isMatter() ? layoutCode : layoutServerIp).setError(result.error); break;
+    default:      showFormError(result.error); break;   // Wi-Fi 등 칸이 없는 오류
+}</code></pre>
+  <div class="why">
+    <div><b>무엇을</b> <code>TextInputLayout.setError</code>는 칸 테두리를 빨갛게 하고 아래에 문구를 붙인다. 글자를 고치면 <code>TextWatcher</code>가 오류를 지운다.</div>
+    <div><b>왜</b> 같은 PAYLOAD라도 Matter면 코드 칸, 직접 연결이면 IP 칸이다. 이 구분은 화면만 안다.</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b>TextInputLayout</b>: 입력칸을 감싸 힌트·도움말·오류·글자 수를 보여 주는 Material 부품.</li>
+    <li><b>MaterialButtonToggleGroup</b>: 버튼 여러 개 중 하나만 눌리게 하는 묶음. 여기서는 Matter / 직접 연결.</li>
+    <li><b>사설 IPv4</b>: 집·회사 안에서만 쓰는 주소 범위(10/8, 172.16/12, 192.168/16). 169.254/16은 공유기 없이 자동으로 정해지는 주소.</li>
+    <li><b>뒤로 스택</b>: <code>addToBackStack</code>으로 쌓은 화면. 뒤로 가기를 누르면 직전 화면으로 돌아간다.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol>
+    <li>같은 <code>Field.PAYLOAD</code> 오류인데 화면이 붙이는 칸이 두 개인 이유는?</li>
+    <li>서버 주소가 <code>172.32.0.1</code>이고 IP 칸을 비우면 어떻게 되나? <code>172.20.0.1</code>이면?</li>
+    <li>5개 인자 <code>validate</code>(서버 주소 없음)를 남겨 둔 이유는?</li>
+  </ol>
+  <details><summary>정답 보기</summary>
+    <ol>
+      <li>Matter는 페어링 코드, 직접 연결은 서버 IP가 payload이기 때문. 검사기는 종류와 상관없이 "payload 칸"이라고만 알려 준다.</li>
+      <li>172.32는 사설 범위(172.16~31) 밖이라 막힌다. 172.20은 통과한다.</li>
+      <li>기존 테스트와 서버 주소를 모르는 호출 쪽이 그대로 쓰도록. <code>null</code>이면 이 검사만 건너뛴다.</li>
+    </ol>
+  </details>
+</section>
+
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <p>새 브랜치나 <code>learning/exercise-add-device/</code> 사본에서 해 보세요.</p>
+  <h3>실습 1 — 이름 칸 글자 수 미리 막기</h3>
+  <p><b>목표</b>: 65자 이상은 아예 입력되지 않게 한다. <b>고칠 파일</b>: <code>fragment_add_device.xml</code>. <b>완료 기준</b>: 64자 뒤로 글자가 더 들어가지 않고, 카운터가 64/64에서 멈춘다.</p>
+  <details><summary>힌트</summary><code>TextInputEditText</code>에 넣는 속성 하나로 된다.</details>
+  <details><summary>정답</summary><code>android:maxLength="64"</code>. 단 이 속성은 UTF-16 단위로 세서 이모지는 2개로 친다. 그래서 최종 판정은 검사기(code point 기준)가 한다.</details>
+  <h3>실습 2 — 사설 범위 테스트 하나 더</h3>
+  <p><b>목표</b>: <code>CommissionInputValidatorTest</code>에 <code>192.168.255.255</code>(통과)와 <code>11.0.0.1</code>(막힘) 검사를 넣는다. <b>완료 기준</b>: 테스트 통과.</p>
+  <details><summary>정답</summary><pre><code>assertTrue(CommissionInputValidator.isLanIpv4("192.168.255.255"));
+assertFalse(CommissionInputValidator.isLanIpv4("11.0.0.1"));</code></pre></details>
+</section>
+
+</main>
+</body>
+</html>

@@ -110,4 +110,48 @@ public class CommissionInputValidatorTest {
     public void unknownProtocol_rejected() {
         assertFalse(CommissionInputValidator.validate("ZIGBEE", "x", "1", "w", "p").isValid());
     }
+
+    @Test
+    public void errorsPointToTheirField() {
+        assertEquals(CommissionInputValidator.Field.NAME,
+                CommissionInputValidator.validate("MATTER", "", "34970112332", "w", "p").field);
+        assertEquals(CommissionInputValidator.Field.WIFI,
+                CommissionInputValidator.validate("MATTER", "플러그", "34970112332", repeat("a", 33), "p").field);
+        assertEquals(CommissionInputValidator.Field.PAYLOAD, matter("123").field);
+        assertEquals(CommissionInputValidator.Field.PAYLOAD, tcp("256.1.1.1").field);
+        assertEquals(CommissionInputValidator.Field.TYPE,
+                CommissionInputValidator.validate("ZIGBEE", "x", "1", "w", "p").field);
+        assertNull(matter("34970112332").field);
+    }
+
+    @Test
+    public void tcpEmptyPayload_needsLanServerAddress() {
+        assertTrue(tcpVia("", "192.168.219.108").isValid());
+        assertTrue(tcpVia("", "10.0.0.5").isValid());
+        assertTrue(tcpVia("", "172.16.0.1").isValid());
+        assertTrue(tcpVia("", "172.31.255.255").isValid());
+        assertTrue(tcpVia("", "169.254.1.1").isValid());
+        assertEquals(CommissionInputValidator.Field.PAYLOAD, tcpVia("", "8.8.8.8").field);
+        assertFalse(tcpVia("", "172.32.0.1").isValid());
+        assertFalse(tcpVia("", "myserver.local").isValid());
+        assertFalse(tcpVia("  ", "127.0.0.1").isValid());
+        // IP를 적었으면 서버 주소와 상관없다.
+        assertTrue(tcpVia("192.168.0.10", "myserver.local").isValid());
+        // 서버 주소를 모르면(null) 이 검사는 건너뛴다.
+        assertTrue(tcpVia("", null).isValid());
+    }
+
+    @Test
+    public void lanIpv4Ranges() {
+        assertTrue(CommissionInputValidator.isLanIpv4("192.168.0.1"));
+        assertFalse(CommissionInputValidator.isLanIpv4("192.169.0.1"));
+        assertFalse(CommissionInputValidator.isLanIpv4("172.15.0.1"));
+        assertFalse(CommissionInputValidator.isLanIpv4(""));
+        assertFalse(CommissionInputValidator.isLanIpv4(null));
+        assertFalse(CommissionInputValidator.isLanIpv4("10.0.0"));
+    }
+
+    private static CommissionInputValidator.Result tcpVia(String payload, String serverHost) {
+        return CommissionInputValidator.validate("TCP_DIY", "전등", payload, "MyWiFi", "pw", serverHost);
+    }
 }

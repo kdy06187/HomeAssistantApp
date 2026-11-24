@@ -14,13 +14,18 @@ public final class CommissionInputValidator {
 
     private CommissionInputValidator() {}
 
+    /** 오류를 어느 입력 칸 아래에 보일지. */
+    public enum Field { NAME, PAYLOAD, WIFI, TYPE }
+
     /** 검사 결과. error가 null이면 통과이고, payload는 서버에 보낼 정리된 값이다. */
     public static final class Result {
         public final String error;
+        public final Field field;
         public final String payload;
 
-        private Result(String error, String payload) {
+        private Result(String error, Field field, String payload) {
             this.error = error;
+            this.field = field;
             this.payload = payload;
         }
 
@@ -28,25 +33,38 @@ public final class CommissionInputValidator {
             return error == null;
         }
 
-        static Result fail(String error) {
-            return new Result(error, null);
+        static Result ok(String payload) {
+            return new Result(null, null, payload);
+        }
+
+        static Result fail(Field field, String error) {
+            return new Result(error, field, null);
         }
     }
 
     public static Result validate(String protocolType, String deviceName, String payload,
                                   String ssid, String password) {
+        return validate(protocolType, deviceName, payload, ssid, password, null);
+    }
+
+    /**
+     * serverHost는 앱이 접속한 서버 주소. TCP_DIY에서 IP를 비우면 서버가 이 주소를 기기에 알려 주는데,
+     * LAN IPv4가 아니면 서버가 400으로 거절하므로 보내기 전에 막는다. null이면 이 검사를 건너뛴다.
+     */
+    public static Result validate(String protocolType, String deviceName, String payload,
+                                  String ssid, String password, String serverHost) {
         String nameError = checkName(deviceName);
-        if (nameError != null) return Result.fail(nameError);
+        if (nameError != null) return Result.fail(Field.NAME, nameError);
 
         String wifiError = checkWifi(ssid, password);
-        if (wifiError != null) return Result.fail(wifiError);
+        if (wifiError != null) return Result.fail(Field.WIFI, wifiError);
 
         String raw = payload == null ? "" : payload;
-        if (hasControlChar(raw)) return Result.fail("페어링 코드·서버 IP에 줄바꿈 같은 제어 문자를 쓸 수 없습니다.");
+        if (hasControlChar(raw)) return Result.fail(Field.PAYLOAD, "페어링 코드·서버 IP에 줄바꿈 같은 제어 문자를 쓸 수 없습니다.");
 
         if ("MATTER".equals(protocolType)) return matterPayload(raw);
-        if ("TCP_DIY".equals(protocolType)) return tcpPayload(raw);
-        return Result.fail("알 수 없는 프로토콜입니다.");
+        if ("TCP_DIY".equals(protocolType)) return tcpPayload(raw, serverHost);
+        return Result.fail(Field.TYPE, "알 수 없는 프로토콜입니다.");
     }
 
     /** 설정 화면에서도 저장 전에 쓴다. 공백·따옴표는 허용하고 제어 문자와 길이만 막는다. */
@@ -70,32 +88,46 @@ public final class CommissionInputValidator {
     private static Result matterPayload(String raw) {
         if (raw.startsWith(QR_PREFIX)) {
             String body = raw.substring(QR_PREFIX.length());
-            if (body.isEmpty()) return Result.fail("QR 내용이 비어 있습니다.");
+            if (body.isEmpty()) return Result.fail(Field.PAYLOAD, "QR 내용이 비어 있습니다.");
             for (int i = 0; i < body.length(); i++) {
                 char c = body.charAt(i);
                 boolean ok = (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || c == '.' || c == '-';
-                if (!ok) return Result.fail("QR 내용에 쓸 수 없는 문자가 있습니다.");
+                if (!ok) return Result.fail(Field.PAYLOAD, "QR 내용에 쓸 수 없는 문자가 있습니다.");
             }
-            return new Result(null, raw);
+            return Result.ok(raw);
         }
         String digits = raw.replace("-", "").replace(" ", "");
-        if (digits.isEmpty()) return Result.fail("페어링 코드를 입력해주세요.");
+        if (digits.isEmpty()) return Result.fail(Field.PAYLOAD, "페어링 코드를 입력해주세요.");
         for (int i = 0; i < digits.length(); i++) {
             char c = digits.charAt(i);
-            if (c < '0' || c > '9') return Result.fail("페어링 코드는 숫자 11자리 또는 21자리입니다(QR이면 MT:로 시작).");
+            if (c < '0' || c > '9') return Result.fail(Field.PAYLOAD, "페어링 코드는 숫자 11자리 또는 21자리입니다(QR이면 MT:로 시작).");
         }
         if (digits.length() != 11 && digits.length() != 21) {
-            return Result.fail("페어링 코드는 숫자 11자리 또는 21자리입니다(지금 " + digits.length() + "자리).");
+            return Result.fail(Field.PAYLOAD, "페어링 코드는 숫자 11자리 또는 21자리입니다(지금 " + digits.length() + "자리).");
         }
-        return new Result(null, digits);
+        return Result.ok(digits);
     }
 
     // 빈 값이면 서버가 앱이 접속한 서버 주소를 쓴다.
-    private static Result tcpPayload(String raw) {
+    private static Result tcpPayload(String raw, String serverHost) {
         String ip = raw.trim();
-        if (ip.isEmpty()) return new Result(null, "");
-        if (!isIpv4(ip)) return Result.fail("서버 IP는 192.168.0.10 같은 형식이어야 합니다(비우면 지금 접속한 서버 주소).");
-        return new Result(null, ip);
+        if (ip.isEmpty()) {
+            if (serverHost != null && !isLanIpv4(serverHost.trim())) {
+                return Result.fail(Field.PAYLOAD, "지금 서버 주소가 집 안 IP가 아니라 비워 둘 수 없습니다. 기기가 접속할 서버 IP를 적어 주세요.");
+            }
+            return Result.ok("");
+        }
+        if (!isIpv4(ip)) return Result.fail(Field.PAYLOAD, "서버 IP는 192.168.0.10 같은 형식이어야 합니다(비우면 지금 접속한 서버 주소).");
+        return Result.ok(ip);
+    }
+
+    /** 사설(10/8, 172.16/12, 192.168/16)·링크 로컬(169.254/16) IPv4인지. 서버가 받아 주는 범위와 같다. */
+    public static boolean isLanIpv4(String host) {
+        if (host == null || !isIpv4(host)) return false;
+        String[] p = host.split("\\.");
+        int a = Integer.parseInt(p[0]);
+        int b = Integer.parseInt(p[1]);
+        return a == 10 || (a == 172 && b >= 16 && b <= 31) || (a == 192 && b == 168) || (a == 169 && b == 254);
     }
 
     static boolean isIpv4(String ip) {
