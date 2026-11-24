@@ -2,6 +2,7 @@ package com.example.homeassistantapp.fragment;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -17,12 +18,15 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.network.CommissionInputValidator;
 import com.example.homeassistantapp.network.ServerDefaults;
+import com.example.homeassistantapp.view.QrPayload;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
+import com.example.homeassistantapp.viewmodel.QrScanResult;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButtonToggleGroup;
@@ -48,6 +52,15 @@ public class AddDeviceFragment extends Fragment {
     private View cardWifiMissing;
     private TextView textFormError;
     private Spinner spinnerDriver;
+    private Draft draft;
+    private View rowScanned;
+    private TextView textScanned;
+    private TextView textScannedError;
+
+    /** 스캔한 QR 내용. 화면을 돌려도 남지만 저장(Bundle·prefs)하지 않는다. */
+    public static class Draft extends ViewModel {
+        String scannedPayload;
+    }
 
     public static void open(FragmentActivity activity) {
         FragmentManager fm = activity.getSupportFragmentManager();
@@ -84,6 +97,33 @@ public class AddDeviceFragment extends Fragment {
         cardWifiMissing = view.findViewById(R.id.cardWifiMissing);
         textFormError = view.findViewById(R.id.textFormError);
         spinnerDriver = view.findViewById(R.id.spinnerDriver);
+        rowScanned = view.findViewById(R.id.rowScanned);
+        textScanned = view.findViewById(R.id.textScanned);
+        textScannedError = view.findViewById(R.id.textScannedError);
+        draft = new ViewModelProvider(this).get(Draft.class);
+
+        View btnScanQr = view.findViewById(R.id.btnScanQr);
+        // 카메라가 없는 기기는 직접 입력만 보인다.
+        boolean hasCamera = requireContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY);
+        btnScanQr.setVisibility(hasCamera ? View.VISIBLE : View.GONE);
+        btnScanQr.setOnClickListener(v -> QrScanFragment.open(requireActivity()));
+        view.findViewById(R.id.btnClearScanned).setOnClickListener(v -> {
+            draft.scannedPayload = null;
+            renderScanned();
+        });
+        renderScanned();
+
+        QrScanResult scanResult = new ViewModelProvider(requireActivity()).get(QrScanResult.class);
+        scanResult.getScanned().observe(getViewLifecycleOwner(), event -> {
+            String payload = event != null ? event.takeIfNotHandled() : null;
+            if (payload == null) return;
+            scanResult.clear();
+            draft.scannedPayload = payload;
+            editCode.setText("");
+            renderScanned();
+            // 이름까지 적었으면 바로 등록하고, 아니면 이름 칸 오류로 안내한다.
+            submit();
+        });
 
         layoutServerIp.setHelperText("비워 두면 지금 접속한 서버 주소(" + serverHost() + ")를 써요.");
         toggleType.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
@@ -127,7 +167,8 @@ public class AddDeviceFragment extends Fragment {
             return;
         }
         String type = isMatter() ? "MATTER" : "TCP_DIY";
-        String payload = isMatter() ? text(editCode) : text(editServerIp);
+        String payload = !isMatter() ? text(editServerIp)
+                : draft.scannedPayload != null ? draft.scannedPayload : text(editCode);
         CommissionInputValidator.Result checked = CommissionInputValidator.validate(
                 type, text(editName), payload, ssid, wifiPassword(), serverHost());
         if (!checked.isValid()) {
@@ -145,6 +186,11 @@ public class AddDeviceFragment extends Fragment {
                 editName.requestFocus();
                 break;
             case PAYLOAD:
+                if (isMatter() && draft.scannedPayload != null) {
+                    textScannedError.setText(result.error);
+                    textScannedError.setVisibility(View.VISIBLE);
+                    break;
+                }
                 TextInputLayout target = isMatter() ? layoutCode : layoutServerIp;
                 target.setError(result.error);
                 if (target.getEditText() != null) target.getEditText().requestFocus();
@@ -165,6 +211,16 @@ public class AddDeviceFragment extends Fragment {
         layoutCode.setError(null);
         layoutServerIp.setError(null);
         textFormError.setVisibility(View.GONE);
+        textScannedError.setVisibility(View.GONE);
+    }
+
+    // 스캔한 값이 있으면 앞 몇 자만 보이고, 직접 입력 칸은 숨긴다.
+    private void renderScanned() {
+        boolean scanned = draft.scannedPayload != null;
+        rowScanned.setVisibility(scanned ? View.VISIBLE : View.GONE);
+        layoutCode.setVisibility(scanned ? View.GONE : View.VISIBLE);
+        textScanned.setText(scanned ? "QR 인식됨 · " + QrPayload.masked(draft.scannedPayload) : "");
+        textScannedError.setVisibility(View.GONE);
     }
 
     private static void clearErrorOnEdit(EditText edit, TextInputLayout layout) {
