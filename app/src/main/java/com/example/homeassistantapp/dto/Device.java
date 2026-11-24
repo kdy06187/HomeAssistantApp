@@ -5,12 +5,15 @@ import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
 public class Device {
-    @SerializedName("id")
+    @SerializedName("deviceId")
     public String id;
     @SerializedName("name")
     public String name;
-    @SerializedName("type")
+    @SerializedName("protocolType")
     public String type;
+    // TCP_DIY는 마지막 접속 IP, Matter는 null
+    @SerializedName("ip")
+    public String ip;
     @SerializedName("state")
     public String state;
 

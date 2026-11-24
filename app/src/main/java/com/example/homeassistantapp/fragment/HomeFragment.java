@@ -130,7 +130,7 @@ public class HomeFragment extends Fragment {
                 for (Device device : sortedList) {
                     // MATTER 기기는 차트 기록을 한 번만 자동 요청한다.
                     if(!"TEMP_PAIRING".equals(device.getId()) && !device.isPairing()) {
-                        if (device.getType().equals("MATTER") && device.getPowerInfo() != null && device.getEnergyLogs() == null) {
+                        if ("MATTER".equals(device.getType()) && device.getPowerInfo() != null && device.getEnergyLogs() == null) {
                             if (!requestedChartIds.contains(device.getId())) {
                                 requestedChartIds.add(device.getId());
                                 viewModel.fetchDeviceEnergyHistory(device.getId());
@@ -152,7 +152,7 @@ public class HomeFragment extends Fragment {
         if (currentDevices != null) {
             for (Device device : currentDevices) {
                 if(!"TEMP_PAIRING".equals(device.getId()) && !device.isPairing()) {
-                    if (device.getType().equals("MATTER") && device.getPowerInfo() != null) {
+                    if ("MATTER".equals(device.getType()) && device.getPowerInfo() != null) {
                         viewModel.fetchDeviceEnergy(device.getId());
 
                         if (device.getEnergyLogs() != null) {

@@ -1,8 +1,7 @@
 package com.example.homeassistantapp.dto;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNull;
 
 import com.google.gson.Gson;
 
@@ -12,22 +11,23 @@ public class ControlResponseTest {
     private final Gson gson = new Gson();
 
     @Test
-    public void successMessage_isSucceeded() {
+    public void successBody_readsDeviceIdAndState() {
+        ControlResponse r = gson.fromJson("{\"deviceId\":\"TCP_A1B2C3D4E5F6\",\"state\":\"OFF\"}", ControlResponse.class);
+        assertEquals("TCP_A1B2C3D4E5F6", r.deviceId);
+        assertEquals("OFF", r.state);
+    }
+
+    @Test
+    public void acceptedBody_readsStateBeforeChange_andIgnoresExtraFields() {
+        ControlResponse r = gson.fromJson(
+                "{\"deviceId\":\"SN12345\",\"state\":\"ON\",\"pendingCommand\":\"OFF\",\"delaySeconds\":45}",
+                ControlResponse.class);
+        assertEquals("ON", r.state);
+    }
+
+    @Test
+    public void oldStatusKey_isNotRead() {
         ControlResponse r = gson.fromJson("{\"status\":\"ON\",\"message\":\"명령 성공!\"}", ControlResponse.class);
-        assertTrue(r.isCommandSucceeded());
-        assertEquals("ON", r.status);
-    }
-
-    @Test
-    public void failureMessageWith200_isNotSucceeded() {
-        ControlResponse r = gson.fromJson("{\"status\":\"UNKNOWN\",\"message\":\"명령 실패!\"}", ControlResponse.class);
-        assertFalse(r.isCommandSucceeded());
-        assertEquals("UNKNOWN", r.status);
-    }
-
-    @Test
-    public void missingMessage_isNotSucceeded() {
-        ControlResponse r = gson.fromJson("{\"status\":\"ON\"}", ControlResponse.class);
-        assertFalse(r.isCommandSucceeded());
+        assertNull(r.state);
     }
 }

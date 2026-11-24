@@ -5,10 +5,7 @@ import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
 public class DeviceListResponse {
-    @SerializedName("status")
-    public String status;
-
-    @SerializedName("total_count")
+    @SerializedName("totalCount")
     public int totalCount;
 
     @SerializedName("devices")

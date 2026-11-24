@@ -122,10 +122,10 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
         List<String> activeWidgets = new ArrayList<>();
 
         // TODO: 위젯 목록을 기기 타입이 아니라 저장값에서 불러오기
-        if (device.getType().equals("MATTER") || device.getType().equals("TCP_DIY")) {
+        if ("MATTER".equals(device.getType()) || "TCP_DIY".equals(device.getType())) {
             activeWidgets.add("TOGGLE");
         }
-        if (device.getType().equals("MATTER")) {
+        if ("MATTER".equals(device.getType())) {
             activeWidgets.add("ENERGY");
             activeWidgets.add("CHART");
         }

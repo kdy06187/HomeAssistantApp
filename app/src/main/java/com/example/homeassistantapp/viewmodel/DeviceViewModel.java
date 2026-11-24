@@ -123,18 +123,14 @@ public class DeviceViewModel extends ViewModel {
             @Override
             public void onResponse(Call<ControlResponse> call, Response<ControlResponse> response) {
                 ControlResponse body = response.body();
-                if (response.isSuccessful() && body != null && body.isCommandSucceeded()) {
-                    showToast(body.message);
-                    finishLoading(targetId, body.status);
+                if (response.isSuccessful()) {
+                    showToast("명령 성공!");
+                    finishLoading(targetId, body != null ? body.state : null);
                     if (PowerOffRecheck.shouldRecheck(command, true)) {
                         scheduleRecheck(targetId);
                     }
-                } else if (response.isSuccessful() && body != null) {
-                    // 서버는 명령이 실패해도 200을 준다. 이때 status는 서버가 아는 현재 상태다.
-                    showToast("제어 실패: " + (body.message != null ? body.message : "알 수 없는 응답"));
-                    finishLoading(targetId, body.status);
                 } else {
-                    // 400은 요청 형식 오류라 기기 상태와 무관하다. 401 이동은 UnauthorizedInterceptor가 맡는다.
+                    // 실패면 요청 전 상태로 되돌린다. 401 이동은 UnauthorizedInterceptor가 맡는다.
                     finishLoading(targetId, null);
                     showFailure("제어 실패: ", response);
                 }
@@ -171,8 +167,8 @@ public class DeviceViewModel extends ViewModel {
         RetrofitClient.getApi().addDevice(request).enqueue(new Callback<AddDeviceResponse>() {
             @Override
             public void onResponse(Call<AddDeviceResponse> call, Response<AddDeviceResponse> response){
-                if(response.isSuccessful() && response.body() != null){
-                    showToast("등록 성공: " + response.body().message);
+                if(response.isSuccessful()){
+                    showToast("기기 등록 성공!");
                     fetchDevices();
                 } else{
                     showFailure("등록 실패: ", response);
@@ -206,7 +202,7 @@ public class DeviceViewModel extends ViewModel {
         RetrofitClient.getApi().deleteDevice(new DeleteDeviceRequest(deviceId)).enqueue(new Callback<ControlResponse>() {
             @Override
             public void onResponse(Call<ControlResponse> call, Response<ControlResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
+                if (response.isSuccessful()) {
                     finishLoading(deviceId, null);
                     showToast("삭제 성공!");
                     fetchDevices();
@@ -256,10 +252,10 @@ public class DeviceViewModel extends ViewModel {
                     String powerText = String.format("실시간: %.1f W / 누적: %.4f kWh", currentPowerW, totalEnergyKwh);
 
                     updateDevice(deviceId, device -> device.setPowerInfo(powerText));
-                    finishLoading(deviceId, response.body().device_status);
+                    finishLoading(deviceId, response.body().state);
 
                 } else {
-                    // 400은 없는 기기·서버 오류라 기기가 꺼졌다는 뜻이 아니다. 상태는 그대로 둔다.
+                    // 실패는 기기가 꺼졌다는 뜻이 아니다. 상태는 그대로 둔다.
                     finishLoading(deviceId, null);
                     showFailure("전력 조회 실패: ", response);
                 }
@@ -280,11 +276,7 @@ public class DeviceViewModel extends ViewModel {
             @Override
             public void onResponse(Call<EnergyLogResponse> call, Response<EnergyLogResponse> response) {
                 EnergyLogResponse body = response.body();
-                if (response.isSuccessful() && body != null && body.hasError()) {
-                    // 이 API는 실패도 200 + {"error"}로 온다.
-                    finishLoading(deviceId, null);
-                    showToast("전력량 로그를 불러오지 못했습니다: " + body.error);
-                } else if (response.isSuccessful() && body != null) {
+                if (response.isSuccessful() && body != null) {
                     detailEnergyHistory.setValue(body.getLogs());
                     updateDevice(deviceId, device -> device.setEnergyLogs(body.getLogs()));
                     finishLoading(deviceId, body.stateOr(null));
@@ -318,7 +310,7 @@ public class DeviceViewModel extends ViewModel {
         List<Device> currentList = deviceList.getValue();
         if (currentList != null) {
             for (int i = 0; i < currentList.size(); i++) {
-                if (currentList.get(i).getId().equals(deviceId)) {
+                if (deviceId.equals(currentList.get(i).getId())) {
                     updateAction.accept(currentList.get(i));
                     // 같은 리스트를 다시 넣어 옵저버를 깨운다.
                     deviceList.setValue(currentList);

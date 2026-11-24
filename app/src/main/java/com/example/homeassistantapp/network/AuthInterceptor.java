@@ -12,7 +12,8 @@ import okhttp3.ResponseBody;
 
 /** 모든 요청에 Bearer 토큰 헤더를 붙인다. 토큰은 요청 때마다 Supplier에서 읽어 바뀐 값이 바로 쓰인다. */
 public class AuthInterceptor implements Interceptor {
-    static final String INVALID_TOKEN_BODY = "{\"error\": \"저장된 API 토큰 형식이 올바르지 않습니다.\"}";
+    static final String INVALID_TOKEN_BODY =
+            "{\"error\": {\"code\": \"UNAUTHORIZED\", \"message\": \"저장된 API 토큰 형식이 올바르지 않습니다.\"}}";
 
     private final Supplier<String> tokenSupplier;
 

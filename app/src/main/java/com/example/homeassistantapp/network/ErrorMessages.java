@@ -1,53 +1,36 @@
 package com.example.homeassistantapp.network;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
-import java.io.IOException;
-
-import okhttp3.ResponseBody;
 import retrofit2.Response;
 
-/** 서버 오류 본문({"result","message"} 또는 {"error"})에서 보여 줄 문구를 꺼낸다. */
+/** 실패 응답에서 보여 줄 문구. 서버 고정 문구를 쓰고, 없을 때만 상태코드별 앱 문구를 쓴다. */
 public final class ErrorMessages {
     private ErrorMessages() {}
 
-    /** message, 없으면 error. 둘 다 없거나 JSON이 아니면 null. */
-    public static String fromJson(String body) {
-        if (body == null || body.isEmpty()) return null;
-        try {
-            // 이 Gson 버전에는 정적 parseString이 없다.
-            JsonElement root = new JsonParser().parse(body);
-            if (!root.isJsonObject()) return null;
-            JsonObject obj = root.getAsJsonObject();
-            String message = stringOrNull(obj, "message");
-            return message != null ? message : stringOrNull(obj, "error");
-        } catch (RuntimeException e) {
-            return null;
-        }
+    public static String describe(ApiError error) {
+        if (error.message != null && !error.message.isEmpty()) return error.message;
+        return fallbackFor(error.httpCode);
     }
 
-    /** 서버 문구가 없으면 "HTTP 코드". errorBody는 한 번만 읽을 수 있어 응답당 한 번만 부른다. */
+    /** errorBody를 읽으므로 응답당 한 번만 부른다. 분기도 해야 하면 ApiError.from을 먼저 쓴다. */
     public static String describe(Response<?> response) {
-        String fromServer = null;
-        ResponseBody errorBody = response.errorBody();
-        if (errorBody != null) {
-            try {
-                fromServer = fromJson(errorBody.string());
-            } catch (IOException ignored) {
-            }
+        return describe(ApiError.from(response));
+    }
+
+    static String fallbackFor(int httpCode) {
+        switch (httpCode) {
+            case 400: return "요청 형식이 올바르지 않습니다.";
+            case 401: return "인증에 실패했습니다.";
+            case 404: return "찾을 수 없습니다.";
+            case 409: return "지금은 처리할 수 없는 요청입니다.";
+            case 413: return "요청이 너무 큽니다.";
+            case 500: return "서버 내부 오류입니다.";
+            case 502: return "기기가 응답하지 않습니다.";
+            default: return "HTTP " + httpCode;
         }
-        return fromServer != null ? fromServer : "HTTP " + response.code();
     }
 
     /** 401은 MainActivity가 토큰 안내를 한 번만 띄우므로, 요청마다 실패 토스트를 띄우지 않는다. */
     public static boolean isUnauthorized(int httpCode) {
         return httpCode == 401;
-    }
-
-    private static String stringOrNull(JsonObject obj, String key) {
-        JsonElement value = obj.get(key);
-        return value != null && value.isJsonPrimitive() ? value.getAsString() : null;
     }
 }
