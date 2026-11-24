@@ -62,6 +62,10 @@ public class DeviceViewModel extends ViewModel {
     private Device pairingDevice;
     private Runnable pollRunnable;
     private long commissionStartedAt;
+    // 진행·결과 화면이 보는 상태. null이면 등록한 적 없거나 결과를 확인함.
+    private final MutableLiveData<CommissionStatus> commissionStatus = new MutableLiveData<>();
+    // 결과가 나온 순간 1번. 진행 화면 밖에 있으면 MainActivity가 "보기" Snackbar를 띄운다.
+    private final MutableLiveData<OneTimeEvent<CommissionStatus>> commissionFinished = new MutableLiveData<>();
 
     private static final long LIST_REFRESH_DELAY_MS = 500L;
     private final RefreshGate listRefreshGate = new RefreshGate();
@@ -222,13 +226,28 @@ public class DeviceViewModel extends ViewModel {
     /** 등록 작업이 진행 중이면 true. 기기 추가 버튼을 잠그는 데 쓴다(서버도 동시에 1개만 받는다). */
     public LiveData<Boolean> getCommissioning() { return commissioning; }
 
-    public void addDevice(String type, String name, String payload, String ssid, String password, List<Integer> driver) {
+    public LiveData<CommissionStatus> getCommissionStatus() { return commissionStatus; }
+    public LiveData<OneTimeEvent<CommissionStatus>> getCommissionFinished() { return commissionFinished; }
+
+    /** 결과 화면에서 확인을 누르면 지운다. 진행 중이면 지우지 않는다. */
+    public void acknowledgeCommission() {
+        CommissionStatus current = commissionStatus.getValue();
+        if (current != null && !current.isActive()) commissionStatus.setValue(null);
+    }
+
+    private void finishCommission(CommissionStatus result) {
+        commissionStatus.setValue(result);
+        commissionFinished.setValue(new OneTimeEvent<>(result));
+    }
+
+    /** 등록을 시작하면 true. 이미 진행 중이면 false(서버도 동시에 1개만 받는다). */
+    public boolean addDevice(String type, String name, String payload, String ssid, String password, List<Integer> driver) {
         if (pairingDevice != null) {
             showToast("다른 기기 등록이 진행 중입니다.");
-            return;
+            return false;
         }
         AddDeviceRequest request = new AddDeviceRequest(type, name, payload, ssid, password, driver);
-        showToast("기기 등록을 서버에 요청했습니다...");
+        commissionStatus.setValue(CommissionStatus.sending(name));
 
         // 등록이 끝날 때까지 목록 맨 위에 보여 줄 임시 항목
         Device tempDevice = new Device();
@@ -244,27 +263,35 @@ public class DeviceViewModel extends ViewModel {
             @Override
             public void onResponse(Call<CommissionJobResponse> call, Response<CommissionJobResponse> response){
                 CommissionJobResponse body = response.body();
+                CommissionStatus current = currentCommission(name);
                 if (response.isSuccessful() && body != null && body.jobId != null) {
-                    showToast("기기 등록을 시작했습니다. 완료되면 알려 드립니다.");
                     commissionStartedAt = SystemClock.elapsedRealtime();
+                    commissionStatus.setValue(current.accepted(commissionStartedAt).withServerState(body.state));
                     schedulePoll(body.jobId);
                 } else if (response.isSuccessful()) {
                     // 작업 ID가 없으면 결과를 물을 수 없어 목록으로 확인한다.
                     endCommission();
-                    showToast("등록 결과를 확인하지 못했습니다. 기기 목록을 확인해 주세요.");
+                    finishCommission(current.unconfirmed());
                     fetchDevices();
                 } else {
-                    // 409 COMMISSION_BUSY, 400 INVALID_REQUEST 등
+                    // 400 INVALID_REQUEST, 409 COMMISSION_BUSY, 502 DEVICE_UNREACHABLE(서버 종료 중) 등
+                    ApiError error = ApiError.from(response);
                     endCommission();
-                    showFailure("등록 실패: ", response);
+                    finishCommission(CommissionStatus.rejected(name, error.httpCode, error.code, error.message));
                 }
             }
             @Override
             public void onFailure(Call<CommissionJobResponse> call, Throwable t){
                 endCommission();
-                showToast("통신 실패: " + t.getMessage());
+                finishCommission(CommissionStatus.rejected(name, 0, null, null));
             }
         });
+        return true;
+    }
+
+    private CommissionStatus currentCommission(String name) {
+        CommissionStatus current = commissionStatus.getValue();
+        return current != null ? current : CommissionStatus.sending(name);
     }
 
     private void schedulePoll(String jobId) {
@@ -290,29 +317,27 @@ public class DeviceViewModel extends ViewModel {
     }
 
     private void handlePoll(String jobId, CommissionPoller.Next next, CommissionJobResponse body) {
+        CommissionStatus current = currentCommission(pairingDevice != null ? pairingDevice.getName() : "");
         switch (next) {
             case POLL_AGAIN:
+                if (body != null) commissionStatus.setValue(current.withServerState(body.state));
                 schedulePoll(jobId);
                 break;
             case SUCCEEDED:
                 endCommission();
-                showToast(CommissionPoller.successMessage(body != null && body.isRestored()));
+                finishCommission(current.succeeded(body != null && body.isRestored()));
                 fetchDevices();
                 break;
             case FAILED:
                 CommissionJobResponse.JobError error = body != null ? body.error : null;
                 endCommission();
-                showToast(CommissionPoller.failureMessage(error));
+                finishCommission(current.failed(error != null ? error.code : null, error != null ? error.message : null));
                 if (CommissionPoller.shouldRefreshListAfterFailure(error)) fetchDevices();
                 break;
             case LOST:
-                endCommission();
-                showToast("등록 작업을 찾을 수 없습니다. 기기 목록에서 결과를 확인해 주세요.");
-                fetchDevices();
-                break;
             case TIMED_OUT:
                 endCommission();
-                showToast("등록 결과를 확인하지 못했습니다. 기기 목록을 확인해 주세요.");
+                finishCommission(current.unconfirmed());
                 fetchDevices();
                 break;
         }

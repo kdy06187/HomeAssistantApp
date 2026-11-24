@@ -175,8 +175,10 @@ public class AddDeviceFragment extends Fragment {
             showError(checked);
             return;
         }
-        viewModel.addDevice(type, text(editName), checked.payload, ssid, wifiPassword(), driverTypes());
-        getParentFragmentManager().popBackStack();
+        // 입력 화면은 뒤로 스택에 남겨 둔다. 서버가 거절하면 진행 화면에서 돌아와 고칠 수 있다.
+        if (viewModel.addDevice(type, text(editName), checked.payload, ssid, wifiPassword(), driverTypes())) {
+            CommissionProgressFragment.open(requireActivity());
+        }
     }
 
     private void showError(CommissionInputValidator.Result result) {

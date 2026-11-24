@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.homeassistantapp.fragment.CommissionProgressFragment;
 import com.example.homeassistantapp.fragment.DeviceFragment;
 import com.example.homeassistantapp.fragment.HomeFragment;
 import com.example.homeassistantapp.fragment.SettingsFragment;
@@ -19,6 +20,7 @@ import com.example.homeassistantapp.network.RetrofitClient;
 import com.example.homeassistantapp.network.ServerDefaults;
 import com.example.homeassistantapp.security.TokenStore;
 import com.example.homeassistantapp.view.TileConfigStore;
+import com.example.homeassistantapp.viewmodel.CommissionStatus;
 import com.example.homeassistantapp.viewmodel.ControlFailure;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -93,6 +95,18 @@ public class MainActivity extends AppCompatActivity {
             Snackbar.make(findViewById(R.id.fragmentContainer), failure.message, Snackbar.LENGTH_LONG)
                     .setAnchorView(bottomNav.getVisibility() == View.VISIBLE ? bottomNav : null)
                     .setAction("다시 시도", v -> viewModel.controlDevice(failure.deviceId, failure.command))
+                    .show();
+        });
+
+        // 등록 결과가 나왔을 때 진행 화면 밖에 있으면 알려 주고 결과 화면으로 갈 수 있게 한다.
+        viewModel.getCommissionFinished().observe(this, event -> {
+            CommissionStatus result = event != null ? event.takeIfNotHandled() : null;
+            if (result == null) return;
+            if (fragmentManager.findFragmentById(R.id.fragmentContainer) instanceof CommissionProgressFragment) return;
+            Snackbar.make(findViewById(R.id.fragmentContainer),
+                            "‘" + result.deviceName + "’ 등록 결과가 나왔어요.", Snackbar.LENGTH_LONG)
+                    .setAnchorView(bottomNav.getVisibility() == View.VISIBLE ? bottomNav : null)
+                    .setAction("보기", v -> CommissionProgressFragment.open(this))
                     .show();
         });
 

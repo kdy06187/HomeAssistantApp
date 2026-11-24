@@ -83,8 +83,8 @@ public class HomeFragment extends Fragment {
         ExtendedFloatingActionButton fab = view.findViewById(R.id.fabHomeAddDevice);
         View emptyView = view.findViewById(R.id.emptyHome);
         View emptyAdd = view.findViewById(R.id.btnEmptyAddDevice);
-        fab.setOnClickListener(v -> AddDeviceFragment.open(requireActivity()));
-        emptyAdd.setOnClickListener(v -> AddDeviceFragment.open(requireActivity()));
+        fab.setOnClickListener(v -> CommissionProgressFragment.openAddOrProgress(requireActivity()));
+        emptyAdd.setOnClickListener(v -> CommissionProgressFragment.openAddOrProgress(requireActivity()));
 
         viewModel.getDeviceList().observe(getViewLifecycleOwner(), devices -> {
             swipeRefresh.setRefreshing(false);
@@ -100,12 +100,9 @@ public class HomeFragment extends Fragment {
 
         viewModel.getTileTrends().observe(getViewLifecycleOwner(), adapter::setTrends);
 
-        // 등록 작업이 끝날 때까지 새 등록을 막는다(서버도 동시에 1개만 받는다).
-        viewModel.getCommissioning().observe(getViewLifecycleOwner(), running -> {
-            boolean idle = !Boolean.TRUE.equals(running);
-            fab.setEnabled(idle);
-            emptyAdd.setEnabled(idle);
-        });
+        // 등록 중에는 새 등록 대신 진행 화면을 연다(서버도 동시에 1개만 받는다).
+        viewModel.getCommissioning().observe(getViewLifecycleOwner(),
+                running -> fab.setText(Boolean.TRUE.equals(running) ? "등록 진행 보기" : "기기 추가"));
     }
 
     @Override

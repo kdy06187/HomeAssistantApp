@@ -148,10 +148,10 @@ public class DeviceFragment extends Fragment {
 
         viewModel.fetchDevices();
         ExtendedFloatingActionButton fabAddDevice = view.findViewById(R.id.fabAddDevice);
-        fabAddDevice.setOnClickListener(v -> AddDeviceFragment.open(requireActivity()));
-        // 등록 작업이 끝날 때까지 새 등록을 막는다(서버도 동시에 1개만 받는다).
+        fabAddDevice.setOnClickListener(v -> CommissionProgressFragment.openAddOrProgress(requireActivity()));
+        // 등록 중에는 새 등록 대신 진행 화면을 연다(서버도 동시에 1개만 받는다).
         viewModel.getCommissioning().observe(getViewLifecycleOwner(),
-                running -> fabAddDevice.setEnabled(!Boolean.TRUE.equals(running)));
+                running -> fabAddDevice.setText(Boolean.TRUE.equals(running) ? "등록 진행 보기" : "기기 추가"));
     }
 
     private void showDevices(List<Device> devices) {
