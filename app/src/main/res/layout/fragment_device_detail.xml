@@ -52,6 +52,20 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp" />
+
+            <!-- 되돌리기 어려운 동작이라 맨 아래에 오류 색 글자 버튼으로 따로 둔다. -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDetailDelete"
+                style="@style/Widget.Material3.Button.TextButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="24dp"
+                android:minHeight="48dp"
+                android:text="기기 삭제"
+                android:textColor="?attr/colorError"
+                app:icon="@drawable/ic_delete"
+                app:iconTint="?attr/colorError" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </LinearLayout>

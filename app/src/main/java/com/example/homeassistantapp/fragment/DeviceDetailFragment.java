@@ -131,6 +131,10 @@ public class DeviceDetailFragment extends Fragment {
             if (isMatter() && !historyRequested) showOrLoadHistory();
             updatePolling();
         });
+        // 삭제가 성공하면 목록이 새로 오고, 기기가 빠졌으니 위의 관찰에서 상세가 닫힌다.
+        view.findViewById(R.id.btnDetailDelete).setOnClickListener(v -> {
+            if (device != null) DeleteDeviceDialog.show(this, viewModel, device);
+        });
         viewModel.getDetailEnergy().observe(getViewLifecycleOwner(), reading -> bindPower());
         viewModel.getDetailHistory().observe(getViewLifecycleOwner(), this::bindHistory);
         // 앱이 종료됐다 상세로 복원되면 목록이 비어 있다.

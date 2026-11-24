@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -21,7 +20,6 @@ import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.view.DeviceAdapter;
 import com.example.homeassistantapp.view.DeviceOrder;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
-import com.google.android.material.color.MaterialColors;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 
 import java.util.List;
@@ -64,7 +62,7 @@ public class DeviceFragment extends Fragment {
 
             @Override
             public void onDelete(Device device) {
-                showDeviceDeleteDialog(device);
+                DeleteDeviceDialog.show(DeviceFragment.this, viewModel, device);
             }
 
             @Override
@@ -165,16 +163,4 @@ public class DeviceFragment extends Fragment {
                 .apply();
     }
 
-    private void showDeviceDeleteDialog(Device device) {
-        AlertDialog dialog = new AlertDialog.Builder(requireContext())
-                .setTitle("기기 삭제")
-                .setMessage("‘" + device.getName() + "’ 기기를 삭제할까요? 홈과 기기 목록에서 사라져요.")
-                .setPositiveButton("삭제", (d, which) -> viewModel.deleteDevice(device.getId()))
-                .setNegativeButton("취소", null)
-                .show();
-        // 되돌리기 어려운 동작이라 삭제 버튼을 오류 색으로 구분한다.
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
-                MaterialColors.getColor(dialog.getButton(AlertDialog.BUTTON_POSITIVE),
-                        androidx.appcompat.R.attr.colorError));
-    }
 }
