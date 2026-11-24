@@ -15,7 +15,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.homeassistantapp.R;
-import com.example.homeassistantapp.activity.DeviceDetailActivity;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.view.DeviceOrder;
 import com.example.homeassistantapp.view.HomeTile;
@@ -57,7 +56,7 @@ public class HomeFragment extends Fragment {
 
             @Override
             public void onOpen(Device device) {
-                startActivity(DeviceDetailActivity.intentFor(requireContext(), device));
+                DeviceDetailFragment.open(requireActivity(), device.getId());
             }
         });
         recyclerView.setAdapter(adapter);

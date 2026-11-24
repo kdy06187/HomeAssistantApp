@@ -3,11 +3,13 @@ package com.example.homeassistantapp;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.homeassistantapp.fragment.DeviceFragment;
@@ -34,9 +36,18 @@ public class MainActivity extends AppCompatActivity {
         RetrofitClient.rebuildClient(ip, port);
         RetrofitClient.setApiToken(TokenStore.load(this));
         BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
+        FragmentManager fragmentManager = getSupportFragmentManager();
+
+        // 상세는 전체 화면이라 열려 있는 동안 하단 탭을 숨긴다.
+        fragmentManager.addOnBackStackChangedListener(() -> syncBottomNav(bottomNav));
+        syncBottomNav(bottomNav);
 
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
+            // 상세가 열린 채 탭이 바뀌면(401 → 설정 등) 상세를 먼저 닫는다.
+            if (fragmentManager.getBackStackEntryCount() > 0) {
+                fragmentManager.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            }
 
             int itemId = item.getItemId();
             if (itemId == R.id.nav_home) {
@@ -79,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
             ControlFailure failure = event != null ? event.takeIfNotHandled() : null;
             if (failure == null) return;
             Snackbar.make(findViewById(R.id.fragmentContainer), failure.message, Snackbar.LENGTH_LONG)
-                    .setAnchorView(bottomNav)
+                    .setAnchorView(bottomNav.getVisibility() == View.VISIBLE ? bottomNav : null)
                     .setAction("다시 시도", v -> viewModel.controlDevice(failure.deviceId, failure.command))
                     .show();
         });
@@ -102,7 +113,10 @@ public class MainActivity extends AppCompatActivity {
                 bottomNav.setSelectedItemId(R.id.nav_settings);
             }
         });
-
     }
 
+    private void syncBottomNav(BottomNavigationView bottomNav) {
+        boolean detailOpen = getSupportFragmentManager().getBackStackEntryCount() > 0;
+        bottomNav.setVisibility(detailOpen ? View.GONE : View.VISIBLE);
+    }
 }
