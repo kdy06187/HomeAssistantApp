@@ -16,8 +16,11 @@ public final class WifiPasswordStore {
 
     private WifiPasswordStore() {}
 
+    /** 성공하면 남아 있던 평문도 지운다. 안 지우면 다음 실행의 옮기기가 옛 값으로 덮어쓴다. */
     public static boolean save(Context context, String password) {
-        return STORE.save(context, password);
+        if (!STORE.save(context, password)) return false;
+        context.getSharedPreferences(LEGACY_PREFS, Context.MODE_PRIVATE).edit().remove(LEGACY_KEY).commit();
+        return true;
     }
 
     public static WifiPassword read(Context context) {
