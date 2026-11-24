@@ -67,28 +67,24 @@ public class CommissionPollerTest {
     }
 
     @Test
-    public void restoredMessage() {
+    public void restoredFlag() {
         assertTrue(job("{\"restored\":true}").isRestored());
         assertFalse(job("{\"restored\":null}").isRestored());
         assertFalse(job("{}").isRestored());
-        assertEquals("기기 등록 성공! 이전 기록을 이어받았습니다.", CommissionPoller.successMessage(true));
-        assertEquals("기기 등록 성공!", CommissionPoller.successMessage(false));
     }
 
     @Test
-    public void alreadyRegistered_ownMessageAndRefresh() {
+    public void alreadyRegistered_refreshesList() {
         CommissionJobResponse.JobError e = job(
                 "{\"error\":{\"code\":\"ALREADY_REGISTERED\",\"message\":\"이미 등록된 기기입니다.\"}}").error;
-        assertEquals("이미 등록된 기기입니다.", CommissionPoller.failureMessage(e));
         assertTrue(CommissionPoller.shouldRefreshListAfterFailure(e));
     }
 
     @Test
-    public void otherFailures_useServerMessage() {
+    public void otherFailures_noListRefresh() {
         CommissionJobResponse.JobError e = job(
                 "{\"error\":{\"code\":\"COMMISSION_TIMEOUT\",\"message\":\"기기 등록 시간이 초과되었습니다.\"}}").error;
-        assertEquals("등록 실패: 기기 등록 시간이 초과되었습니다.", CommissionPoller.failureMessage(e));
         assertFalse(CommissionPoller.shouldRefreshListAfterFailure(e));
-        assertEquals("등록 실패: 기기 등록에 실패했습니다.", CommissionPoller.failureMessage(null));
+        assertFalse(CommissionPoller.shouldRefreshListAfterFailure(null));
     }
 }

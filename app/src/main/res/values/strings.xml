@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">HomeAssistantApp</string>
-    <string-array name="protocol_array"><item>TCP_DIY</item><item>MATTER</item></string-array>
     <string-array name="driver_display_array">
         <item>없음 (기본 플러그/스위치)</item>
         <item>PC 제어 드라이버</item>

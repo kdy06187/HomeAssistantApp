@@ -43,18 +43,8 @@ final class CommissionPoller {
         return elapsedMs + INTERVAL_MS > LIMIT_MS ? Next.TIMED_OUT : Next.POLL_AGAIN;
     }
 
-    static String successMessage(boolean restored) {
-        return restored ? "기기 등록 성공! 이전 기록을 이어받았습니다." : "기기 등록 성공!";
-    }
-
     /** ALREADY_REGISTERED는 실패지만 이미 목록에 있으므로 목록을 새로고침한다. */
     static boolean shouldRefreshListAfterFailure(CommissionJobResponse.JobError error) {
         return error != null && "ALREADY_REGISTERED".equals(error.code);
-    }
-
-    static String failureMessage(CommissionJobResponse.JobError error) {
-        if (error != null && "ALREADY_REGISTERED".equals(error.code)) return "이미 등록된 기기입니다.";
-        if (error != null && error.message != null && !error.message.isEmpty()) return "등록 실패: " + error.message;
-        return "등록 실패: 기기 등록에 실패했습니다.";
     }
 }
