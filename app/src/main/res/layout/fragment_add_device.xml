@@ -43,6 +43,7 @@
                     android:padding="16dp">
 
                     <TextView
+                        android:id="@+id/textWifiMissing"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="기기에 알려 줄 Wi-Fi가 아직 없어요. 설정 탭에서 Wi-Fi 이름과 비밀번호를 먼저 저장해 주세요."

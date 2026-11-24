@@ -24,6 +24,8 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.network.CommissionInputValidator;
 import com.example.homeassistantapp.network.ServerDefaults;
+import com.example.homeassistantapp.security.WifiPassword;
+import com.example.homeassistantapp.security.WifiPasswordStore;
 import com.example.homeassistantapp.view.QrPayload;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.example.homeassistantapp.viewmodel.QrScanResult;
@@ -38,7 +40,6 @@ import java.util.List;
 /** 기기 추가 입력(전체 화면). 홈·기기 탭의 추가 버튼에서 열리고, 등록을 시작하면 진행 화면으로 넘어간다. */
 public class AddDeviceFragment extends Fragment {
     private static final String KEY_WIFI_SSID = "WIFI_SSID";
-    private static final String KEY_WIFI_PASSWORD = "WIFI_PASSWORD";
 
     private DeviceViewModel viewModel;
     private MaterialButtonToggleGroup toggleType;
@@ -51,6 +52,7 @@ public class AddDeviceFragment extends Fragment {
     private View groupMatter;
     private View cardWifiMissing;
     private TextView textFormError;
+    private TextView textWifiMissing;
     private Spinner spinnerDriver;
     private Draft draft;
     private View rowScanned;
@@ -96,6 +98,7 @@ public class AddDeviceFragment extends Fragment {
         groupMatter = view.findViewById(R.id.groupMatter);
         cardWifiMissing = view.findViewById(R.id.cardWifiMissing);
         textFormError = view.findViewById(R.id.textFormError);
+        textWifiMissing = view.findViewById(R.id.textWifiMissing);
         spinnerDriver = view.findViewById(R.id.spinnerDriver);
         rowScanned = view.findViewById(R.id.rowScanned);
         textScanned = view.findViewById(R.id.textScanned);
@@ -143,7 +146,18 @@ public class AddDeviceFragment extends Fragment {
     public void onResume() {
         super.onResume();
         // 설정 탭에서 Wi-Fi를 저장하고 돌아왔을 수 있어 보일 때마다 다시 본다.
-        cardWifiMissing.setVisibility(wifiSsid().isEmpty() ? View.VISIBLE : View.GONE);
+        renderWifiCard();
+    }
+
+    private boolean wifiReady() {
+        return !wifiSsid().isEmpty() && WifiPasswordStore.read(requireContext()).isUsable();
+    }
+
+    private void renderWifiCard() {
+        cardWifiMissing.setVisibility(wifiReady() ? View.GONE : View.VISIBLE);
+        textWifiMissing.setText(wifiSsid().isEmpty()
+                ? "기기에 알려 줄 Wi-Fi가 아직 없어요. 설정 탭에서 Wi-Fi 이름과 비밀번호를 먼저 저장해 주세요."
+                : "저장된 Wi-Fi 비밀번호를 읽을 수 없어요. 설정 탭에서 비밀번호를 다시 저장해 주세요.");
     }
 
     private boolean isMatter() {
@@ -161,8 +175,8 @@ public class AddDeviceFragment extends Fragment {
     private void submit() {
         clearErrors();
         String ssid = wifiSsid();
-        if (ssid.isEmpty()) {
-            cardWifiMissing.setVisibility(View.VISIBLE);
+        if (!wifiReady()) {
+            renderWifiCard();
             showFormError("Wi-Fi를 먼저 설정해 주세요.");
             return;
         }
@@ -261,8 +275,10 @@ public class AddDeviceFragment extends Fragment {
         return prefs().getString(KEY_WIFI_SSID, "");
     }
 
+    // 메모리에만 두고 등록 요청 본문으로만 보낸다.
     private String wifiPassword() {
-        return prefs().getString(KEY_WIFI_PASSWORD, "");
+        WifiPassword saved = WifiPasswordStore.read(requireContext());
+        return saved.isUsable() ? saved.value : "";
     }
 
     private String serverHost() {

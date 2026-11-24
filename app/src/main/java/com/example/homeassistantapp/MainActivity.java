@@ -19,6 +19,7 @@ import com.example.homeassistantapp.fragment.SettingsFragment;
 import com.example.homeassistantapp.network.RetrofitClient;
 import com.example.homeassistantapp.network.ServerDefaults;
 import com.example.homeassistantapp.security.TokenStore;
+import com.example.homeassistantapp.security.WifiPasswordStore;
 import com.example.homeassistantapp.view.TileConfigStore;
 import com.example.homeassistantapp.viewmodel.CommissionStatus;
 import com.example.homeassistantapp.viewmodel.ControlFailure;
@@ -31,6 +32,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        // 예전 버전이 평문으로 둔 Wi-Fi 비밀번호를 암호화해 옮긴다. 실패하면 다음 실행에 다시 한다.
+        WifiPasswordStore.migrateLegacy(this);
 
         SharedPreferences prefs = getSharedPreferences(ServerDefaults.PREFS_NAME, Context.MODE_PRIVATE);
         String ip = prefs.getString(ServerDefaults.KEY_SERVER_IP, ServerDefaults.IP);

@@ -24,6 +24,8 @@ import com.example.homeassistantapp.network.ServerDefaults;
 import com.example.homeassistantapp.network.SettingsInputValidator;
 import com.example.homeassistantapp.security.TokenFormat;
 import com.example.homeassistantapp.security.TokenStore;
+import com.example.homeassistantapp.security.WifiPassword;
+import com.example.homeassistantapp.security.WifiPasswordStore;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.textfield.TextInputEditText;
@@ -79,7 +81,6 @@ public class SettingsFragment extends Fragment {
         etServerIp.setText(prefs.getString(ServerDefaults.KEY_SERVER_IP, ServerDefaults.IP));
         etServerPort.setText(prefs.getString(ServerDefaults.KEY_SERVER_PORT, ServerDefaults.PORT));
         etWifiSsid.setText(prefs.getString("WIFI_SSID", ""));
-        etWifiPassword.setText(prefs.getString("WIFI_PASSWORD", ""));
 
         btnSaveSettings.setOnClickListener(v -> saveSettings());
         btnTestConnection.setOnClickListener(v -> testConnection());
@@ -96,6 +97,7 @@ public class SettingsFragment extends Fragment {
         etServerPort.addTextChangedListener(invalidateTest);
         etApiToken.addTextChangedListener(invalidateTest);
         renderTokenState();
+        renderWifiPasswordState();
 
         // 401로 이 탭에 왔으면 무엇을 고쳐야 하는지 토큰 칸에 바로 보인다.
         if (RetrofitClient.hadUnauthorizedSinceSave()) {
@@ -114,6 +116,22 @@ public class SettingsFragment extends Fragment {
         tilApiToken.setHint(isFirstRun() ? "API 토큰 (필수)" : "API 토큰 (저장됨 · 바꿀 때만 입력)");
         cardFirstRun.setVisibility(isFirstRun() ? View.VISIBLE : View.GONE);
         renderSaveButton();
+    }
+
+    // 저장된 비밀번호는 토큰처럼 화면에 다시 채우지 않는다.
+    private void renderWifiPasswordState() {
+        TextInputLayout layout = fieldLayouts.get(SettingsInputValidator.Field.WIFI_PASSWORD);
+        WifiPassword saved = WifiPasswordStore.read(requireContext());
+        if (saved.state == WifiPassword.State.OK) {
+            layout.setHint("비밀번호 (저장됨 · 바꿀 때만 입력)");
+            layout.setHelperText(null);
+        } else if (saved.state == WifiPassword.State.UNREADABLE) {
+            layout.setHint("비밀번호");
+            layout.setHelperText("저장된 비밀번호를 읽을 수 없어요. 다시 입력해 주세요.");
+        } else {
+            layout.setHint("비밀번호");
+            layout.setHelperText(null);
+        }
     }
 
     private void renderSaveButton() {
@@ -197,11 +215,19 @@ public class SettingsFragment extends Fragment {
         if (showErrors(errors)) return;
         if (!ConnectionTestResult.canSave(firstRun, testedInputs, currentInputs())) return;
 
+        // 비밀번호 칸이 비어 있으면 저장된 비밀번호를 그대로 둔다.
+        if (!password.isEmpty() && !WifiPasswordStore.save(requireContext(), password)) {
+            fieldLayouts.get(SettingsInputValidator.Field.WIFI_PASSWORD)
+                    .setError("비밀번호를 안전하게 저장하지 못했어요. 다시 시도해 주세요.");
+            return;
+        }
+        if (!password.isEmpty()) etWifiPassword.setText("");
+        renderWifiPasswordState();
+
         prefs.edit()
                 .putString(ServerDefaults.KEY_SERVER_IP, ip)
                 .putString(ServerDefaults.KEY_SERVER_PORT, port)
                 .putString("WIFI_SSID", ssid)
-                .putString("WIFI_PASSWORD", password)
                 .apply();
 
         RetrofitClient.rebuildClient(ip, port);
