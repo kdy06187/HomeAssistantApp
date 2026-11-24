@@ -68,8 +68,9 @@ public class RetrofitClient {
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(60, TimeUnit.SECONDS)
                 .writeTimeout(60, TimeUnit.SECONDS)
-                .addInterceptor(new AuthInterceptor(() -> apiToken))
+                // AuthInterceptor가 만든 401(형식이 틀린 토큰)도 받도록 401 감시를 바깥에 둔다.
                 .addInterceptor(new UnauthorizedInterceptor(RetrofitClient::notifyUnauthorized))
+                .addInterceptor(new AuthInterceptor(() -> apiToken))
                 .addInterceptor(new CommissionTimeoutInterceptor())
                 .build();
 

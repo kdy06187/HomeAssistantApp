@@ -15,6 +15,7 @@ import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.network.RetrofitClient;
 import com.example.homeassistantapp.network.ServerDefaults;
 
+import com.example.homeassistantapp.security.TokenFormat;
 import com.example.homeassistantapp.security.TokenStore;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -62,11 +63,16 @@ public class SettingsFragment extends Fragment {
         String port = etServerPort.getText() != null ? etServerPort.getText().toString().trim() : "";
         String ssid = etWifiSsid.getText() != null ? etWifiSsid.getText().toString().trim() : "";
         String password = etWifiPassword.getText() != null ? etWifiPassword.getText().toString().trim() : "";
-        String token = etApiToken.getText() != null ? etApiToken.getText().toString().trim() : "";
+        String token = TokenFormat.normalize(etApiToken.getText() != null ? etApiToken.getText().toString() : null);
 
         // 저장된 토큰도 입력도 없으면 모든 요청이 401이 되므로 막는다.
         if (token.isEmpty() && !TokenStore.hasToken(requireContext())) {
             Toast.makeText(getContext(), "서버 API 토큰을 입력해주세요.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!token.isEmpty() && !TokenFormat.isValid(token)) {
+            Toast.makeText(getContext(), "API 토큰에는 영문·숫자·기호만 쓸 수 있습니다(공백·줄바꿈·한글 불가).", Toast.LENGTH_LONG).show();
             return;
         }
 
