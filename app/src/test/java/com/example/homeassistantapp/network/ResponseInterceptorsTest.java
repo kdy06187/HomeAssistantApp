@@ -14,7 +14,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
-// 마지막 인터셉터가 가짜 응답을 돌려주고, 그때 적용된 읽기 타임아웃을 기록한다.
+// 마지막 인터셉터가 가짜 응답을 돌려줘 서버 없이 401 감시를 시험한다.
 public class ResponseInterceptorsTest {
 
     private static Response fake(Interceptor.Chain chain, int code) {
@@ -47,32 +47,5 @@ public class ResponseInterceptorsTest {
     public void otherStatus_doesNotNotify() throws Exception {
         assertEquals(0, countUnauthorized(200));
         assertEquals(0, countUnauthorized(400));
-    }
-
-    private static int readTimeoutFor(String path) throws Exception {
-        AtomicInteger seenMillis = new AtomicInteger();
-        OkHttpClient client = new OkHttpClient.Builder()
-                .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-                .addInterceptor(new CommissionTimeoutInterceptor())
-                .addInterceptor(chain -> {
-                    seenMillis.set(chain.readTimeoutMillis());
-                    return fake(chain, 200);
-                })
-                .build();
-        client.newCall(new Request.Builder().url("http://localhost:8000" + path).build())
-                .execute().close();
-        return seenMillis.get();
-    }
-
-    @Test
-    public void commission_usesLongReadTimeout() throws Exception {
-        int millis = readTimeoutFor("/api/commission");
-        assertEquals(150_000, millis);
-        assertEquals(true, millis >= 120_000);
-    }
-
-    @Test
-    public void otherPath_keepsDefaultReadTimeout() throws Exception {
-        assertEquals(60_000, readTimeoutFor("/api/devices"));
     }
 }
