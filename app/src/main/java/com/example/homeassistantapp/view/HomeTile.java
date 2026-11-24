@@ -82,7 +82,7 @@ public final class HomeTile {
         return value == null ? NO_VALUE : String.format(Locale.ROOT, "%.1f W", value);
     }
 
-    static String kwh(Double value) {
+    public static String kwh(Double value) {
         return value == null ? NO_VALUE : String.format(Locale.ROOT, "%.2f kWh", value);
     }
 }

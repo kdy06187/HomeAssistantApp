@@ -406,12 +406,39 @@ public class DeviceViewModel extends ViewModel {
         });
     }
     public void fetchDeviceEnergy(String deviceId) {
-        // 홈에 들어올 때마다 자동으로 부르므로 LOADING으로 바꾸지 않고(타일이 깜빡이지 않게) 토스트도 띄우지 않는다.
+        // 홈에 들어올 때마다 자동으로 부르므로 LOADING으로 바꾸지 않는다(타일이 깜빡이지 않게).
+        requestEnergy(deviceId, new EnergyListener() {
+            @Override
+            public void onSuccess() {}
+
+            @Override
+            public void onGone() {}
+
+            @Override
+            public void onFailure(ApiError error, String reason) {
+                if (error != null) {
+                    showFailure("전력 조회 실패: ", error);
+                } else {
+                    showToast("통신 실패: " + reason);
+                }
+            }
+        });
+    }
+
+    private interface EnergyListener {
+        void onSuccess();
+        /** 기기가 사라짐(404). 목록 새로고침은 이미 예약했다. */
+        void onGone();
+        /** 통신 실패면 error가 null. */
+        void onFailure(ApiError error, String reason);
+    }
+
+    /** E6 요청. 성공하면 기기의 전력 값과 상태를 바꾼다. */
+    private void requestEnergy(String deviceId, EnergyListener listener) {
         RetrofitClient.getApi().getDeviceEnergy(deviceId).enqueue(new Callback<EnergyResponse>() {
             @Override
             public void onResponse(Call<EnergyResponse> call, Response<EnergyResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-
                     // 서버 단위는 mW·mWh
                     double currentPowerW = response.body().activePowerMw / 1000.0;
                     double totalEnergyKwh = response.body().totalEnergyMwh / 1000000.0;
@@ -423,23 +450,88 @@ public class DeviceViewModel extends ViewModel {
                         // 제어 등 다른 요청이 진행 중이면 그 결과가 상태를 정한다.
                         if (state != null && !pendingStates.isPending(deviceId)) device.setState(state);
                     });
-
+                    listener.onSuccess();
                 } else {
                     // 실패는 기기가 꺼졌다는 뜻이 아니다(502도 서버 상태는 그대로). 상태는 그대로 둔다.
                     ApiError error = ApiError.from(response);
                     if (isDeviceGone(error)) {
                         scheduleListRefresh();
+                        listener.onGone();
                     } else {
-                        showFailure("전력 조회 실패: ", error);
+                        listener.onFailure(error, ErrorMessages.describe(error));
                     }
                 }
             }
 
             @Override
             public void onFailure(Call<EnergyResponse> call, Throwable t) {
-                showToast("통신 실패: " + t.getMessage());
+                listener.onFailure(null, t.getMessage());
             }
         });
+    }
+
+    // 상세 화면 전력 주기 조회. 화면이 보이는 동안(onStart~onStop)만 돈다.
+    private final MutableLiveData<EnergyReading> detailEnergy = new MutableLiveData<>();
+    private final EnergyPollSchedule detailPoll = new EnergyPollSchedule();
+    private final Runnable detailPollTick = this::pollDetailEnergy;
+    private String detailDeviceId;
+
+    public LiveData<EnergyReading> getDetailEnergy() { return detailEnergy; }
+
+    public void startDetailPolling(String deviceId) {
+        if (!deviceId.equals(detailDeviceId)) {
+            detailDeviceId = deviceId;
+            detailPoll.reset();
+            detailEnergy.setValue(null);
+        }
+        mainHandler.removeCallbacks(detailPollTick);
+        long delay = detailPoll.start(SystemClock.elapsedRealtime());
+        if (delay != EnergyPollSchedule.NONE) mainHandler.postDelayed(detailPollTick, delay);
+    }
+
+    public void stopDetailPolling() {
+        detailPoll.stop();
+        mainHandler.removeCallbacks(detailPollTick);
+    }
+
+    /** 실패 배너의 "다시 시도". 진행 중인 요청이 있으면 그 결과를 기다린다. */
+    public void retryDetailEnergy() {
+        if (!detailPoll.canFetchNow()) return;
+        mainHandler.removeCallbacks(detailPollTick);
+        pollDetailEnergy();
+    }
+
+    private void pollDetailEnergy() {
+        String deviceId = detailDeviceId;
+        if (deviceId == null) return;
+        detailPoll.requestStarted();
+        requestEnergy(deviceId, new EnergyListener() {
+            @Override
+            public void onSuccess() {
+                if (!deviceId.equals(detailDeviceId)) return;
+                detailEnergy.setValue(EnergyReading.success(deviceId, System.currentTimeMillis()));
+                scheduleNextDetailPoll();
+            }
+
+            @Override
+            public void onGone() {
+                // 목록이 새로 오면 상세가 닫힌다. 그 전까지 주기만 이어 간다.
+                if (deviceId.equals(detailDeviceId)) scheduleNextDetailPoll();
+            }
+
+            @Override
+            public void onFailure(ApiError error, String reason) {
+                if (!deviceId.equals(detailDeviceId)) return;
+                String shown = error == null ? ControlFailure.UNREACHABLE_SERVER : reason;
+                detailEnergy.setValue(EnergyReading.failure(detailEnergy.getValue(), deviceId, shown));
+                scheduleNextDetailPoll();
+            }
+        });
+    }
+
+    private void scheduleNextDetailPoll() {
+        long delay = detailPoll.finished(SystemClock.elapsedRealtime());
+        if (delay != EnergyPollSchedule.NONE) mainHandler.postDelayed(detailPollTick, delay);
     }
 
     public void fetchDeviceEnergyHistory(String deviceId) {

@@ -33,6 +33,13 @@
                 android:layout_height="wrap_content" />
 
             <include
+                android:id="@+id/cardPower"
+                layout="@layout/detail_power_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp" />
+
+            <include
                 android:id="@+id/cardInfo"
                 layout="@layout/detail_info_card"
                 android:layout_width="match_parent"
