@@ -124,6 +124,11 @@ public class DeviceViewModel extends ViewModel {
     }
 
     public void fetchDevices() {
+        fetchDevices(false);
+    }
+
+    /** withEnergy가 true면 목록을 받은 뒤 Matter 기기의 전력(E6)도 묻는다. 홈 화면용. */
+    public void fetchDevices(boolean withEnergy) {
         RetrofitClient.getApi().getDeviceList().enqueue(new Callback<DeviceListResponse>() {
             @Override
             public void onResponse(Call<DeviceListResponse> call, Response<DeviceListResponse> response) {
@@ -135,6 +140,11 @@ public class DeviceViewModel extends ViewModel {
                         }
                     }
                     deviceList.setValue(withPairingItem(devices));
+                    if (withEnergy && devices != null) {
+                        for (Device device : devices) {
+                            if ("MATTER".equals(device.getType())) fetchDeviceEnergy(device.getId());
+                        }
+                    }
                 } else {
                     showFailure("목록 로드 실패: ", response);
                 }

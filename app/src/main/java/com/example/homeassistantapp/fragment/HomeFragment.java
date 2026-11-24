@@ -144,23 +144,9 @@ public class HomeFragment extends Fragment {
         return view;
     }
     @Override
-    public void onResume() {
-        super.onResume();
-
-        // 화면에 돌아올 때마다 전력값과 차트를 새로 고친다.
-        List<Device> currentDevices = viewModel.getDeviceList().getValue();
-        if (currentDevices != null) {
-            for (Device device : currentDevices) {
-                if(!"TEMP_PAIRING".equals(device.getId()) && !device.isPairing()) {
-                    if ("MATTER".equals(device.getType()) && device.getPowerInfo() != null) {
-                        viewModel.fetchDeviceEnergy(device.getId());
-
-                        if (device.getEnergyLogs() != null) {
-                            viewModel.fetchDeviceEnergyHistory(device.getId());
-                        }
-                    }
-                }
-            }
-        }
+    public void onStart() {
+        super.onStart();
+        // 홈이 시작 탭이므로 들어올 때마다(상세에서 돌아올 때 포함) 목록과 전력을 새로 받는다.
+        viewModel.fetchDevices(true);
     }
 }

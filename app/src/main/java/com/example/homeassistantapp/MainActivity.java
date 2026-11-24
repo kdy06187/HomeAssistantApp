@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
         });
         if (savedInstanceState == null) {
             if (RetrofitClient.hasApiToken()) {
-                bottomNav.setSelectedItemId(R.id.nav_devices);
+                bottomNav.setSelectedItemId(R.id.nav_home);
             } else {
                 // 토큰 없이는 모든 요청이 401이므로 처음부터 설정 화면을 연다.
                 Toast.makeText(this, "서버 API 토큰을 먼저 입력해 주세요.", Toast.LENGTH_LONG).show();
