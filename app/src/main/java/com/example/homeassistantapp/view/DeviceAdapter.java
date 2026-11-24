@@ -27,6 +27,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
     public interface Listener {
         void onOpen(Device device);
         void onDelete(Device device);
+        void onCustomize(Device device);
         void onStartDrag(RecyclerView.ViewHolder holder);
         /** TalkBack 사용자용 "위로/아래로 이동"(드래그 대신). delta는 -1 또는 +1. */
         void onMoveBy(RecyclerView.ViewHolder holder, int delta);
@@ -82,6 +83,10 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             return false;
         } : null);
 
+        holder.customize.setVisibility(row.editable ? View.VISIBLE : View.INVISIBLE);
+        holder.customize.setContentDescription(row.name + " 타일 꾸미기");
+        holder.customize.setOnClickListener(row.editable ? v -> listener.onCustomize(device) : null);
+
         holder.delete.setVisibility(row.editable ? View.VISIBLE : View.INVISIBLE);
         holder.delete.setContentDescription(row.name + " 삭제");
         holder.delete.setOnClickListener(row.editable ? v -> listener.onDelete(device) : null);
@@ -110,7 +115,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         final TextView name, type, state;
         final ProgressBar progress;
         final ImageView handle;
-        final ImageButton delete;
+        final ImageButton delete, customize;
         final View main;
         final List<Integer> moveActionIds = new ArrayList<>();
 
@@ -122,6 +127,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             progress = itemView.findViewById(R.id.progressBar);
             handle = itemView.findViewById(R.id.handleReorder);
             delete = itemView.findViewById(R.id.btnDeleteDevice);
+            customize = itemView.findViewById(R.id.btnCustomizeTile);
             main = itemView.findViewById(R.id.rowMain);
         }
     }

@@ -75,6 +75,14 @@
     </LinearLayout>
 
     <ImageButton
+        android:id="@+id/btnCustomizeTile"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_tune"
+        app:tint="?attr/colorOnSurfaceVariant" />
+
+    <ImageButton
         android:id="@+id/btnDeleteDevice"
         android:layout_width="48dp"
         android:layout_height="48dp"

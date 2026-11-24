@@ -70,7 +70,36 @@ public class HomeTileAdapter extends RecyclerView.Adapter<HomeTileAdapter.TileVi
     public void onBindViewHolder(@NonNull TileViewHolder holder, int position) {
         Device device = devices.get(position);
         HomeTile tile = tileAt(position);
+        bindLook(holder, tile, tile.showsTrend ? trends.get(device.getId()) : null);
 
+        holder.toggle.setOnCheckedChangeListener((button, isChecked) -> {
+            if (button.isPressed()) listener.onToggle(device, isChecked);
+        });
+        holder.refresh.setOnClickListener(v -> listener.onRefresh(device));
+        holder.main.setClickable(tile.opensDetail);
+        holder.main.setContentDescription(tile.opensDetail ? tile.name + ", " + tile.chipText + ", 상세 열기" : null);
+        holder.main.setOnClickListener(tile.opensDetail ? v -> listener.onOpen(device) : null);
+    }
+
+    /** 꾸미기 화면의 미리보기. 홈과 같은 모양으로 그리되 누를 수 없게 한다. */
+    public static void bindPreview(View tileRoot, HomeTile tile, TrendValues trend) {
+        TileViewHolder holder = new TileViewHolder(tileRoot);
+        bindLook(holder, tile, trend);
+        holder.toggle.setEnabled(false);
+        holder.refresh.setEnabled(false);
+        holder.main.setClickable(false);
+        // 미리보기 안의 스위치·버튼을 TalkBack이 진짜 버튼으로 읽지 않게 한 덩어리로 묶는다.
+        tileRoot.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        tileRoot.setContentDescription("미리보기: " + tile.name + ", " + tile.chipText
+                + (tile.showsPower ? ", " + tile.powerText : "")
+                + (tile.metaText.isEmpty() ? "" : ", " + tile.metaText)
+                + (tile.showsTrend ? ", 추이선" : "") + ", " + tile.span + "칸");
+        holder.itemView.findViewById(R.id.tileMain).setImportantForAccessibility(
+                View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+    }
+
+    /** 눌렀을 때 동작을 뺀 보이는 부분. trend는 아직 못 받았으면 null. */
+    private static void bindLook(TileViewHolder holder, HomeTile tile, TrendValues trend) {
         holder.name.setText(tile.name);
         StateChip.apply(holder.state, tile.chipText, tile.tone);
 
@@ -80,13 +109,9 @@ public class HomeTileAdapter extends RecyclerView.Adapter<HomeTileAdapter.TileVi
         holder.toggle.setChecked(tile.switchChecked);
         holder.toggle.setEnabled(tile.switchEnabled);
         holder.toggle.setContentDescription(tile.name + " 켜기");
-        holder.toggle.setOnCheckedChangeListener((button, isChecked) -> {
-            if (button.isPressed()) listener.onToggle(device, isChecked);
-        });
 
         holder.refresh.setVisibility(tile.showsRefresh ? View.VISIBLE : View.GONE);
         holder.refresh.setContentDescription(tile.name + " 상태 새로고침");
-        holder.refresh.setOnClickListener(v -> listener.onRefresh(device));
 
         holder.power.setVisibility(tile.showsPower ? View.VISIBLE : View.GONE);
         holder.power.setText(tile.powerText);
@@ -94,15 +119,10 @@ public class HomeTileAdapter extends RecyclerView.Adapter<HomeTileAdapter.TileVi
         holder.meta.setText(tile.metaText);
 
         holder.trend.setVisibility(tile.showsTrend ? View.VISIBLE : View.GONE);
-        TrendValues trend = tile.showsTrend ? trends.get(device.getId()) : null;
         // 아직 못 받았으면 빈 자리, 받았는데 기록이 없으면 "–".
         boolean empty = trend != null && trend.isEmpty();
         holder.spark.setTrend(empty ? null : trend);
         holder.trendEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
-
-        holder.main.setClickable(tile.opensDetail);
-        holder.main.setContentDescription(tile.opensDetail ? tile.name + ", " + tile.chipText + ", 상세 열기" : null);
-        holder.main.setOnClickListener(tile.opensDetail ? v -> listener.onOpen(device) : null);
     }
 
     @Override

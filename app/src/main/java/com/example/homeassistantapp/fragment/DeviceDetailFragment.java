@@ -82,6 +82,11 @@ public class DeviceDetailFragment extends Fragment {
         MaterialToolbar toolbar = view.findViewById(R.id.detailToolbar);
         toolbar.setNavigationOnClickListener(v -> close());
         toolbar.inflateMenu(R.menu.menu_device_detail);
+        toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() != R.id.actionTileCustomize) return false;
+            TileCustomizeSheet.open(getChildFragmentManager(), deviceId);
+            return true;
+        });
 
         StatusCard statusCard = new StatusCard(view.findViewById(R.id.cardStatus), new StatusCard.Listener() {
             @Override

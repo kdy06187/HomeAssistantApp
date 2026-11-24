@@ -66,6 +66,11 @@ public class DeviceFragment extends Fragment {
             }
 
             @Override
+            public void onCustomize(Device device) {
+                TileCustomizeSheet.open(getChildFragmentManager(), device.getId());
+            }
+
+            @Override
             public void onStartDrag(RecyclerView.ViewHolder holder) {
                 touchHelper.startDrag(holder);
             }
