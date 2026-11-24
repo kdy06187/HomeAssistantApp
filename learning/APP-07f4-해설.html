@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-07f-4 해설 — 07f 지울 목록 삭제</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07f-4 해설 — 07f 지울 목록 삭제</h1>
+  <p>ui-1 브랜치 · UI 1차 07f · 승인 2026-11-24(결정 69)</p>
+</header>
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <p>07f에서 쓰이지 않게 된 401 처리 코드를 승인(2026-11-24, 결정 69) 뒤 지웠다. 동작은 바뀌지 않는다.</p>
+  <div class="table-wrap"><table>
+    <tr><th>대상</th><th>처리</th></tr>
+    <tr><td><code>network/UnauthorizedInterceptor.java</code></td><td>삭제 — <code>ConnectionStateInterceptor</code>가 대신함</td></tr>
+    <tr><td><code>network/UnauthorizedNotice.java</code> + <code>UnauthorizedNoticeTest</code>(3개)</td><td>삭제 — 안내 1회 표시를 <code>ConnectionState</code>가 대신함</td></tr>
+    <tr><td><code>AuthInterceptorTest</code>·<code>ResponseInterceptorsTest</code></td><td>바깥 인터셉터를 <code>ConnectionStateInterceptor</code>로 바꿔 같은 검사 유지(401을 몇 번 봤는지)</td></tr>
+  </table></div>
+</section>
+<section class="card">
+  <h2><span class="num">3</span>코드 해설 — 테스트는 검사 내용을 유지하며 갈아 끼운다</h2>
+<pre><code>.addInterceptor(new ConnectionStateInterceptor(new ConnectionStateInterceptor.Listener() {
+    @Override public void onResponse(int httpCode) { if (httpCode == 401) calls.incrementAndGet(); }
+    @Override public void onNetworkFailure() {}
+}))</code></pre>
+  <div class="why">
+    <div><b>왜</b> 이 테스트의 핵심은 "AuthInterceptor가 만든 가짜 401(형식이 틀린 토큰)도 바깥 감시가 본다"는 것이다. 감시 클래스가 바뀌어도 그 약속은 그대로라, 리스너에서 401만 세면 같은 검사가 된다.</div>
+  </div>
+</section>
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <p>새 브랜치에서 <code>ResponseInterceptorsTest</code>에 "통신 실패면 <code>onNetworkFailure</code>가 1번" 검사를 더해 보세요. <b>완료 기준</b>: 통과.</p>
+  <details><summary>힌트</summary>가짜 서버 인터셉터에서 <code>throw new IOException()</code>, 호출은 <code>try/catch</code>로 감싼다(<code>ConnectionStateInterceptorTest</code> 참고).</details>
+</section>
+
+</main>
+</body>
+</html>

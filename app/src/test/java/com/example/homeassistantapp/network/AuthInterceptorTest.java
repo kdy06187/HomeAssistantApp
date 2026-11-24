@@ -58,7 +58,10 @@ public class AuthInterceptorTest {
         AtomicInteger unauthorizedCalls = new AtomicInteger();
         // RetrofitClient와 같은 순서: 401 감시가 바깥, 토큰 헤더가 안쪽
         OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new UnauthorizedInterceptor(unauthorizedCalls::incrementAndGet))
+                .addInterceptor(new ConnectionStateInterceptor(new ConnectionStateInterceptor.Listener() {
+                    @Override public void onResponse(int httpCode) { if (httpCode == 401) unauthorizedCalls.incrementAndGet(); }
+                    @Override public void onNetworkFailure() {}
+                }))
                 .addInterceptor(new AuthInterceptor(() -> "test-token\nabc"))
                 .addInterceptor(chain -> {
                     reachedServer.set(true);

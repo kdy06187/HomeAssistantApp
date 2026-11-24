@@ -206,7 +206,7 @@ public class DeviceViewModel extends ViewModel {
                         break;
                     default:
                         finishLoading(targetId, outcome.failedState());
-                        // 401 이동은 UnauthorizedInterceptor가 맡는다.
+                        // 401 안내·설정 탭 이동은 연결 상태(ConnectionState)가 맡는다.
                         if (!ErrorMessages.isUnauthorized(error.httpCode)) {
                             reportControlFailure(targetId, command, ErrorMessages.describe(error));
                         }

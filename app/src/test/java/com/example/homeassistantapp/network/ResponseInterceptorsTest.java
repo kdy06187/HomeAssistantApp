@@ -30,7 +30,10 @@ public class ResponseInterceptorsTest {
     private static int countUnauthorized(int responseCode) throws Exception {
         AtomicInteger calls = new AtomicInteger();
         OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new UnauthorizedInterceptor(calls::incrementAndGet))
+                .addInterceptor(new ConnectionStateInterceptor(new ConnectionStateInterceptor.Listener() {
+                    @Override public void onResponse(int httpCode) { if (httpCode == 401) calls.incrementAndGet(); }
+                    @Override public void onNetworkFailure() {}
+                }))
                 .addInterceptor(chain -> fake(chain, responseCode))
                 .build();
         client.newCall(new Request.Builder().url("http://localhost:8000/api/devices").build())
