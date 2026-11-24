@@ -32,7 +32,7 @@ public final class DeviceOrder {
         return sb.toString();
     }
 
-    static boolean isPairing(Device device) {
+    public static boolean isPairing(Device device) {
         return device.isPairing() || "TEMP_PAIRING".equals(device.getId());
     }
 

@@ -19,15 +19,20 @@ import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.view.DeviceOrder;
 import com.example.homeassistantapp.view.HomeTile;
 import com.example.homeassistantapp.view.HomeTileAdapter;
+import com.example.homeassistantapp.view.TileConfig;
+import com.example.homeassistantapp.view.TileConfigStore;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /** 홈: 기기마다 타일 하나(2열). 순서는 기기 탭에서 정한 device_order를 따른다. */
 public class HomeFragment extends Fragment {
     private DeviceViewModel viewModel;
     private HomeTileAdapter adapter;
+    private TileConfigStore tileConfigs;
 
     @Nullable
     @Override
@@ -42,7 +47,9 @@ public class HomeFragment extends Fragment {
         viewModel = new ViewModelProvider(requireActivity()).get(DeviceViewModel.class);
 
         RecyclerView recyclerView = view.findViewById(R.id.recyclerViewDashboard);
-        recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        GridLayoutManager grid = new GridLayoutManager(getContext(), 2);
+        recyclerView.setLayoutManager(grid);
+        tileConfigs = new TileConfigStore(requireContext());
         adapter = new HomeTileAdapter(new HomeTileAdapter.Listener() {
             @Override
             public void onToggle(Device device, boolean turnOn) {
@@ -60,6 +67,12 @@ public class HomeFragment extends Fragment {
             }
         });
         recyclerView.setAdapter(adapter);
+        grid.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+            @Override
+            public int getSpanSize(int position) {
+                return adapter.spanAt(position);
+            }
+        });
 
         SwipeRefreshLayout swipeRefresh = view.findViewById(R.id.swipeRefreshHome);
         swipeRefresh.setOnRefreshListener(() -> viewModel.fetchDevices(true));
@@ -78,7 +91,8 @@ public class HomeFragment extends Fragment {
             boolean empty = HomeTile.isEmptyHome(devices);
             emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
             fab.setVisibility(empty ? View.GONE : View.VISIBLE);
-            adapter.setDevices(sorted(devices));
+            List<Device> ordered = sorted(devices);
+            adapter.setDevices(ordered, configsFor(ordered));
         });
 
         // 등록 작업이 끝날 때까지 새 등록을 막는다(서버도 동시에 1개만 받는다).
@@ -94,6 +108,15 @@ public class HomeFragment extends Fragment {
         super.onStart();
         // 홈이 시작 탭이므로 들어올 때마다(상세에서 돌아올 때 포함) 목록과 전력을 새로 받는다.
         viewModel.fetchDevices(true);
+    }
+
+    /** 설정은 홈에 들어올 때마다 새로 읽으므로, 꾸미기 화면에서 바꾸고 돌아오면 바로 반영된다. */
+    private Map<String, TileConfig> configsFor(List<Device> devices) {
+        Map<String, TileConfig> result = new HashMap<>();
+        for (Device device : devices) {
+            if (!DeviceOrder.isPairing(device)) result.put(device.getId(), tileConfigs.load(device.getId()));
+        }
+        return result;
     }
 
     private List<Device> sorted(List<Device> devices) {

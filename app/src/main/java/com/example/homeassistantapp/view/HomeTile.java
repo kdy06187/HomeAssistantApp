@@ -21,9 +21,14 @@ public final class HomeTile {
     public final String powerText;
     public final String metaText;
     public final boolean opensDetail;
+    /** 1칸 또는 2칸(한 줄 전체). */
+    public final int span;
+    /** 추이선 자리를 보일지. 선 값은 따로 받는다. */
+    public final boolean showsTrend;
 
-    private HomeTile(Device device) {
+    private HomeTile(Device device, TileConfig config) {
         name = device.getName();
+        TileConfig shown = config.effectiveFor(device.getType());
         pairing = DeviceOrder.isPairing(device);
         DeviceStateLabel.Kind kind = DeviceStateLabel.kindOf(device.getState());
         boolean matter = "MATTER".equals(device.getType());
@@ -39,6 +44,8 @@ public final class HomeTile {
             powerText = NO_VALUE;
             metaText = "";
             opensDetail = false;
+            span = 1;
+            showsTrend = false;
             return;
         }
 
@@ -57,20 +64,27 @@ public final class HomeTile {
         }
         switchVisible = true;
         showsRefresh = pending == null && kind == DeviceStateLabel.Kind.UNKNOWN;
-        showsPower = matter;
+        showsPower = matter && shown.power;
         powerText = matter && kind == DeviceStateLabel.Kind.ON ? watts(device.getActivePowerW()) : NO_VALUE;
         if (kind == DeviceStateLabel.Kind.OFFLINE) {
             metaText = "기기 응답 없음";
-        } else if (matter) {
+        } else if (matter && shown.total) {
             metaText = "누적 " + kwh(device.getTotalEnergyKwh());
         } else {
             metaText = "";
         }
         opensDetail = true;
+        span = shown.span;
+        showsTrend = matter && shown.trend;
     }
 
+    /** 꾸미기 설정 없이(기본값) 만든다. 상세 화면처럼 타일 모양과 상관없는 곳에서 쓴다. */
     public static HomeTile of(Device device) {
-        return new HomeTile(device);
+        return new HomeTile(device, TileConfig.DEFAULT);
+    }
+
+    public static HomeTile of(Device device, TileConfig config) {
+        return new HomeTile(device, config == null ? TileConfig.DEFAULT : config);
     }
 
     /** 목록을 받았는데 기기가 하나도 없을 때만 빈 화면. 아직 못 받았으면(null) 빈 화면을 보이지 않는다. */

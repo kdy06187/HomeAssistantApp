@@ -14,7 +14,9 @@ import com.example.homeassistantapp.dto.Device;
 import com.google.android.material.materialswitch.MaterialSwitch;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /** 홈 2열 타일. 값은 HomeTile이 정하고 여기서는 그리기만 한다. */
 public class HomeTileAdapter extends RecyclerView.Adapter<HomeTileAdapter.TileViewHolder> {
@@ -27,14 +29,28 @@ public class HomeTileAdapter extends RecyclerView.Adapter<HomeTileAdapter.TileVi
 
     private final Listener listener;
     private List<Device> devices = new ArrayList<>();
+    private Map<String, TileConfig> configs = new HashMap<>();
 
     public HomeTileAdapter(Listener listener) {
         this.listener = listener;
     }
 
-    public void setDevices(List<Device> devices) {
+    /** configs에 없는 기기는 기본 설정으로 그린다. */
+    public void setDevices(List<Device> devices, Map<String, TileConfig> configs) {
         this.devices = new ArrayList<>(devices);
+        this.configs = new HashMap<>(configs);
         notifyDataSetChanged();
+    }
+
+    /** GridLayoutManager.SpanSizeLookup용. 2칸 타일은 한 줄을 다 쓴다. */
+    public int spanAt(int position) {
+        if (position < 0 || position >= devices.size()) return 1;
+        return tileAt(position).span;
+    }
+
+    private HomeTile tileAt(int position) {
+        Device device = devices.get(position);
+        return HomeTile.of(device, configs.get(device.getId()));
     }
 
     @NonNull
@@ -47,7 +63,7 @@ public class HomeTileAdapter extends RecyclerView.Adapter<HomeTileAdapter.TileVi
     @Override
     public void onBindViewHolder(@NonNull TileViewHolder holder, int position) {
         Device device = devices.get(position);
-        HomeTile tile = HomeTile.of(device);
+        HomeTile tile = tileAt(position);
 
         holder.name.setText(tile.name);
         StateChip.apply(holder.state, tile.chipText, tile.tone);

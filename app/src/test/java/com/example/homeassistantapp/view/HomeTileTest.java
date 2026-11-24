@@ -119,4 +119,49 @@ public class HomeTileTest {
         assertFalse(HomeTile.isEmptyHome(null));
         assertFalse(HomeTile.isEmptyHome(java.util.Collections.singletonList(DeviceOrderTest.pairing())));
     }
+
+    @Test
+    public void config_hidesPowerAndTotal() {
+        Device d = device("MATTER", "ON");
+        d.setEnergy(12.44, 1.054);
+        HomeTile tile = HomeTile.of(d, new TileConfig(false, false, false, 1));
+        assertFalse(tile.showsPower);
+        assertEquals("", tile.metaText);
+    }
+
+    @Test
+    public void config_offlineMessageStaysEvenIfTotalOff() {
+        HomeTile tile = HomeTile.of(device("MATTER", "OFFLINE"), new TileConfig(true, false, false, 1));
+        assertEquals("기기 응답 없음", tile.metaText);
+    }
+
+    @Test
+    public void config_spanAndTrend() {
+        HomeTile tile = HomeTile.of(device("MATTER", "ON"), new TileConfig(true, true, true, 2));
+        assertEquals(2, tile.span);
+        assertTrue(tile.showsTrend);
+        assertEquals(1, HomeTile.of(device("MATTER", "ON")).span);
+        assertFalse(HomeTile.of(device("MATTER", "ON")).showsTrend);
+    }
+
+    @Test
+    public void config_tcpDiyKeepsOnlySpan() {
+        HomeTile tile = HomeTile.of(device("TCP_DIY", "ON"), new TileConfig(true, true, true, 2));
+        assertEquals(2, tile.span);
+        assertFalse(tile.showsTrend);
+        assertFalse(tile.showsPower);
+    }
+
+    @Test
+    public void config_pairingIsAlwaysOneCell() {
+        HomeTile tile = HomeTile.of(DeviceOrderTest.pairing(), new TileConfig(true, true, true, 2));
+        assertEquals(1, tile.span);
+        assertFalse(tile.showsTrend);
+    }
+
+    @Test
+    public void config_nullMeansDefault() {
+        Device d = device("MATTER", "ON");
+        assertEquals(HomeTile.of(d).metaText, HomeTile.of(d, null).metaText);
+    }
 }

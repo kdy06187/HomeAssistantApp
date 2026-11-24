@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-07g-2 해설 — 홈 타일에 설정 반영</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07g-2 해설 — 홈 타일에 설정 반영(줄 숨김·2칸)</h1>
+  <p>ui-1 브랜치 · UI 1차 07g · D10·D11 · 2026-11-24</p>
+</header>
+
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li>홈이 목록을 그릴 때 기기마다 <code>TilePrefs</code>에서 설정을 읽어 타일에 넘긴다.</li>
+    <li><b>W 끔</b> → 큰 전력 숫자 줄이 사라진다. <b>누적 끔</b> → "누적 … kWh" 줄이 사라진다. 단 오프라인이면 "기기 응답 없음"은 설정과 상관없이 보인다(상태 안내라서).</li>
+    <li><b>2칸</b> → 그 타일이 한 줄을 다 쓴다. 1칸 타일 다음에 2칸이 오면 오른쪽이 빈칸으로 남는다(순서대로 채움, 자동 메우기 안 함).</li>
+    <li>설정이 없는 기기·등록 중 타일은 기본값(지금 모양, 1칸)이다. 추이선 값 그리기는 07g-3.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림 — 설정에서 칸 수까지</h2>
+  <svg class="flow" viewBox="0 0 760 200" role="img" aria-label="목록을 받으면 설정을 읽어 HomeTile을 만들고 span으로 칸 수를 정하는 흐름">
+    <rect x="10" y="20" width="140" height="54" rx="8"/><text x="80" y="43" text-anchor="middle">deviceList</text><text class="small" x="80" y="62" text-anchor="middle">순서 정렬</text>
+    <rect x="180" y="20" width="160" height="54" rx="8"/><text x="260" y="43" text-anchor="middle">configsFor</text><text class="small" x="260" y="62" text-anchor="middle">TileConfigStore.load</text>
+    <rect class="hl" x="370" y="20" width="170" height="54" rx="8"/><text x="455" y="43" text-anchor="middle">HomeTile.of(d, config)</text><text class="small" x="455" y="62" text-anchor="middle">showsPower·meta·span</text>
+    <rect x="570" y="20" width="180" height="54" rx="8"/><text x="660" y="43" text-anchor="middle">onBindViewHolder</text><text class="small" x="660" y="62" text-anchor="middle">줄 보이기/숨기기</text>
+    <line x1="150" y1="47" x2="180" y2="47"/><line x1="340" y1="47" x2="370" y2="47"/><line x1="540" y1="47" x2="570" y2="47"/>
+    <rect x="370" y="120" width="170" height="54" rx="8"/><text x="455" y="143" text-anchor="middle">SpanSizeLookup</text><text class="small" x="455" y="162" text-anchor="middle">adapter.spanAt(pos)</text>
+    <path d="M455 74 L455 120"/>
+  </svg>
+</section>
+
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+  <h3>① 칸 수는 GridLayoutManager에게 물어보게 한다</h3>
+  <pre><code>grid.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+    public int getSpanSize(int position) { return adapter.spanAt(position); }
+});</code></pre>
+  <div class="why">
+    <div><b>왜</b> 격자는 2열이고, 항목마다 "몇 열을 쓸지"를 이 콜백으로 묻는다. 값은 다른 표시 값처럼 <code>HomeTile</code>이 정하므로 테스트로 확인할 수 있다(등록 중 타일은 늘 1칸, TCP_DIY도 2칸 가능).</div>
+  </div>
+
+  <h3>② 설정은 그릴 때마다 읽는다</h3>
+  <pre><code>List&lt;Device&gt; ordered = sorted(devices);
+adapter.setDevices(ordered, configsFor(ordered));</code></pre>
+  <div class="why">
+    <div><b>왜</b> 꾸미기 화면은 상세나 기기 탭에서 열리고, 홈으로 돌아오면 홈 화면이 새로 만들어진다. 그때 읽으면 따로 "설정 바뀜" 알림이 없어도 바로 반영된다. SharedPreferences는 메모리에 올라와 있어 기기 수만큼 읽어도 가볍다.</div>
+  </div>
+
+  <h3>③ 상태 안내는 끄지 않는다</h3>
+  <pre><code>if (kind == OFFLINE)                metaText = "기기 응답 없음";
+else if (matter &amp;&amp; shown.total)     metaText = "누적 " + kwh(...);</code></pre>
+  <div class="why">
+    <div><b>왜</b> 누적을 끈 사람도 기기가 응답하지 않는다는 사실은 알아야 한다. 꾸미기는 "값"을 고르는 것이고 "상태"는 칩·안내로 항상 보인다(D10).</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b>span(칸)</b>: 격자에서 항목 하나가 차지하는 열 수. 2열 격자에서 span 2 = 한 줄 전체.</li>
+    <li><b>SpanSizeLookup</b>: GridLayoutManager가 항목별 span을 묻는 콜백.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol>
+    <li>순서가 [A(1칸), B(2칸), C(1칸)]이면 화면은 어떻게 놓일까?</li>
+    <li>상세 화면의 전력 카드는 W를 끈 기기에서도 W를 보일까?</li>
+  </ol>
+  <details><summary>정답 보기</summary>
+    <ol>
+      <li>첫 줄 A + 빈칸, 둘째 줄 B, 셋째 줄 C + 빈칸. B가 첫 줄 남은 1칸에 들어갈 수 없어 다음 줄로 간다.</li>
+      <li>보인다. 상세는 <code>HomeTile.of(device)</code>(기본 설정)를 쓴다. 꾸미기는 홈 타일에만 적용된다.</li>
+    </ol>
+  </details>
+</section>
+
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <h3>실습. 2칸 타일이면 W를 옆에 크게</h3>
+  <ul>
+    <li><b>목표</b>: 2칸 타일은 넓으니 W 숫자를 32sp로 키운다(1칸은 24sp 그대로).</li>
+    <li><b>고칠 파일</b>: <code>HomeTileAdapter.onBindViewHolder</code> 한 곳</li>
+    <li><b>완료 기준</b>: 375dp에서 2칸 타일의 W가 커지고, 1칸으로 바꾸면 돌아온다(RecyclerView가 뷰를 재사용하므로 두 경우 모두 값을 넣어야 함).</li>
+  </ul>
+  <details><summary>힌트</summary><code>holder.power.setTextSize(TypedValue.COMPLEX_UNIT_SP, tile.span == 2 ? 32 : 24)</code>. 재사용 때문에 else 쪽도 꼭 넣는다.</details>
+</section>
+</main>
+</body>
+</html>
