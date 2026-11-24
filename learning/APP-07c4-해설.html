@@ -1,0 +1,93 @@
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07c-4 해설 — 일/주/월 탭</h1>
+  <p>ui-1 브랜치 · UI 1차 07c · D1(기간 고정: 일 7일·주 8주·월 6개월) · 2026-11-24</p>
+</header>
+
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li>차트 카드 위에 탭 4개: <b>최근 · 일 · 주 · 월</b>. "최근"은 07c-3의 원본 기록, 나머지는 서버가 합쳐 준 <b>집계</b>(E7 <code>period</code>).</li>
+    <li><b>기간은 앱이 고정</b>(날짜 선택기 없음): 일 = 오늘 포함 7일, 주 = 이번 주 포함 8주(월요일 시작), 월 = 이번 달 포함 6개월. 모두 +09:00 날짜.</li>
+    <li>기록이 없는 구간(<code>sampleCount: 0</code>)은 막대 없이 빈칸이고, 누르면 "기록 없음". 모든 구간이 비면 "이 기간에는 기록이 없어요."</li>
+    <li>월 탭은 "기록은 90일만 보관돼 오래된 달은 비어 있을 수 있어요" 안내.</li>
+    <li>고른 탭은 화면 회전 뒤에도 유지된다.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림 — 탭에서 막대까지</h2>
+  <svg class="flow" viewBox="0 0 760 210" role="img" aria-label="탭을 고르면 PeriodRange로 기간을 정해 E7 집계를 요청하고 fromBuckets로 막대를 만드는 흐름">
+    <rect x="10" y="20" width="130" height="54" rx="8"/><text x="75" y="43" text-anchor="middle">"주" 탭</text><text class="small" x="75" y="62" text-anchor="middle">onPeriodSelected</text>
+    <rect class="hl" x="170" y="20" width="170" height="54" rx="8"/><text x="255" y="43" text-anchor="middle">PeriodRange.of</text><text class="small" x="255" y="62" text-anchor="middle">10-05 ~ 11-24</text>
+    <rect x="370" y="20" width="190" height="54" rx="8"/><text x="465" y="43" text-anchor="middle">E7 ?from&amp;to&amp;period</text><text class="small" x="465" y="62" text-anchor="middle">getDeviceEnergySummary</text>
+    <rect x="590" y="20" width="160" height="54" rx="8"/><text x="670" y="43" text-anchor="middle">buckets[]</text><text class="small" x="670" y="62" text-anchor="middle">start·end·mWh·count</text>
+    <line x1="140" y1="47" x2="170" y2="47"/><line x1="340" y1="47" x2="370" y2="47"/><line x1="560" y1="47" x2="590" y2="47"/>
+    <rect class="hl" x="590" y="130" width="160" height="54" rx="8"/><text x="670" y="153" text-anchor="middle">ChartBars.fromBuckets</text><text class="small" x="670" y="172" text-anchor="middle">count 0 → 빈칸</text>
+    <rect x="370" y="130" width="190" height="54" rx="8"/><text x="465" y="153" text-anchor="middle">같은 막대 차트</text><text class="small" x="465" y="172" text-anchor="middle">07c-3 그대로</text>
+    <path d="M670 74 L670 130"/><line x1="590" y1="157" x2="560" y2="157"/>
+  </svg>
+</section>
+
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+  <h3>① 주는 월요일부터</h3>
+  <pre><code>LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+return new PeriodRange(monday.minusWeeks(7), today);</code></pre>
+  <div class="why">
+    <div><b>왜</b> 서버는 주를 월요일 시작으로 자른다. 시작일을 아무 요일로 주면 첫 막대가 며칠짜리 반쪽 주가 된다. 이번 주 월요일에서 7주를 빼면 8개 막대가 모두 온전한 주(이번 주만 오늘까지)가 된다. 2026-11-24(화) 기준 시작은 <b>10-05(월)</b>이다. 변경 목록에 적었던 10-06은 화요일이라 고쳤다.</div>
+  </div>
+
+  <h3>② "오늘"은 서버 기준 날짜</h3>
+  <pre><code>private static final ZoneOffset SERVER_OFFSET = ZoneOffset.ofHours(9);
+public static LocalDate today() { return LocalDate.now(SERVER_OFFSET); }</code></pre>
+  <div class="why">
+    <div><b>왜</b> 집계 날짜는 +09:00이다. 휴대폰 시간대가 다르면(해외 여행 등) 자정 근처에 "오늘"이 하루 어긋나 마지막 막대가 빠질 수 있다.</div>
+  </div>
+
+  <h3>③ 0과 "기록 없음"은 다르다</h3>
+  <pre><code>boolean hasData = bucket.sampleCount &gt; 0;
+bars.add(new Bar(label, detail, hasData ? bucket.energyUsedMwh : 0L, hasData));</code></pre>
+  <div class="why">
+    <div><b>왜</b> 기기가 켜져 있지만 전기를 안 썼으면 0 mWh, 기기가 꺼져 있거나 기록 보관 기간(90일) 밖이면 기록 자체가 없다. 둘 다 막대 높이는 0이지만 눌렀을 때 글자로 구분한다.</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b>집계 모드</b>: 서버가 기록을 하루·주·달 단위로 합쳐 구간마다 사용량 하나를 주는 방식. 앱이 차이를 계산할 필요가 없다.</li>
+    <li><b>MaterialButtonToggleGroup</b>: 버튼 여럿 중 하나만 눌린 상태로 두는 묶음. <code>selectionRequired</code>로 아무것도 안 고른 상태를 막는다.</li>
+    <li><b>onSaveInstanceState</b>: 화면이 다시 만들어질 때 되살릴 작은 값(여기서는 고른 탭)을 담는 곳.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol>
+    <li>2027-01-03(일)에 월 탭을 누르면 from은?</li>
+    <li>탭을 "일 → 주"로 빠르게 바꿨는데 "일" 응답이 늦게 오면 어떻게 될까?</li>
+  </ol>
+  <details><summary>정답 보기</summary>
+    <ol>
+      <li>2026-08-01. 이번 달 1일(2027-01-01)에서 5개월 전.</li>
+      <li>버려진다. ViewModel이 마지막으로 요청한 기기·기간(<code>isLatestHistory</code>)이 아니면 결과를 내보내지 않는다.</li>
+    </ol>
+  </details>
+</section>
+
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <h3>실습. 기간 합계 보이기</h3>
+  <ul>
+    <li><b>목표</b>: 일/주/월 탭에서 제목 아래에 "합계 12.3 Wh"를 보인다(기록 없는 구간 제외).</li>
+    <li><b>고칠 파일</b>: <code>view/detail/ChartBars.java</code>(<code>totalText</code>), <code>ChartCard.java</code>, <code>detail_chart_card.xml</code>, 테스트</li>
+    <li><b>완료 기준</b>: 9100 + 빈칸 → "합계 9.1 Wh". 최근 탭에서는 숨김.</li>
+  </ul>
+  <details><summary>힌트</summary>합계는 막대 단위와 다를 수 있다(막대 최대 900 mWh, 합계 3 Wh). <code>EnergyUnits.format(total)</code>처럼 합계 기준으로 단위를 고르는 편이 읽기 쉽다.</details>
+</section>
+</main>
+</body>
+</html>

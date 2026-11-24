@@ -43,4 +43,8 @@ public interface HomeAssistantApi {
     Call<EnergyResponse> getDeviceEnergy(@Path("deviceId") String deviceId);
     @GET("/api/devices/{id}/energy/history")
     Call<EnergyLogResponse> getDeviceEnergyHistory(@Path("id") String deviceId);
+    /** 집계 모드. from·to는 +09:00 날짜 "YYYY-MM-DD", period는 day/week/month. */
+    @GET("/api/devices/{id}/energy/history")
+    Call<EnergyLogResponse> getDeviceEnergySummary(@Path("id") String deviceId, @Query("from") String from,
+                                                   @Query("to") String to, @Query("period") String period);
 }

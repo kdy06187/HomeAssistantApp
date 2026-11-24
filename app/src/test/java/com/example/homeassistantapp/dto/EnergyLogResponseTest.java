@@ -22,6 +22,20 @@ public class EnergyLogResponseTest {
     }
 
     @Test
+    public void summaryResponse_readsBuckets() {
+        EnergyLogResponse r = gson.fromJson(
+                "{\"deviceId\":\"SN12345\",\"state\":\"ON\",\"period\":\"week\",\"utcOffset\":\"+09:00\","
+                        + "\"buckets\":[{\"start\":\"2026-11-01\",\"end\":\"2026-11-01\",\"energyUsed_mWh\":1200,\"sampleCount\":1440},"
+                        + "{\"start\":\"2026-11-02\",\"end\":\"2026-11-08\",\"energyUsed_mWh\":0,\"sampleCount\":0}]}",
+                EnergyLogResponse.class);
+        assertEquals("week", r.period);
+        assertEquals(2, r.buckets.size());
+        assertEquals("2026-11-01", r.buckets.get(0).start);
+        assertEquals(1200L, r.buckets.get(0).energyUsedMwh);
+        assertEquals(0L, r.buckets.get(1).sampleCount);
+    }
+
+    @Test
     public void truncatedFlag() {
         assertTrue(gson.fromJson("{\"logs\":[],\"truncated\":true}", EnergyLogResponse.class).isTruncated());
         assertFalse(gson.fromJson("{\"logs\":[],\"truncated\":false}", EnergyLogResponse.class).isTruncated());

@@ -24,6 +24,57 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
+        <!-- 최근 = 원본 기록, 일·주·월 = 서버 집계(기간은 앱이 고정) -->
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/chartPeriods"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:checkedButton="@+id/btnPeriodRecent"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPeriodRecent"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:contentDescription="최근 기록 50건"
+                android:minHeight="48dp"
+                android:text="최근" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPeriodDay"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:contentDescription="일별, 최근 7일"
+                android:minHeight="48dp"
+                android:text="일" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPeriodWeek"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:contentDescription="주별, 최근 8주"
+                android:minHeight="48dp"
+                android:text="주" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPeriodMonth"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:contentDescription="월별, 최근 6개월"
+                android:minHeight="48dp"
+                android:text="월" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
         <!-- 막대를 누르면 그 구간의 시각과 값이 여기에 보인다. -->
         <TextView
             android:id="@+id/tvChartSelected"

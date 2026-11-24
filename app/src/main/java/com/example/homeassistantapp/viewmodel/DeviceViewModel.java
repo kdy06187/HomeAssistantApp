@@ -24,6 +24,7 @@ import com.example.homeassistantapp.dto.EnergyResponse;
 import com.example.homeassistantapp.network.ApiError;
 import com.example.homeassistantapp.network.ErrorMessages;
 import com.example.homeassistantapp.network.RetrofitClient;
+import com.example.homeassistantapp.view.PeriodRange;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -532,32 +533,49 @@ public class DeviceViewModel extends ViewModel {
     // 상세 차트(E7). 마지막으로 요청한 기기·기간의 결과만 내보낸다(빠르게 바꿀 때 늦게 온 이전 응답 무시).
     private final MutableLiveData<HistoryResult> detailHistory = new MutableLiveData<>();
     private String historyDeviceId;
+    private String historyPeriod;
 
     public LiveData<HistoryResult> getDetailHistory() { return detailHistory; }
 
-    /** 원본 기록(최근 50건). 상태를 LOADING으로 바꾸지 않고 실패도 토스트 대신 차트 카드에 보인다. */
-    public void loadDetailHistory(String deviceId) {
+    /**
+     * period가 null이면 원본 기록(최근 50건), day/week/month면 앱이 정한 기간의 집계.
+     * 상태를 LOADING으로 바꾸지 않고 실패도 토스트 대신 차트 카드에 보인다.
+     */
+    public void loadDetailHistory(String deviceId, String period) {
         historyDeviceId = deviceId;
-        RetrofitClient.getApi().getDeviceEnergyHistory(deviceId).enqueue(new Callback<EnergyLogResponse>() {
+        historyPeriod = period;
+        Call<EnergyLogResponse> call;
+        if (period == null) {
+            call = RetrofitClient.getApi().getDeviceEnergyHistory(deviceId);
+        } else {
+            PeriodRange range = PeriodRange.of(period, PeriodRange.today());
+            call = RetrofitClient.getApi().getDeviceEnergySummary(deviceId, range.fromText(), range.toText(), period);
+        }
+        call.enqueue(new Callback<EnergyLogResponse>() {
             @Override
             public void onResponse(Call<EnergyLogResponse> call, Response<EnergyLogResponse> response) {
-                if (!deviceId.equals(historyDeviceId)) return;
+                if (!isLatestHistory(deviceId, period)) return;
                 EnergyLogResponse body = response.body();
                 if (response.isSuccessful() && body != null) {
-                    detailHistory.setValue(new HistoryResult(deviceId, null, body, null));
+                    detailHistory.setValue(new HistoryResult(deviceId, period, body, null));
                     return;
                 }
                 ApiError error = ApiError.from(response);
                 if (isDeviceGone(error)) scheduleListRefresh();
-                detailHistory.setValue(new HistoryResult(deviceId, null, null, ErrorMessages.describe(error)));
+                detailHistory.setValue(new HistoryResult(deviceId, period, null, ErrorMessages.describe(error)));
             }
 
             @Override
             public void onFailure(Call<EnergyLogResponse> call, Throwable t) {
-                if (!deviceId.equals(historyDeviceId)) return;
-                detailHistory.setValue(new HistoryResult(deviceId, null, null, ControlFailure.UNREACHABLE_SERVER));
+                if (!isLatestHistory(deviceId, period)) return;
+                detailHistory.setValue(new HistoryResult(deviceId, period, null, ControlFailure.UNREACHABLE_SERVER));
             }
         });
+    }
+
+    private boolean isLatestHistory(String deviceId, String period) {
+        return deviceId.equals(historyDeviceId)
+                && (period == null ? historyPeriod == null : period.equals(historyPeriod));
     }
 
     private void scheduleNextDetailPoll() {

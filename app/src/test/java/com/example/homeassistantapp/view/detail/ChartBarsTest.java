@@ -1,11 +1,14 @@
 package com.example.homeassistantapp.view.detail;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import com.example.homeassistantapp.dto.EnergyBucket;
 import com.example.homeassistantapp.dto.EnergyLog;
 import com.example.homeassistantapp.view.EnergyUnits;
+import com.example.homeassistantapp.view.PeriodRange;
 
 import org.junit.Test;
 
@@ -73,6 +76,56 @@ public class ChartBarsTest {
                 log("2026-11-16T00:22:00Z", 400)));
         ChartBars c = ChartBars.fromLogs(logs, false, SEOUL);
         assertEquals("구간별 사용량 (mWh), 막대 2개, 가장 많은 구간 09:22 · 300 mWh", c.summary());
+    }
+
+    private static EnergyBucket bucket(String start, String end, long mWh, long samples) {
+        EnergyBucket b = new EnergyBucket();
+        b.start = start;
+        b.end = end;
+        b.energyUsedMwh = mWh;
+        b.sampleCount = samples;
+        return b;
+    }
+
+    @Test
+    public void fromBuckets_week_labelsAndEmptySlot() {
+        List<EnergyBucket> buckets = Arrays.asList(
+                bucket("2026-11-16", "2026-11-22", 9100, 10080),
+                bucket("2026-11-23", "2026-11-24", 0, 0));
+        ChartBars c = ChartBars.fromBuckets(buckets, PeriodRange.WEEK);
+        assertEquals("주별 사용량 (Wh)", c.title);
+        assertEquals("11/16", c.bars.get(0).label);
+        assertEquals("11/16~11/22 · 9.1 Wh", c.describe(0));
+        assertFalse(c.bars.get(1).hasData);
+        assertEquals("11/23~11/24 · 기록 없음", c.describe(1));
+        assertNull(c.note);
+    }
+
+    @Test
+    public void fromBuckets_dayAndMonthLabels() {
+        ChartBars day = ChartBars.fromBuckets(Arrays.asList(bucket("2026-11-24", "2026-11-24", 500, 3)), PeriodRange.DAY);
+        assertEquals("일별 사용량 (mWh)", day.title);
+        assertEquals("11/24 · 500 mWh", day.describe(0));
+
+        ChartBars month = ChartBars.fromBuckets(Arrays.asList(bucket("2026-11-01", "2026-11-24", 2_500_000, 9)), PeriodRange.MONTH);
+        assertEquals("11월", month.bars.get(0).label);
+        assertEquals("2026년 11월 · 2.5 kWh", month.describe(0));
+        assertTrue(month.note.startsWith("기록은 90일만"));
+    }
+
+    @Test
+    public void fromBuckets_allEmpty_showsEmptyState() {
+        ChartBars c = ChartBars.fromBuckets(Arrays.asList(bucket("2026-11-24", "2026-11-24", 0, 0)), PeriodRange.DAY);
+        assertTrue(c.bars.isEmpty());
+        assertEquals("이 기간에는 기록이 없어요.", c.emptyText);
+        assertEquals("일별 사용량", c.title);
+        assertTrue(ChartBars.fromBuckets(null, PeriodRange.DAY).bars.isEmpty());
+    }
+
+    @Test
+    public void fromBuckets_badDate_doesNotCrash() {
+        ChartBars c = ChartBars.fromBuckets(Arrays.asList(bucket("2026-13-01", null, 5, 1)), PeriodRange.WEEK);
+        assertEquals("", c.bars.get(0).label);
     }
 
     @Test

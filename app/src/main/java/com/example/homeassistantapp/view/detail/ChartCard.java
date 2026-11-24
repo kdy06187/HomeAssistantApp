@@ -5,17 +5,27 @@ import android.widget.TextView;
 
 import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.view.EnergyBarChartView;
+import com.example.homeassistantapp.view.PeriodRange;
+import com.google.android.material.button.MaterialButtonToggleGroup;
 
 /** 사용량 막대 차트 카드(제목·선택한 막대 값·빈 상태·안내). */
 public final class ChartCard {
+
+    public interface Listener {
+        /** period가 null이면 최근 기록. */
+        void onPeriodSelected(String period);
+        void onRetry();
+    }
+
     private static final String SELECT_HINT = "막대를 누르면 값이 보여요";
 
     private final View root, empty, retry;
     private final TextView title, selected, emptyText, note;
     private final EnergyBarChartView chart;
+    private final MaterialButtonToggleGroup periods;
     private ChartBars current;
 
-    public ChartCard(View root, Runnable onRetry) {
+    public ChartCard(View root, Listener listener) {
         this.root = root;
         title = root.findViewById(R.id.tvChartTitle);
         selected = root.findViewById(R.id.tvChartSelected);
@@ -24,11 +34,34 @@ public final class ChartCard {
         emptyText = root.findViewById(R.id.tvChartEmpty);
         retry = root.findViewById(R.id.btnChartRetry);
         note = root.findViewById(R.id.tvChartNote);
-        retry.setOnClickListener(v -> onRetry.run());
+        periods = root.findViewById(R.id.chartPeriods);
+        retry.setOnClickListener(v -> listener.onRetry());
+        periods.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (isChecked) listener.onPeriodSelected(periodOf(checkedId));
+        });
         chart.setOnBarSelected(index -> {
             if (current == null) return;
             selected.setText(index < 0 ? SELECT_HINT : current.describe(index));
         });
+    }
+
+    /** 저장해 둔 탭을 다시 고를 때. 리스너가 불리므로 부르는 쪽은 따로 요청하지 않는다. */
+    public void select(String period) {
+        periods.check(buttonOf(period));
+    }
+
+    private static String periodOf(int buttonId) {
+        if (buttonId == R.id.btnPeriodDay) return PeriodRange.DAY;
+        if (buttonId == R.id.btnPeriodWeek) return PeriodRange.WEEK;
+        if (buttonId == R.id.btnPeriodMonth) return PeriodRange.MONTH;
+        return null;
+    }
+
+    private static int buttonOf(String period) {
+        if (PeriodRange.DAY.equals(period)) return R.id.btnPeriodDay;
+        if (PeriodRange.WEEK.equals(period)) return R.id.btnPeriodWeek;
+        if (PeriodRange.MONTH.equals(period)) return R.id.btnPeriodMonth;
+        return R.id.btnPeriodRecent;
     }
 
     public void setVisible(boolean visible) {

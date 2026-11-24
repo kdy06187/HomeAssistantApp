@@ -18,6 +18,13 @@ public class EnergyLogResponse {
     @SerializedName("truncated")
     public Boolean truncated;
 
+    // 집계 모드(period 요청)일 때만 온다.
+    @SerializedName("period")
+    public String period;
+
+    @SerializedName("buckets")
+    public List<EnergyBucket> buckets;
+
     public List<EnergyLog> getLogs() {
         return logs;
     }

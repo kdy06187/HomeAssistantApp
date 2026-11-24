@@ -33,6 +33,7 @@ import java.util.TimeZone;
 /** 기기 상세(전체 화면). MainActivity 안에서 뒤로 스택에 쌓이고, 목록·제어는 탭들과 같은 ViewModel을 쓴다. */
 public class DeviceDetailFragment extends Fragment {
     private static final String ARG_DEVICE_ID = "deviceId";
+    private static final String STATE_PERIOD = "chartPeriod";
 
     private DeviceViewModel viewModel;
     private String deviceId;
@@ -42,6 +43,8 @@ public class DeviceDetailFragment extends Fragment {
     private boolean historyRequested;
     // 회전처럼 화면만 다시 만들어진 경우에만 받아 둔 차트 결과를 다시 쓴다.
     private boolean reuseHistory;
+    /** 차트 탭. null이면 최근 기록. */
+    private String period;
     private Device device;
     // 전력 조회(E6)는 Matter 기기만, 화면이 보이는 동안만.
     private boolean started;
@@ -74,6 +77,7 @@ public class DeviceDetailFragment extends Fragment {
         viewModel = new ViewModelProvider(requireActivity()).get(DeviceViewModel.class);
         deviceId = requireArguments().getString(ARG_DEVICE_ID);
         reuseHistory = savedInstanceState != null;
+        period = savedInstanceState != null ? savedInstanceState.getString(STATE_PERIOD) : null;
 
         MaterialToolbar toolbar = view.findViewById(R.id.detailToolbar);
         toolbar.setNavigationOnClickListener(v -> close());
@@ -93,7 +97,21 @@ public class DeviceDetailFragment extends Fragment {
         InfoCard infoCard = new InfoCard(view.findViewById(R.id.cardInfo));
         powerCard = new PowerCard(view.findViewById(R.id.cardPower), () -> viewModel.retryDetailEnergy());
         powerCard.setVisible(false);
-        chartCard = new ChartCard(view.findViewById(R.id.cardChart), this::loadHistory);
+        chartCard = new ChartCard(view.findViewById(R.id.cardChart), new ChartCard.Listener() {
+            @Override
+            public void onPeriodSelected(String selected) {
+                boolean changed = selected == null ? period != null : !selected.equals(period);
+                period = selected;
+                // 복원 때 탭을 다시 고르는 것도 여기로 온다. 기기를 아직 모르면 목록이 온 뒤 불러온다.
+                if (changed && historyRequested) loadHistory();
+            }
+
+            @Override
+            public void onRetry() {
+                loadHistory();
+            }
+        });
+        chartCard.select(period);
         chartCard.setVisible(false);
 
         viewModel.getDeviceList().observe(getViewLifecycleOwner(), devices -> {
@@ -117,6 +135,12 @@ public class DeviceDetailFragment extends Fragment {
         viewModel.getDetailHistory().observe(getViewLifecycleOwner(), this::bindHistory);
         // 앱이 종료됐다 상세로 복원되면 목록이 비어 있다.
         if (viewModel.getDeviceList().getValue() == null) viewModel.fetchDevices();
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString(STATE_PERIOD, period);
     }
 
     @Override
@@ -157,7 +181,7 @@ public class DeviceDetailFragment extends Fragment {
     private void showOrLoadHistory() {
         historyRequested = true;
         HistoryResult last = viewModel.getDetailHistory().getValue();
-        if (reuseHistory && last != null && last.isFor(deviceId, null)) {
+        if (reuseHistory && last != null && last.isFor(deviceId, period)) {
             bindHistory(last);
         } else {
             loadHistory();
@@ -167,13 +191,15 @@ public class DeviceDetailFragment extends Fragment {
     private void loadHistory() {
         historyRequested = true;
         chartCard.showLoading();
-        viewModel.loadDetailHistory(deviceId);
+        viewModel.loadDetailHistory(deviceId, period);
     }
 
     private void bindHistory(HistoryResult result) {
-        if (result == null || !historyRequested || !result.isFor(deviceId, null)) return;
+        if (result == null || !historyRequested || !result.isFor(deviceId, period)) return;
         if (result.failure != null) {
             chartCard.bind(ChartBars.failed(result.failure), true);
+        } else if (period != null) {
+            chartCard.bind(ChartBars.fromBuckets(result.response.buckets, period), false);
         } else {
             chartCard.bind(ChartBars.fromLogs(result.response.getLogs(), result.response.isTruncated(),
                     TimeZone.getDefault()), false);

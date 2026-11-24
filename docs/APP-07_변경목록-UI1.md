@@ -63,7 +63,7 @@
 | 07c-4 | **일/주/월 탭(D1)**: E7 `period=day/week/month`, 기간은 앱이 정함(일 = 오늘까지 7일, 주 = 이번 주까지 8주, 월 = 이번 달까지 6개월, 모두 +09:00 날짜). `buckets[].energyUsed_mWh`를 막대로, `sampleCount: 0`은 빈칸 | 새 `dto/EnergyBucket.java`, `EnergyLogResponse.java`(`period`·`buckets`), `HomeAssistantApi.java`(쿼리 `from`·`to`·`period`), 새 `view/PeriodRange.java` |
 | 07c-5 | 삭제: 하단 빨간 글자 버튼 + 확인 대화상자(파괴적 동작 강조, UI-34). 성공하면 상세를 닫는다. `unpaired:false` 경고는 06c 그대로 | `DeviceDetailFragment.java` |
 
-- **테스트**: `EnergyUnits`(999 mWh → "999 mWh", 1500 → "1.5 Wh", 2,500,000 → "2.5 kWh"), `PeriodRange`(오늘 2026-11-24 화요일 → 일: 11-18~11-24, 주: 10-06(월)~11-24, 월: 06-01~11-24, 연말 넘김, 범위 366일 이하), 버킷 → 막대 값(빈 구간), 15초 주기 결정 함수(보임·숨김 → 예약·취소), 상태 카드 표시.
+- **테스트**: `EnergyUnits`(999 mWh → "999 mWh", 1500 → "1.5 Wh", 2,500,000 → "2.5 kWh"), `PeriodRange`(오늘 2026-11-24 화요일 → 일: 11-18~11-24, 주: 10-05(월)~11-24, 월: 06-01~11-24, 연말 넘김, 범위 366일 이하), 버킷 → 막대 값(빈 구간), 15초 주기 결정 함수(보임·숨김 → 예약·취소), 상태 카드 표시.
 - **위험**: `DeviceDetailActivity`를 Fragment로 바꾸면 지금 Activity·레이아웃(`activity_device_detail.xml`)·`EnergyLineChartView`·`detailEnergyHistory`가 안 쓰이게 된다(D4) → 지울 목록은 구현 때 승인. 15초 갱신이 화면 밖에서 돌면 요청이 쌓인다 → 수명 주기 테스트는 Studio. 서버 E7 집계는 12a 구현됨, **실서버 확인 필요**.
 - **Studio 확인**: 스크롤·회전·뒤로가기, 15초 갱신이 화면을 나가면 멈추는지(서버 로그나 Logcat 요청 간격), 막대 터치 툴팁·TalkBack, 일/주/월 전환, 다크 모드 차트.
 
