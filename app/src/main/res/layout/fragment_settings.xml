@@ -63,9 +63,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:lineSpacingExtra="4dp"
-                        android:text="1. 서버 IP와 포트를 입력해요.
-2. 서버에서 받은 API 토큰을 입력해요.
-3. 연결 테스트가 성공하면 저장하고 시작해요."
+                        android:text="1. 서버 IP와 포트를 입력해요.\n2. 서버에서 받은 API 토큰을 입력해요.\n3. 연결 테스트가 성공하면 저장하고 시작해요."
                         android:textColor="?attr/colorOnPrimaryContainer"
                         android:textSize="16sp" />
                 </LinearLayout>
@@ -255,6 +253,27 @@
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- 저장하지 않고 입력한 주소·토큰으로 서버에 한 번 물어본다. -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTestConnection"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="연결 테스트"
+                android:textSize="16sp"
+                app:cornerRadius="14dp" />
+
+            <TextView
+                android:id="@+id/textTestResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="12dp"
+                android:accessibilityLiveRegion="polite"
+                android:textSize="14sp"
+                android:visibility="gone" />
 
             <!-- 저장 버튼 -->
             <com.google.android.material.button.MaterialButton

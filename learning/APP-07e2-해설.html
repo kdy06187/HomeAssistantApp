@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-07e-2 해설 — 연결 테스트와 첫 실행 저장</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07e-2 해설 — 연결 테스트와 첫 실행 저장</h1>
+  <p>ui-1 브랜치 · UI 1차 07e · D8(첫 실행만 테스트 성공 뒤 저장) · 2026-11-24</p>
+</header>
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>연결 테스트</b>: 설정을 저장하지 않고, 지금 입력한 IP·포트·토큰으로 <b>임시 클라이언트</b>를 만들어 기기 목록(E1)을 한 번 부른다. 결과는 성공 / 토큰 오류(401) / 연결 불가 / 서버 오류(그 밖의 HTTP) 네 가지로 버튼 아래에 보인다.</li>
+    <li><b>첫 실행(D8)</b>: 토큰이 저장된 적 없으면 저장 버튼이 "저장하고 시작하기"가 되고, <b>지금 입력과 같은 값으로 테스트가 성공했을 때만</b> 눌린다. 저장하면 홈 탭으로 간다. 다시 들어온 경우에는 테스트 없이 저장할 수 있다(서버가 꺼져 있어도 주소를 바꿀 수 있게).</li>
+    <li>임시 클라이언트는 401이어도 전역 안내·설정 탭 이동을 하지 않는다. 토큰 칸이 비었으면 저장된 토큰으로 테스트한다.</li>
+    <li>07e-1 첫 실행 카드 글자의 줄바꿈이 공백으로 보이던 것을 <code>\n</code>으로 고쳤다.</li>
+  </ul>
+  <div class="table-wrap"><table>
+    <tr><th>파일</th><th>역할</th><th>변경</th></tr>
+    <tr><td><code>network/ConnectionTestResult.java</code> (새)</td><td>결과 분류·문구, 저장 가능 판단</td><td><code>fromHttp</code>, <code>fromFailure</code>, <code>canSave</code></td></tr>
+    <tr><td><code>network/RetrofitClient.java</code></td><td>임시 클라이언트</td><td><code>createTestApi</code>(401 감시 없음, 짧은 타임아웃), <code>currentApiToken</code></td></tr>
+    <tr><td><code>fragment/SettingsFragment.java</code>, <code>fragment_settings.xml</code></td><td>화면</td><td>연결 테스트 버튼·결과, 첫 실행 저장 잠금, 저장 뒤 홈</td></tr>
+  </table></div>
+</section>
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림 — 첫 실행</h2>
+  <svg class="flow" viewBox="0 0 760 180" role="img" aria-label="입력, 연결 테스트 성공, 저장 버튼 활성, 저장 후 홈으로 가는 흐름. 입력을 바꾸면 저장 버튼이 다시 잠긴다.">
+    <rect x="10" y="30" width="130" height="50" rx="10"/><text x="75" y="60" text-anchor="middle">주소·토큰 입력</text>
+    <rect x="180" y="30" width="150" height="50" rx="10" class="hl"/><text x="255" y="52" text-anchor="middle">연결 테스트</text><text x="255" y="70" text-anchor="middle" class="small">임시 클라이언트 E1</text>
+    <rect x="370" y="30" width="170" height="50" rx="10"/><text x="455" y="52" text-anchor="middle">testedInputs = 입력</text><text x="455" y="70" text-anchor="middle" class="small">성공일 때만</text>
+    <rect x="580" y="30" width="170" height="50" rx="10"/><text x="665" y="52" text-anchor="middle">저장하고 시작하기</text><text x="665" y="70" text-anchor="middle" class="small">→ 홈 탭</text>
+    <line x1="140" y1="55" x2="180" y2="55"/><line x1="330" y1="55" x2="370" y2="55"/><line x1="540" y1="55" x2="580" y2="55"/>
+    <path d="M455,80 L455,130 L75,130 L75,80" class="no"/><text x="265" y="150" text-anchor="middle" class="small">입력을 바꾸면 testedInputs와 달라져 저장 버튼이 다시 잠김</text>
+  </svg>
+</section>
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+  <h3>① 저장하지 않는 임시 클라이언트</h3>
+<pre><code>new OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .addInterceptor(new AuthInterceptor(() -&gt; token))   // 401 감시 인터셉터는 넣지 않음
+        .build();</code></pre>
+  <div class="why">
+    <div><b>왜</b> 앱 전체가 쓰는 클라이언트를 바꾸면, 틀린 주소로 테스트만 해도 다른 탭의 요청이 모두 실패한다. 401 감시를 넣으면 테스트 한 번에 "토큰이 맞지 않습니다" 토스트와 탭 이동이 일어난다.</div>
+  </div>
+  <h3>② "같은 입력으로 성공했나"만 본다</h3>
+<pre><code>public static boolean canSave(boolean firstRun, String testedInputs, String currentInputs) {
+    if (!firstRun) return true;
+    return testedInputs != null &amp;&amp; testedInputs.equals(currentInputs);
+}</code></pre>
+  <div class="why">
+    <div><b>무엇을</b> 성공한 순간의 "IP·포트·토큰" 묶음을 기억하고, 글자가 바뀔 때마다 지금 묶음과 비교한다.</div>
+    <div class="drop"><b>빼면</b> 테스트 성공 뒤 토큰을 한 글자 바꿔도 저장되어, 첫 실행부터 401을 만난다.</div>
+  </div>
+</section>
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b>임시 클라이언트</b>: 한 번 쓰고 버리는 Retrofit/OkHttp 객체. 전역 설정을 건드리지 않는다.</li>
+    <li><b>Call.cancel()</b>: 진행 중 요청을 끊는다. 화면이 사라질 때 불러 결과가 빈 화면에 그려지지 않게 한다.</li>
+    <li><b>IOException</b>: 연결 거부·시간 초과처럼 서버에 닿지 못한 실패.</li>
+  </ul>
+</section>
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol><li>테스트가 404를 받았다. 성공인가, 무엇을 의심해야 하나?</li><li>두 번째 실행부터는 왜 테스트 없이 저장할 수 있게 했나?</li></ol>
+  <details><summary>정답 보기</summary><ol><li>실패(SERVER_ERROR). 서버에는 닿았지만 경로가 없으니 다른 프로그램의 주소·포트일 수 있다.</li><li>서버가 꺼져 있을 때도 주소를 고칠 수 있어야 하기 때문(D8 A).</li></ol></details>
+</section>
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <p>새 브랜치나 <code>learning/exercise-conntest/</code> 사본에서.</p>
+  <h3>실습 — 기기 수 보여 주기</h3>
+  <p><b>목표</b>: 성공 문구를 "연결됐어요. 기기 3개를 찾았어요."로. <b>고칠 파일</b>: <code>ConnectionTestResult</code>(새 메서드 <code>success(int count)</code>), <code>SettingsFragment</code>(응답 본문에서 개수). <b>완료 기준</b>: 단위 테스트로 0개·3개 문구 확인.</p>
+  <details><summary>힌트</summary><code>response.body()</code>가 null일 수 있으니 개수는 0으로 본다.</details>
+</section>
+
+</main>
+</body>
+</html>

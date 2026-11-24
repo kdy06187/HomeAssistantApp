@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -16,16 +17,24 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.homeassistantapp.R;
+import com.example.homeassistantapp.dto.DeviceListResponse;
+import com.example.homeassistantapp.network.ConnectionTestResult;
 import com.example.homeassistantapp.network.RetrofitClient;
 import com.example.homeassistantapp.network.ServerDefaults;
 import com.example.homeassistantapp.network.SettingsInputValidator;
 import com.example.homeassistantapp.security.TokenFormat;
 import com.example.homeassistantapp.security.TokenStore;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.EnumMap;
 import java.util.Map;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class SettingsFragment extends Fragment {
     private TextInputEditText etServerIp, etServerPort, etWifiSsid, etWifiPassword, etApiToken;
@@ -34,6 +43,11 @@ public class SettingsFragment extends Fragment {
             new EnumMap<>(SettingsInputValidator.Field.class);
     private Button btnSaveSettings;
     private View cardFirstRun;
+    private Button btnTestConnection;
+    private TextView textTestResult;
+    private Call<DeviceListResponse> testCall;
+    // 마지막으로 연결 테스트가 성공한 입력(메모리에만). 첫 실행에는 이 값과 같아야 저장할 수 있다.
+    private String testedInputs;
     private SharedPreferences prefs;
 
     @Nullable
@@ -55,6 +69,9 @@ public class SettingsFragment extends Fragment {
         fieldLayouts.put(SettingsInputValidator.Field.WIFI_SSID, view.findViewById(R.id.tilWifiSsid));
         fieldLayouts.put(SettingsInputValidator.Field.WIFI_PASSWORD, view.findViewById(R.id.tilWifiPassword));
         for (TextInputLayout layout : fieldLayouts.values()) clearErrorOnEdit(layout);
+        btnTestConnection = view.findViewById(R.id.btnTestConnection);
+        textTestResult = view.findViewById(R.id.textTestResult);
+        testedInputs = null;
 
         prefs = requireActivity().getSharedPreferences(ServerDefaults.PREFS_NAME, Context.MODE_PRIVATE);
 
@@ -65,6 +82,19 @@ public class SettingsFragment extends Fragment {
         etWifiPassword.setText(prefs.getString("WIFI_PASSWORD", ""));
 
         btnSaveSettings.setOnClickListener(v -> saveSettings());
+        btnTestConnection.setOnClickListener(v -> testConnection());
+        // 주소·토큰을 바꾸면 이전 테스트 결과는 더 맞지 않는다.
+        TextWatcher invalidateTest = new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
+                if (testedInputs != null && !testedInputs.equals(currentInputs())) textTestResult.setVisibility(View.GONE);
+                renderSaveButton();
+            }
+        };
+        etServerIp.addTextChangedListener(invalidateTest);
+        etServerPort.addTextChangedListener(invalidateTest);
+        etApiToken.addTextChangedListener(invalidateTest);
         renderTokenState();
 
         // 401로 이 탭에 왔으면 무엇을 고쳐야 하는지 토큰 칸에 바로 보인다.
@@ -83,6 +113,74 @@ public class SettingsFragment extends Fragment {
         // 저장된 토큰은 화면에 다시 채우지 않는다. 칸이 비어 있으면 기존 토큰을 유지한다.
         tilApiToken.setHint(isFirstRun() ? "API 토큰 (필수)" : "API 토큰 (저장됨 · 바꿀 때만 입력)");
         cardFirstRun.setVisibility(isFirstRun() ? View.VISIBLE : View.GONE);
+        renderSaveButton();
+    }
+
+    private void renderSaveButton() {
+        boolean firstRun = isFirstRun();
+        btnSaveSettings.setText(firstRun ? "저장하고 시작하기" : "변경사항 저장");
+        btnSaveSettings.setEnabled(ConnectionTestResult.canSave(firstRun, testedInputs, currentInputs()));
+    }
+
+    private String currentInputs() {
+        return text(etServerIp).trim() + "\n" + text(etServerPort).trim() + "\n" + TokenFormat.normalize(text(etApiToken));
+    }
+
+    /** 저장하지 않고 입력한 주소·토큰으로 E1을 한 번 부른다. 토큰 칸이 비었으면 저장된 토큰을 쓴다. */
+    private void testConnection() {
+        String ip = text(etServerIp).trim();
+        String port = text(etServerPort).trim();
+        String typed = TokenFormat.normalize(text(etApiToken));
+        Map<SettingsInputValidator.Field, String> errors = SettingsInputValidator.validate(
+                ip, port, typed, !isFirstRun(), "", "");
+        if (showErrors(errors)) return;
+        String token = typed.isEmpty() ? RetrofitClient.currentApiToken() : typed;
+        String inputs = currentInputs();
+
+        btnTestConnection.setEnabled(false);
+        btnTestConnection.setText("연결 테스트 중…");
+        textTestResult.setVisibility(View.GONE);
+        try {
+            testCall = RetrofitClient.createTestApi(ip, port, token).getDeviceList();
+        } catch (IllegalArgumentException e) {
+            showTestResult(ConnectionTestResult.fromFailure(e), inputs);
+            return;
+        }
+        testCall.enqueue(new Callback<DeviceListResponse>() {
+            @Override
+            public void onResponse(Call<DeviceListResponse> call, Response<DeviceListResponse> response) {
+                showTestResult(ConnectionTestResult.fromHttp(response.code()), inputs);
+            }
+
+            @Override
+            public void onFailure(Call<DeviceListResponse> call, Throwable t) {
+                if (call.isCanceled()) return;
+                showTestResult(ConnectionTestResult.fromFailure(t), inputs);
+            }
+        });
+    }
+
+    private void showTestResult(ConnectionTestResult result, String inputs) {
+        if (getView() == null) return;
+        btnTestConnection.setEnabled(true);
+        btnTestConnection.setText("연결 테스트");
+        testedInputs = result.isSuccess() ? inputs : null;
+        textTestResult.setVisibility(View.VISIBLE);
+        textTestResult.setText(result.message);
+        textTestResult.setTextColor(MaterialColors.getColor(textTestResult, result.isSuccess()
+                ? androidx.appcompat.R.attr.colorPrimary : androidx.appcompat.R.attr.colorError));
+        if (result.kind == ConnectionTestResult.Kind.TOKEN_ERROR) {
+            tilApiToken.setError("서버가 이 토큰을 거절했어요.");
+            etApiToken.requestFocus();
+        }
+        renderSaveButton();
+    }
+
+    @Override
+    public void onDestroyView() {
+        if (testCall != null) testCall.cancel();
+        testCall = null;
+        super.onDestroyView();
     }
 
     private void saveSettings() {
@@ -93,9 +191,11 @@ public class SettingsFragment extends Fragment {
         String password = text(etWifiPassword);
         String token = TokenFormat.normalize(text(etApiToken));
 
+        boolean firstRun = isFirstRun();
         Map<SettingsInputValidator.Field, String> errors = SettingsInputValidator.validate(
-                ip, port, token, !isFirstRun(), ssid, password);
+                ip, port, token, !firstRun, ssid, password);
         if (showErrors(errors)) return;
+        if (!ConnectionTestResult.canSave(firstRun, testedInputs, currentInputs())) return;
 
         prefs.edit()
                 .putString(ServerDefaults.KEY_SERVER_IP, ip)
@@ -119,6 +219,11 @@ public class SettingsFragment extends Fragment {
         // 저장한 값이 또 틀리면 다시 알려 줘야 하므로, 저장할 때마다 401 안내를 되살린다.
         RetrofitClient.resetUnauthorizedNotice();
         Toast.makeText(getContext(), "설정을 저장했어요.", Toast.LENGTH_SHORT).show();
+        // 첫 실행이면 연결을 확인했으니 바로 홈으로 간다.
+        if (firstRun) {
+            BottomNavigationView nav = requireActivity().findViewById(R.id.bottomNavigation);
+            nav.setSelectedItemId(R.id.nav_home);
+        }
     }
 
     /** 오류가 있으면 칸마다 보이고 첫 칸으로 커서를 옮긴 뒤 true. */

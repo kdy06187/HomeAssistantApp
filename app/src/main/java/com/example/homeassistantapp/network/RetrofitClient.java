@@ -87,6 +87,29 @@ public class RetrofitClient {
         api = retrofit.create(HomeAssistantApi.class);
     }
 
+    /**
+     * 연결 테스트용 임시 클라이언트. 저장된 설정을 바꾸지 않고, 401이어도 전역 안내·탭 이동을 하지 않는다.
+     * 주소가 URL로 만들 수 없는 값이면 IllegalArgumentException.
+     */
+    public static HomeAssistantApi createTestApi(String ip, String port, String token) {
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .connectTimeout(5, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .addInterceptor(new AuthInterceptor(() -> token))
+                .build();
+        return new Retrofit.Builder()
+                .baseUrl("http://" + ip + ":" + port + "/")
+                .client(okHttpClient)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+                .create(HomeAssistantApi.class);
+    }
+
+    /** 지금 메모리에 있는 토큰(저장된 토큰을 복호화한 값). 연결 테스트가 칸이 비었을 때 쓴다. */
+    public static String currentApiToken() {
+        return apiToken;
+    }
+
     public static HomeAssistantApi getApi() {
         if (api == null) {
             rebuildClient(ServerDefaults.IP, ServerDefaults.PORT);
