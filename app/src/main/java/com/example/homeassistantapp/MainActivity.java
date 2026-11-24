@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -68,6 +69,17 @@ public class MainActivity extends AppCompatActivity {
             String message = event != null ? event.takeIfNotHandled() : null;
             if (message != null) {
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        viewModel.getDeleteWarning().observe(this, event -> {
+            String message = event != null ? event.takeIfNotHandled() : null;
+            if (message != null) {
+                new AlertDialog.Builder(this)
+                        .setTitle("기기 초기화 필요")
+                        .setMessage(message)
+                        .setPositiveButton("확인", null)
+                        .show();
             }
         });
 

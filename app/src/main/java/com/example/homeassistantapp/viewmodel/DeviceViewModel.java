@@ -13,6 +13,7 @@ import com.example.homeassistantapp.dto.AddDeviceResponse;
 import com.example.homeassistantapp.dto.ControlRequest;
 import com.example.homeassistantapp.dto.ControlResponse;
 import com.example.homeassistantapp.dto.DeleteDeviceRequest;
+import com.example.homeassistantapp.dto.DeleteDeviceResponse;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.dto.DeviceListResponse;
 import com.example.homeassistantapp.dto.DeviceStateResponse;
@@ -42,7 +43,14 @@ public class DeviceViewModel extends ViewModel {
     public LiveData<OneTimeEvent<String>> getToastMessage() { return toastMessage; }
     public LiveData<List<EnergyLog>> getDetailEnergyHistory() {return detailEnergyHistory;}
 
+    // 삭제는 됐지만 기기 쪽 해제가 실패했을 때의 경고. 토스트보다 오래 보이도록 대화상자로 띄운다.
+    private final MutableLiveData<OneTimeEvent<String>> deleteWarning = new MutableLiveData<>();
+    public LiveData<OneTimeEvent<String>> getDeleteWarning() { return deleteWarning; }
+
     private final PendingStates pendingStates = new PendingStates();
+
+    private static final long LIST_REFRESH_DELAY_MS = 500L;
+    private final RefreshGate listRefreshGate = new RefreshGate();
 
     // 지연 수락(202) 뒤 상태 재확인 예약. 기기별로 하나만 둔다.
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -61,6 +69,19 @@ public class DeviceViewModel extends ViewModel {
         };
         pendingRechecks.put(deviceId, recheck);
         mainHandler.postDelayed(recheck, delayMs);
+    }
+
+    /** 기기가 서버에서 사라졌을 때(404). 잠깐 기다려 같은 때 온 404들을 목록 새로고침 1번으로 묶는다. */
+    private void scheduleListRefresh() {
+        if (!listRefreshGate.tryClaim()) return;
+        mainHandler.postDelayed(() -> {
+            listRefreshGate.release();
+            fetchDevices();
+        }, LIST_REFRESH_DELAY_MS);
+    }
+
+    private static boolean isDeviceGone(ApiError error) {
+        return error.httpCode == 404 && error.is("DEVICE_NOT_FOUND");
     }
 
     @Override
@@ -146,7 +167,7 @@ public class DeviceViewModel extends ViewModel {
                     case DEVICE_GONE:
                         finishLoading(targetId, null);
                         showFailure("제어 실패: ", error);
-                        fetchDevices();
+                        scheduleListRefresh();
                         break;
                     default:
                         // 401 이동은 UnauthorizedInterceptor가 맡는다.
@@ -219,21 +240,32 @@ public class DeviceViewModel extends ViewModel {
         beginLoading(deviceId);
         showToast("기기 삭제 중...");
 
-        RetrofitClient.getApi().deleteDevice(new DeleteDeviceRequest(deviceId)).enqueue(new Callback<ControlResponse>() {
+        RetrofitClient.getApi().deleteDevice(new DeleteDeviceRequest(deviceId)).enqueue(new Callback<DeleteDeviceResponse>() {
             @Override
-            public void onResponse(Call<ControlResponse> call, Response<ControlResponse> response) {
+            public void onResponse(Call<DeleteDeviceResponse> call, Response<DeleteDeviceResponse> response) {
+                finishLoading(deviceId, null);
                 if (response.isSuccessful()) {
-                    finishLoading(deviceId, null);
-                    showToast("삭제 성공!");
+                    showToast("기기를 삭제했습니다. 90일 안에 다시 등록하면 기록을 이어받습니다.");
+                    DeleteDeviceResponse body = response.body();
+                    if (body != null && body.needsDeviceReset()) {
+                        deleteWarning.setValue(new OneTimeEvent<>(
+                                "앱에서는 삭제됐지만 기기 쪽 연결 해제에 실패했습니다. 기기를 초기화해 주세요."));
+                    }
                     fetchDevices();
+                    return;
+                }
+                ApiError error = ApiError.from(response);
+                if (isDeviceGone(error)) {
+                    // 이미 없거나 숨긴 기기: 사용자가 원한 결과는 이미 이뤄졌다.
+                    showToast("이미 삭제된 기기입니다.");
+                    scheduleListRefresh();
                 } else {
-                    finishLoading(deviceId, null);
-                    showFailure("삭제 실패: ", response);
+                    showFailure("삭제 실패: ", error);
                 }
             }
 
             @Override
-            public void onFailure(Call<ControlResponse> call, Throwable t) {
+            public void onFailure(Call<DeleteDeviceResponse> call, Throwable t) {
                 finishLoading(deviceId, null);
                 showToast("통신 실패: " + t.getMessage());
             }
@@ -248,6 +280,8 @@ public class DeviceViewModel extends ViewModel {
                     finishLoading(deviceId, response.body().state);
                 } else {
                     finishLoading(deviceId, null);
+                    // 자동 조회가 많아 실패 토스트는 띄우지 않는다. 기기가 사라졌으면 목록만 맞춘다.
+                    if (isDeviceGone(ApiError.from(response))) scheduleListRefresh();
                 }
             }
 
@@ -275,9 +309,14 @@ public class DeviceViewModel extends ViewModel {
                     finishLoading(deviceId, response.body().state);
 
                 } else {
-                    // 실패는 기기가 꺼졌다는 뜻이 아니다. 상태는 그대로 둔다.
+                    // 실패는 기기가 꺼졌다는 뜻이 아니다(502도 서버 상태는 그대로). 상태는 그대로 둔다.
                     finishLoading(deviceId, null);
-                    showFailure("전력 조회 실패: ", response);
+                    ApiError error = ApiError.from(response);
+                    if (isDeviceGone(error)) {
+                        scheduleListRefresh();
+                    } else {
+                        showFailure("전력 조회 실패: ", error);
+                    }
                 }
             }
 
@@ -303,7 +342,12 @@ public class DeviceViewModel extends ViewModel {
                 }
                 else{
                     finishLoading(deviceId, null);
-                    showFailure("전력량 로그를 불러오지 못했습니다: ", response);
+                    ApiError error = ApiError.from(response);
+                    if (isDeviceGone(error)) {
+                        scheduleListRefresh();
+                    } else {
+                        showFailure("전력량 로그를 불러오지 못했습니다: ", error);
+                    }
                 }
             }
 

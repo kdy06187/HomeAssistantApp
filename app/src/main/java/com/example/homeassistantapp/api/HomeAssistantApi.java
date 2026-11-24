@@ -7,6 +7,7 @@ import com.example.homeassistantapp.dto.AddDeviceResponse;
 import com.example.homeassistantapp.dto.ControlRequest;
 import com.example.homeassistantapp.dto.ControlResponse;
 import com.example.homeassistantapp.dto.DeleteDeviceRequest;
+import com.example.homeassistantapp.dto.DeleteDeviceResponse;
 import com.example.homeassistantapp.dto.DeviceListResponse;
 import com.example.homeassistantapp.dto.DeviceStateResponse;
 import com.example.homeassistantapp.dto.EnergyLog;
@@ -31,7 +32,7 @@ public interface HomeAssistantApi {
     @POST("/api/commission")
     Call<AddDeviceResponse> addDevice(@Body AddDeviceRequest request);
     @POST("/api/devices/delete")
-    Call<ControlResponse> deleteDevice(@Body DeleteDeviceRequest request);
+    Call<DeleteDeviceResponse> deleteDevice(@Body DeleteDeviceRequest request);
     @GET("/api/devices/{deviceId}/state")
     Call<DeviceStateResponse> getDeviceState(@Path("deviceId") String deviceId
             , @Query("isManualRefresh") boolean isManualRefresh);
