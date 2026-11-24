@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -16,18 +17,27 @@ import com.example.homeassistantapp.fragment.CommissionProgressFragment;
 import com.example.homeassistantapp.fragment.DeviceFragment;
 import com.example.homeassistantapp.fragment.HomeFragment;
 import com.example.homeassistantapp.fragment.SettingsFragment;
+import com.example.homeassistantapp.network.ConnectionState;
 import com.example.homeassistantapp.network.RetrofitClient;
 import com.example.homeassistantapp.network.ServerDefaults;
 import com.example.homeassistantapp.security.TokenStore;
 import com.example.homeassistantapp.security.WifiPasswordStore;
+import com.example.homeassistantapp.view.ConnectionBanner;
 import com.example.homeassistantapp.view.TileConfigStore;
 import com.example.homeassistantapp.viewmodel.CommissionStatus;
 import com.example.homeassistantapp.viewmodel.ControlFailure;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 
 public class MainActivity extends AppCompatActivity {
+    private View banner;
+    private TextView bannerText;
+    private MaterialButton bannerAction;
+    private BottomNavigationView bottomNav;
+    private DeviceViewModel viewModel;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,7 +51,10 @@ public class MainActivity extends AppCompatActivity {
 
         RetrofitClient.rebuildClient(ip, port);
         RetrofitClient.setApiToken(TokenStore.load(this));
-        BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
+        bottomNav = findViewById(R.id.bottomNavigation);
+        banner = findViewById(R.id.connectionBanner);
+        bannerText = findViewById(R.id.textConnectionBanner);
+        bannerAction = findViewById(R.id.btnConnectionBanner);
         FragmentManager fragmentManager = getSupportFragmentManager();
 
         // 상세는 전체 화면이라 열려 있는 동안 하단 탭을 숨긴다.
@@ -69,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
                         .replace(R.id.fragmentContainer, selectedFragment)
                         .commit();
             }
+            renderBanner(RetrofitClient.getConnectionState().getValue(), itemId == R.id.nav_settings);
             return true;
         });
         if (savedInstanceState == null) {
@@ -83,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 어느 요청이든 401이면 설정 화면으로 보낸다. 다른 Activity에 있다 돌아와도 LiveData가 전달한다.
         // 탭마다 따로 관찰하면 대시보드에서 토스트가 안 뜨거나 탭을 바꿀 때 다시 뜨므로, 여기서 한 번만 띄운다.
-        DeviceViewModel viewModel = new ViewModelProvider(this).get(DeviceViewModel.class);
+        viewModel = new ViewModelProvider(this).get(DeviceViewModel.class);
         viewModel.getToastMessage().observe(this, event -> {
             String message = event != null ? event.takeIfNotHandled() : null;
             if (message != null) {
@@ -129,12 +143,29 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // 탭을 옮겨도 고칠 때까지 보이는 배너. 자동 이동·토스트는 토큰 오류로 바뀐 순간 1번만.
+        RetrofitClient.getConnectionState().observe(this,
+                kind -> renderBanner(kind, bottomNav.getSelectedItemId() == R.id.nav_settings));
+
         RetrofitClient.getUnauthorizedSignal().observe(this, signal -> {
             if (!RetrofitClient.consumeUnauthorized()) return;
             Toast.makeText(this, "API 토큰이 맞지 않습니다. 설정에서 다시 입력해 주세요.", Toast.LENGTH_LONG).show();
             if (bottomNav.getSelectedItemId() != R.id.nav_settings) {
                 bottomNav.setSelectedItemId(R.id.nav_settings);
             }
+        });
+    }
+
+    private void renderBanner(ConnectionState.Kind kind, boolean onSettingsTab) {
+        ConnectionBanner state = ConnectionBanner.of(kind, onSettingsTab);
+        banner.setVisibility(state.visible ? View.VISIBLE : View.GONE);
+        if (!state.visible) return;
+        bannerText.setText(state.message);
+        bannerAction.setVisibility(state.action == ConnectionBanner.Action.NONE ? View.GONE : View.VISIBLE);
+        bannerAction.setText(state.actionLabel);
+        bannerAction.setOnClickListener(v -> {
+            if (state.action == ConnectionBanner.Action.RETRY) viewModel.fetchDevices(true);
+            else if (state.action == ConnectionBanner.Action.OPEN_SETTINGS) bottomNav.setSelectedItemId(R.id.nav_settings);
         });
     }
 
