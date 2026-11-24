@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-07b-4 해설</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07b-4 해설 — 기기 탭: 상태 칩·삭제 버튼·순서 핸들</h1>
+  <p>ui-1 브랜치 · UI 1차 07b · UI-20·UI-22, D3(순서는 기기 탭 핸들) · 2026-11-24</p>
+</header>
+
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>전</b>: 기기 탭 한 줄 = 이름 + <code>MATTER</code> 같은 원시 값 + 화살표. 삭제는 <b>길게 누르기</b>로만 할 수 있어 찾기 어려웠고(UI-20), 추가 버튼은 "+" 아이콘뿐이었다(UI-22). 순서 바꾸기는 홈 섹션을 길게 눌러 끌었다.</li>
+    <li><b>후</b>: 한 줄 = <b>순서 핸들</b>(48dp) · 이름 · "Matter / 직접 연결 (TCP_DIY)" · <b>상태 칩</b> · <b>삭제 버튼</b>(빨간 휴지통, 48dp). 이름 부분을 누르면 상세, 아래쪽 "<b>기기 추가</b>" 글자 버튼.</li>
+    <li><b>순서</b>: 핸들을 누른 채 끌면 바뀌고, 손을 떼면 <code>device_order</code>에 저장한다. 홈 타일도 같은 순서를 따른다. TalkBack 사용자는 항목의 동작 메뉴에서 "위로 이동 / 아래로 이동"을 쓴다.</li>
+    <li><b>삭제 확인</b>: "‘이름’ 기기를 삭제할까요?" 대화상자의 삭제 버튼을 오류 색으로 구분. 길게 누르기 삭제는 없앴다(버튼으로 대신).</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림 — 순서 바꾸기</h2>
+  <svg class="flow" viewBox="0 0 760 230" role="img" aria-label="핸들 드래그로 순서를 바꾸고 저장해 홈에도 반영되는 흐름">
+    <rect x="10" y="20" width="150" height="54" rx="8"/><text x="85" y="43" text-anchor="middle">핸들 ACTION_DOWN</text><text class="small" x="85" y="62" text-anchor="middle">startDrag(holder)</text>
+    <rect class="hl" x="200" y="20" width="160" height="54" rx="8"/><text x="280" y="43" text-anchor="middle">onMove</text><text class="small" x="280" y="62" text-anchor="middle">adapter.move(from,to)</text>
+    <rect x="400" y="20" width="160" height="54" rx="8"/><text x="480" y="43" text-anchor="middle">clearView(손 뗌)</text><text class="small" x="480" y="62" text-anchor="middle">saveOrder()</text>
+    <rect x="600" y="20" width="150" height="54" rx="8"/><text x="675" y="43" text-anchor="middle">device_order</text><text class="small" x="675" y="62" text-anchor="middle">DashboardPrefs</text>
+    <line x1="160" y1="47" x2="200" y2="47"/><line x1="360" y1="47" x2="400" y2="47"/><line x1="560" y1="47" x2="600" y2="47"/>
+    <rect x="600" y="140" width="150" height="54" rx="8"/><text x="675" y="163" text-anchor="middle">홈 타일</text><text class="small" x="675" y="182" text-anchor="middle">DeviceOrder.sort</text>
+    <path d="M675 74 L675 140"/>
+    <rect x="200" y="140" width="320" height="54" rx="8"/><text x="360" y="163" text-anchor="middle">드래그 중 목록 갱신 → deferredDevices에 보관</text><text class="small" x="360" y="182" text-anchor="middle">손을 뗀 뒤 마지막 목록을 그린다</text>
+    <path class="no" d="M280 74 L280 140"/>
+  </svg>
+</section>
+
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+  <h3>① 길게 누르지 않고 핸들로 끌기</h3>
+  <pre><code>@Override public boolean isLongPressDragEnabled() { return false; } // 핸들로만
+
+holder.handle.setOnTouchListener((v, event) -&gt; {
+    if (event.getActionMasked() == MotionEvent.ACTION_DOWN) listener.onStartDrag(holder);
+    return false;
+});</code></pre>
+  <div class="why">
+    <div><b>왜</b> 길게 누르기는 눈에 보이지 않는 기능이라 찾기 어렵고, 줄을 누르면 상세가 열리는 동작과 겹친다. 핸들은 "여기를 잡으면 움직인다"를 그림으로 보여 준다(D3).</div>
+  </div>
+
+  <h3>② 드래그 중 갱신 미루기</h3>
+  <pre><code>if (dragging) {
+    deferredDevices = devices;      // 지금 그리면 끌던 줄이 사라진다
+} else {
+    showDevices(devices);
+}
+… clearView: dragging = false; saveOrder(); showDevices(deferredDevices);</code></pre>
+  <div class="why">
+    <div><b>왜</b> 기기 탭에 들어오면 기기마다 E5 상태 조회가 돌아 목록이 여러 번 다시 나온다. 그 사이에 <code>notifyDataSetChanged</code>가 오면 RecyclerView가 끌던 항목을 놓친다. 예전 위젯 편집의 "편집 중 갱신 무시"와 같은 생각이다.</div>
+  </div>
+
+  <h3>③ 보조 기술용 이동 동작</h3>
+  <pre><code>ViewCompat.addAccessibilityAction(holder.itemView, "위로 이동",
+        (v, args) -&gt; { listener.onMoveBy(holder, -1); return true; });</code></pre>
+  <div class="why">
+    <div><b>왜</b> 화면 읽기(TalkBack)에서는 손가락으로 끌기가 어렵다. 같은 결과를 내는 동작을 메뉴로 하나 더 준다. 다시 그릴 때 이전 동작 ID를 지우지 않으면 메뉴가 계속 늘어나므로 <code>moveActionIds</code>에 모아 두었다가 지운다.</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b>ItemTouchHelper</b>: RecyclerView 항목 끌기·밀기를 처리하는 도우미. <code>onMove</code>에서 자리를 바꾸고 <code>clearView</code>에서 끝을 안다.</li>
+    <li><b>접근성 동작(AccessibilityAction)</b>: TalkBack의 "동작" 메뉴에 이름 붙은 기능을 추가하는 방법.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol>
+    <li>등록 중 임시 항목 위로 다른 기기를 끌어 올릴 수 있을까?</li>
+    <li>순서를 바꾼 뒤 홈 탭에 가면 바로 바뀐 순서가 보이는 이유는?</li>
+  </ol>
+  <details><summary>정답 보기</summary>
+    <ol>
+      <li>없다. <code>move</code>가 대상 자리가 임시 항목이면 거절하고, 임시 항목에는 핸들·삭제가 보이지 않는다.</li>
+      <li>홈은 탭에 들어올 때 새로 만들어지고, 목록을 그릴 때마다 같은 <code>device_order</code>로 정렬하기 때문이다.</li>
+    </ol>
+  </details>
+</section>
+
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <h3>실습. 기기 개수 안내</h3>
+  <ul>
+    <li><b>목표</b>: 목록 위에 "등록된 기기 N개"를 보인다(임시 항목은 세지 않음).</li>
+    <li><b>고칠 파일</b>: <code>fragment_device.xml</code>(TextView 추가), <code>DeviceFragment.java</code></li>
+    <li><b>완료 기준</b>: 등록 중에도 숫자가 늘지 않고, 삭제 뒤 줄어든다.</li>
+  </ul>
+  <details><summary>힌트</summary><code>DeviceOrder.serialize(devices)</code>는 임시 항목을 빼고 쉼표로 잇는다. 쉼표 수를 세거나, <code>DeviceRow.of(d).pairing</code>이 아닌 것만 센다.</details>
+</section>
+</main>
+</body>
+</html>

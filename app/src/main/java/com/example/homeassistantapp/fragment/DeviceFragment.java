@@ -1,5 +1,6 @@
 package com.example.homeassistantapp.fragment;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,27 +11,38 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.homeassistantapp.R;
+import com.example.homeassistantapp.activity.DeviceDetailActivity;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.view.DeviceAdapter;
+import com.example.homeassistantapp.view.DeviceOrder;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.color.MaterialColors;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 
+import java.util.List;
 
+/** 기기 탭: 목록 관리(상태·종류·삭제·순서). 순서는 홈 타일에도 그대로 쓰인다. */
 public class DeviceFragment extends Fragment {
     private DeviceViewModel viewModel;
     private DeviceAdapter adapter;
+    private ItemTouchHelper touchHelper;
     private boolean isManualRefresh = true;
+    // 드래그 중에 상태 갱신으로 목록을 다시 그리면 끌던 항목이 사라진다. 끝난 뒤 마지막 목록을 그린다.
+    private boolean dragging;
+    private List<Device> deferredDevices;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_device, container, false);
     }
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -45,22 +57,81 @@ public class DeviceFragment extends Fragment {
             isManualRefresh = true;
         });
 
-        adapter = new DeviceAdapter();
-        recyclerView.setAdapter(adapter);
-        adapter.setOnDeviceLongClickListener(device -> showDeviceDeleteDialog(device));
+        adapter = new DeviceAdapter(new DeviceAdapter.Listener() {
+            @Override
+            public void onOpen(Device device) {
+                startActivity(DeviceDetailActivity.intentFor(requireContext(), device));
+            }
 
+            @Override
+            public void onDelete(Device device) {
+                showDeviceDeleteDialog(device);
+            }
+
+            @Override
+            public void onStartDrag(RecyclerView.ViewHolder holder) {
+                touchHelper.startDrag(holder);
+            }
+
+            @Override
+            public void onMoveBy(RecyclerView.ViewHolder holder, int delta) {
+                int from = holder.getBindingAdapterPosition();
+                if (adapter.move(from, from + delta)) saveOrder();
+            }
+        });
+        recyclerView.setAdapter(adapter);
+
+        touchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(
+                ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
+            @Override
+            public boolean isLongPressDragEnabled() {
+                return false; // 핸들로만 끈다
+            }
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView rv, @NonNull RecyclerView.ViewHolder from,
+                                  @NonNull RecyclerView.ViewHolder to) {
+                return adapter.move(from.getBindingAdapterPosition(), to.getBindingAdapterPosition());
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder holder, int direction) {
+                // 스와이프는 쓰지 않는다.
+            }
+
+            @Override
+            public void onSelectedChanged(@Nullable RecyclerView.ViewHolder holder, int actionState) {
+                super.onSelectedChanged(holder, actionState);
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) dragging = true;
+            }
+
+            @Override
+            public void clearView(@NonNull RecyclerView rv, @NonNull RecyclerView.ViewHolder holder) {
+                super.clearView(rv, holder);
+                dragging = false;
+                saveOrder();
+                if (deferredDevices != null) {
+                    showDevices(deferredDevices);
+                    deferredDevices = null;
+                }
+            }
+        });
+        touchHelper.attachToRecyclerView(recyclerView);
 
         viewModel.getDeviceList().observe(getViewLifecycleOwner(), devices -> {
-            if (devices != null) {
-                adapter.setDevices(devices);
-            }
             if (swipeRefreshLayout.isRefreshing()) {
                 swipeRefreshLayout.setRefreshing(false);
+            }
+            if (devices == null) return;
+            if (dragging) {
+                deferredDevices = devices;
+            } else {
+                showDevices(devices);
             }
             if (isManualRefresh) {
                 for (Device device : devices) {
                     if (!"TEMP_PAIRING".equals(device.getId()) && !device.isPairing()) {
-                        viewModel.syncDeviceState(device.getId(),isManualRefresh);
+                        viewModel.syncDeviceState(device.getId(), isManualRefresh);
                     }
                 }
                 isManualRefresh = false; // 상태 갱신이 목록을 다시 내보내도 반복 요청하지 않게
@@ -74,20 +145,37 @@ public class DeviceFragment extends Fragment {
         });
 
         viewModel.fetchDevices();
-        FloatingActionButton fabAddDevice = view.findViewById(R.id.fabAddDevice);
+        ExtendedFloatingActionButton fabAddDevice = view.findViewById(R.id.fabAddDevice);
         fabAddDevice.setOnClickListener(v -> AddDeviceDialog.show(this, viewModel));
         // 등록 작업이 끝날 때까지 새 등록을 막는다(서버도 동시에 1개만 받는다).
         viewModel.getCommissioning().observe(getViewLifecycleOwner(),
                 running -> fabAddDevice.setEnabled(!Boolean.TRUE.equals(running)));
     }
+
+    private void showDevices(List<Device> devices) {
+        String saved = requireContext()
+                .getSharedPreferences(DeviceOrder.PREFS_NAME, Context.MODE_PRIVATE)
+                .getString(DeviceOrder.KEY_ORDER, "");
+        adapter.setDevices(DeviceOrder.sort(devices, saved));
+    }
+
+    private void saveOrder() {
+        requireContext().getSharedPreferences(DeviceOrder.PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putString(DeviceOrder.KEY_ORDER, DeviceOrder.serialize(adapter.getDevices()))
+                .apply();
+    }
+
     private void showDeviceDeleteDialog(Device device) {
-        new AlertDialog.Builder(getContext())
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setTitle("기기 삭제")
-                .setMessage("정말 [" + device.getName() + "] 기기를 삭제하시겠습니까?")
-                .setPositiveButton("삭제", (dialog, which) -> {
-                    viewModel.deleteDevice(device.getId());
-                })
+                .setMessage("‘" + device.getName() + "’ 기기를 삭제할까요? 홈과 기기 목록에서 사라져요.")
+                .setPositiveButton("삭제", (d, which) -> viewModel.deleteDevice(device.getId()))
                 .setNegativeButton("취소", null)
                 .show();
+        // 되돌리기 어려운 동작이라 삭제 버튼을 오류 색으로 구분한다.
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
+                MaterialColors.getColor(dialog.getButton(AlertDialog.BUTTON_POSITIVE),
+                        androidx.appcompat.R.attr.colorError));
     }
 }

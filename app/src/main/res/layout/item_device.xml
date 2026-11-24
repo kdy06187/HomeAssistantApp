@@ -1,49 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="16dp"
-    android:layout_margin="8dp"
-    android:background="?android:attr/selectableItemBackground"
-    android:elevation="2dp">
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp"
+    android:background="@drawable/bg_state_chip"
+    android:backgroundTint="?attr/colorSurfaceContainer"
+    android:gravity="center_vertical"
+    android:minHeight="72dp"
+    android:orientation="horizontal">
+
+    <!-- 눌러서 끌면 순서가 바뀐다(길게 누를 필요 없음). -->
+    <ImageView
+        android:id="@+id/handleReorder"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:scaleType="center"
+        android:src="@drawable/ic_drag_handle"
+        app:tint="?attr/colorOnSurfaceVariant" />
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:id="@+id/rowMain"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackground"
+        android:minHeight="48dp"
+        android:orientation="vertical"
+        android:paddingVertical="8dp">
 
         <TextView
             android:id="@+id/tvDeviceName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="기기 이름"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="?attr/colorOnSurface" />
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tvDeviceType"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="MATTER / TCP_DIY"
-            android:textSize="14sp"
-            android:textColor="?attr/colorOnSurfaceVariant" />
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:layout_marginTop="4dp"
-            android:visibility="gone" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="6dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvDeviceState"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_state_chip"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- 상세 화면으로 넘어간다는 직관적인 힌트 아이콘 -->
-    <ImageView
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:layout_alignParentEnd="true"
-        android:layout_centerVertical="true"
-        android:src="@android:drawable/ic_media_next"
-        app:tint="?attr/colorOnSurfaceVariant" />
-</RelativeLayout>
+    <ImageButton
+        android:id="@+id/btnDeleteDevice"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_delete"
+        app:tint="?attr/colorError" />
+</LinearLayout>
