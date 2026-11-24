@@ -529,6 +529,37 @@ public class DeviceViewModel extends ViewModel {
         });
     }
 
+    // 상세 차트(E7). 마지막으로 요청한 기기·기간의 결과만 내보낸다(빠르게 바꿀 때 늦게 온 이전 응답 무시).
+    private final MutableLiveData<HistoryResult> detailHistory = new MutableLiveData<>();
+    private String historyDeviceId;
+
+    public LiveData<HistoryResult> getDetailHistory() { return detailHistory; }
+
+    /** 원본 기록(최근 50건). 상태를 LOADING으로 바꾸지 않고 실패도 토스트 대신 차트 카드에 보인다. */
+    public void loadDetailHistory(String deviceId) {
+        historyDeviceId = deviceId;
+        RetrofitClient.getApi().getDeviceEnergyHistory(deviceId).enqueue(new Callback<EnergyLogResponse>() {
+            @Override
+            public void onResponse(Call<EnergyLogResponse> call, Response<EnergyLogResponse> response) {
+                if (!deviceId.equals(historyDeviceId)) return;
+                EnergyLogResponse body = response.body();
+                if (response.isSuccessful() && body != null) {
+                    detailHistory.setValue(new HistoryResult(deviceId, null, body, null));
+                    return;
+                }
+                ApiError error = ApiError.from(response);
+                if (isDeviceGone(error)) scheduleListRefresh();
+                detailHistory.setValue(new HistoryResult(deviceId, null, null, ErrorMessages.describe(error)));
+            }
+
+            @Override
+            public void onFailure(Call<EnergyLogResponse> call, Throwable t) {
+                if (!deviceId.equals(historyDeviceId)) return;
+                detailHistory.setValue(new HistoryResult(deviceId, null, null, ControlFailure.UNREACHABLE_SERVER));
+            }
+        });
+    }
+
     private void scheduleNextDetailPoll() {
         long delay = detailPoll.finished(SystemClock.elapsedRealtime());
         if (delay != EnergyPollSchedule.NONE) mainHandler.postDelayed(detailPollTick, delay);

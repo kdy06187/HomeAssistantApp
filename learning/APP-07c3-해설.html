@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-07c-3 해설 — 사용량 막대 차트</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07c-3 해설 — 사용량 막대 차트</h1>
+  <p>ui-1 브랜치 · UI 1차 07c · UI-14(차트 단위·제목·빈 상태) · 2026-11-24</p>
+</header>
+
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>전</b>: 옛 상세는 선 차트였고 단위·제목이 없었다. 기록이 1개뿐이면 빈 차트에 영어 안내가 떴다.</li>
+    <li><b>후</b>: 상세에 <b>막대 차트 카드</b>. 제목 "구간별 사용량 (Wh)"처럼 단위가 붙고, 막대를 누르면 "09:22 · 0.5 Wh"가 위에 보인다.</li>
+    <li><b>단위 자동</b>: 가장 큰 막대가 1000 mWh를 넘으면 Wh, 1,000,000을 넘으면 kWh. 한 차트 안 막대는 모두 같은 단위.</li>
+    <li><b>빈 상태</b>: 기록 2개 미만이면 "기록이 쌓이는 중이에요". 실패하면 이유 + "다시 시도". 서버가 잘랐으면(<code>truncated</code>) "최근 50건만 보여요."</li>
+    <li>상태가 "확인 중…"으로 바뀌지 않는다(옛 상세는 차트를 받는 동안 기기 상태를 LOADING으로 바꿨다).</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림 — 기록에서 막대까지</h2>
+  <svg class="flow" viewBox="0 0 760 210" role="img" aria-label="E7 응답을 HistoryResult로 받고 ChartBars로 바꿔 차트가 그리는 흐름">
+    <rect x="10" y="20" width="140" height="54" rx="8"/><text x="80" y="43" text-anchor="middle">E7 원본 모드</text><text class="small" x="80" y="62" text-anchor="middle">logs(누적값)</text>
+    <rect x="190" y="20" width="150" height="54" rx="8"/><text x="265" y="43" text-anchor="middle">HistoryResult</text><text class="small" x="265" y="62" text-anchor="middle">기기·기간·응답/실패</text>
+    <rect class="hl" x="380" y="20" width="170" height="54" rx="8"/><text x="465" y="43" text-anchor="middle">ChartBars.fromLogs</text><text class="small" x="465" y="62" text-anchor="middle">차이·라벨·단위·문구</text>
+    <rect x="590" y="20" width="160" height="54" rx="8"/><text x="670" y="43" text-anchor="middle">EnergyBarChartView</text><text class="small" x="670" y="62" text-anchor="middle">그리기만</text>
+    <line x1="150" y1="47" x2="190" y2="47"/><line x1="340" y1="47" x2="380" y2="47"/><line x1="550" y1="47" x2="590" y2="47"/>
+    <rect x="380" y="130" width="170" height="54" rx="8"/><text x="465" y="153" text-anchor="middle">describe(index)</text><text class="small" x="465" y="172" text-anchor="middle">"09:22 · 0.5 Wh"</text>
+    <rect x="590" y="130" width="160" height="54" rx="8"/><text x="670" y="153" text-anchor="middle">막대 누름</text><text class="small" x="670" y="172" text-anchor="middle">onBarSelected(i)</text>
+    <path d="M670 74 L670 130"/><line x1="590" y1="157" x2="550" y2="157"/>
+  </svg>
+</section>
+
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+  <h3>① 계산과 그리기를 나눈다</h3>
+  <pre><code>ChartBars bars = ChartBars.fromLogs(logs, truncated, TimeZone.getDefault());
+chartCard.bind(bars, false);   // 카드는 글자만, 차트는 막대만</code></pre>
+  <div class="why">
+    <div><b>왜</b> MPAndroidChart는 Android 뷰라 단위 테스트에서 만들 수 없다. 막대 값·라벨·단위·빈 상태 문구를 순수 클래스 <code>ChartBars</code>로 만들어 두면 "누적값이 줄면 0" "기록 1개면 빈 상태" 같은 규칙을 테스트로 확인할 수 있다. 07c-4의 일/주/월도 같은 모양으로 바꿔 넣기만 하면 된다.</div>
+  </div>
+
+  <h3>② 단위는 가장 큰 막대 기준</h3>
+  <pre><code>public static Unit unitFor(long maxMwh) {
+    if (maxMwh &gt;= 1_000_000) return Unit.KWH;
+    if (maxMwh &gt;= 1_000) return Unit.WH;
+    return Unit.MWH;
+}</code></pre>
+  <div class="why">
+    <div><b>왜</b> 막대마다 단위가 다르면 높이를 비교할 수 없다. 가장 큰 값이 1~999 사이 숫자가 되는 단위를 하나 골라 모든 막대를 그 단위로 나눈다. 그래서 작은 막대는 "0.15 Wh"처럼 소수가 된다.</div>
+  </div>
+
+  <h3>③ 늦게 온 응답은 버린다</h3>
+  <pre><code>if (!deviceId.equals(historyDeviceId)) return;</code></pre>
+  <div class="why">
+    <div><b>왜</b> A 기기 상세를 열었다가 바로 B로 가면 A의 응답이 B 화면에 그려질 수 있다. ViewModel이 마지막으로 요청한 기기만 기억해 다른 응답은 무시한다. 화면 회전 때는 받아 둔 결과를 다시 쓰고, 새로 열면 새로 묻는다.</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b>누적값과 구간 사용량</b>: 기기는 "지금까지 쓴 양"을 준다. 막대는 이웃한 두 기록의 차이, 즉 그 사이에 쓴 양이다.</li>
+    <li><b>BarEntry</b>: MPAndroidChart 막대 하나(x 위치, 높이).</li>
+    <li><b>contentDescription 요약</b>: TalkBack은 막대를 하나씩 읽지 못하므로 "막대 N개, 가장 많은 구간 …"을 한 문장으로 준다.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol>
+    <li>기록이 50개면 막대는 몇 개일까?</li>
+    <li>막대 값이 150, 1500, 400 mWh면 제목과 첫 막대 글자는?</li>
+  </ol>
+  <details><summary>정답 보기</summary>
+    <ol>
+      <li>49개. 이웃 둘의 차이라서 하나 적다.</li>
+      <li>"구간별 사용량 (Wh)", 첫 막대는 "0.15 Wh". 가장 큰 1500이 Wh 단위를 정한다.</li>
+    </ol>
+  </details>
+</section>
+
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <h3>실습. 평균선 안내 한 줄</h3>
+  <ul>
+    <li><b>목표</b>: 차트 아래에 "구간 평균 0.4 Wh"를 보인다(기록 없는 구간은 빼고).</li>
+    <li><b>고칠 파일</b>: <code>view/detail/ChartBars.java</code>(<code>averageText</code> 필드), <code>ChartCard.java</code>, <code>detail_chart_card.xml</code>, 테스트 <code>ChartBarsTest</code></li>
+    <li><b>완료 기준</b>: 막대 150·1500·400 → "구간 평균 0.68 Wh". 막대가 없으면 줄을 숨긴다.</li>
+  </ul>
+  <details><summary>힌트</summary>평균도 차트와 같은 단위로 보여야 하므로 <code>EnergyUnits.format(avg, unit)</code>를 쓴다.</details>
+</section>
+</main>
+</body>
+</html>

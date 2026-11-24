@@ -15,6 +15,8 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.view.HomeTile;
+import com.example.homeassistantapp.view.detail.ChartBars;
+import com.example.homeassistantapp.view.detail.ChartCard;
 import com.example.homeassistantapp.view.detail.DeviceInfo;
 import com.example.homeassistantapp.view.detail.InfoCard;
 import com.example.homeassistantapp.view.detail.PowerCard;
@@ -22,6 +24,7 @@ import com.example.homeassistantapp.view.detail.PowerPanel;
 import com.example.homeassistantapp.view.detail.StatusCard;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.example.homeassistantapp.viewmodel.EnergyReading;
+import com.example.homeassistantapp.viewmodel.HistoryResult;
 import com.google.android.material.appbar.MaterialToolbar;
 
 import java.util.List;
@@ -35,6 +38,10 @@ public class DeviceDetailFragment extends Fragment {
     private String deviceId;
     private boolean closing;
     private PowerCard powerCard;
+    private ChartCard chartCard;
+    private boolean historyRequested;
+    // 회전처럼 화면만 다시 만들어진 경우에만 받아 둔 차트 결과를 다시 쓴다.
+    private boolean reuseHistory;
     private Device device;
     // 전력 조회(E6)는 Matter 기기만, 화면이 보이는 동안만.
     private boolean started;
@@ -66,6 +73,7 @@ public class DeviceDetailFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         viewModel = new ViewModelProvider(requireActivity()).get(DeviceViewModel.class);
         deviceId = requireArguments().getString(ARG_DEVICE_ID);
+        reuseHistory = savedInstanceState != null;
 
         MaterialToolbar toolbar = view.findViewById(R.id.detailToolbar);
         toolbar.setNavigationOnClickListener(v -> close());
@@ -85,6 +93,8 @@ public class DeviceDetailFragment extends Fragment {
         InfoCard infoCard = new InfoCard(view.findViewById(R.id.cardInfo));
         powerCard = new PowerCard(view.findViewById(R.id.cardPower), () -> viewModel.retryDetailEnergy());
         powerCard.setVisible(false);
+        chartCard = new ChartCard(view.findViewById(R.id.cardChart), this::loadHistory);
+        chartCard.setVisible(false);
 
         viewModel.getDeviceList().observe(getViewLifecycleOwner(), devices -> {
             if (devices == null) return;
@@ -98,10 +108,13 @@ public class DeviceDetailFragment extends Fragment {
             statusCard.bind(HomeTile.of(device));
             infoCard.bind(DeviceInfo.of(device));
             powerCard.setVisible(isMatter());
+            chartCard.setVisible(isMatter());
             bindPower();
+            if (isMatter() && !historyRequested) showOrLoadHistory();
             updatePolling();
         });
         viewModel.getDetailEnergy().observe(getViewLifecycleOwner(), reading -> bindPower());
+        viewModel.getDetailHistory().observe(getViewLifecycleOwner(), this::bindHistory);
         // 앱이 종료됐다 상세로 복원되면 목록이 비어 있다.
         if (viewModel.getDeviceList().getValue() == null) viewModel.fetchDevices();
     }
@@ -139,6 +152,32 @@ public class DeviceDetailFragment extends Fragment {
         if (!isMatter()) return;
         EnergyReading reading = viewModel.getDetailEnergy().getValue();
         powerCard.bind(PowerPanel.of(device, reading, TimeZone.getDefault()));
+    }
+
+    private void showOrLoadHistory() {
+        historyRequested = true;
+        HistoryResult last = viewModel.getDetailHistory().getValue();
+        if (reuseHistory && last != null && last.isFor(deviceId, null)) {
+            bindHistory(last);
+        } else {
+            loadHistory();
+        }
+    }
+
+    private void loadHistory() {
+        historyRequested = true;
+        chartCard.showLoading();
+        viewModel.loadDetailHistory(deviceId);
+    }
+
+    private void bindHistory(HistoryResult result) {
+        if (result == null || !historyRequested || !result.isFor(deviceId, null)) return;
+        if (result.failure != null) {
+            chartCard.bind(ChartBars.failed(result.failure), true);
+        } else {
+            chartCard.bind(ChartBars.fromLogs(result.response.getLogs(), result.response.isTruncated(),
+                    TimeZone.getDefault()), false);
+        }
     }
 
     private void close() {
