@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 상태 칩 모양. 색은 코드에서 상태별 토큰으로 칠한다(backgroundTint). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners android:radius="8dp" />
+    <solid android:color="@android:color/white" />
+</shape>

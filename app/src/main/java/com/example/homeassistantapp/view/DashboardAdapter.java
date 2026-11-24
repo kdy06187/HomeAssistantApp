@@ -2,6 +2,7 @@ package com.example.homeassistantapp.view;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +14,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -87,30 +89,27 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
 
         if ("TEMP_PAIRING".equals(device.getId()) || device.isPairing()) {
             holder.tvDeviceStatus.setText("페어링중");
-            holder.tvDeviceStatus.setTextColor(MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurfaceVariant));
+            applyTone(holder.tvDeviceStatus, DeviceStateLabel.Tone.OFF);
             holder.widgetContainer.setVisibility(View.GONE);
             holder.itemView.setAlpha(0.5f);
-
-        } else if ("LOADING".equals(status)) {
-            holder.tvDeviceStatus.setTextColor(MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurfaceVariant));
-            holder.pbDeviceLoading.setVisibility(View.VISIBLE);
-            holder.btnRefreshStatus.setEnabled(false); // 로딩 중 중복 클릭 방지
-            holder.itemView.setAlpha(0.7f);
         } else {
-            holder.tvDeviceStatus.setText(DeviceStateLabel.textOf(status));
-            holder.widgetContainer.setVisibility(View.VISIBLE);
-            switch (DeviceStateLabel.kindOf(status)) {
-                case CONNECTED:
-                    holder.tvDeviceStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.state_on_fg));
-                    holder.itemView.setAlpha(1.0f);
+            DeviceStateLabel.Kind kind = DeviceStateLabel.kindOf(status);
+            holder.tvDeviceStatus.setText(kind.text);
+            applyTone(holder.tvDeviceStatus, kind.tone);
+            switch (kind) {
+                case LOADING:
+                    holder.pbDeviceLoading.setVisibility(View.VISIBLE);
+                    holder.btnRefreshStatus.setEnabled(false); // 로딩 중 중복 클릭 방지
+                    holder.itemView.setAlpha(0.7f);
                     break;
                 case OFFLINE:
-                    holder.tvDeviceStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.state_offline_fg));
                     holder.itemView.setAlpha(0.5f);
                     break;
-                default:
-                    holder.tvDeviceStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.state_unknown_fg));
+                case UNKNOWN:
                     holder.itemView.setAlpha(0.8f);
+                    break;
+                default:
+                    holder.itemView.setAlpha(1.0f);
                     break;
             }
         }
@@ -166,6 +165,12 @@ public class DashboardAdapter extends RecyclerView.Adapter<DashboardAdapter.Dash
     @Override
     public int getItemCount() {
         return deviceList.size();
+    }
+
+    private static void applyTone(TextView chip, DeviceStateLabel.Tone tone) {
+        chip.setTextColor(ContextCompat.getColor(chip.getContext(), tone.foreground));
+        ViewCompat.setBackgroundTintList(chip,
+                ColorStateList.valueOf(ContextCompat.getColor(chip.getContext(), tone.background)));
     }
 
     static class DashboardViewHolder extends RecyclerView.ViewHolder {

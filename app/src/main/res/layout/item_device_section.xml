@@ -48,7 +48,10 @@
                 android:text="연결됨"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:paddingStart="8dp" />
+                android:layout_marginStart="8dp"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:background="@drawable/bg_state_chip" />
             <ImageButton
                 android:id="@+id/btnEditWidgets"
                 android:layout_width="40dp"
