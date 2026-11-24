@@ -47,6 +47,10 @@ public class DeviceViewModel extends ViewModel {
     private final MutableLiveData<OneTimeEvent<String>> deleteWarning = new MutableLiveData<>();
     public LiveData<OneTimeEvent<String>> getDeleteWarning() { return deleteWarning; }
 
+    // 삭제 성공 시 지운 기기 ID. 기기별 저장값(타일 꾸미기)은 Context가 있는 쪽이 지운다.
+    private final MutableLiveData<OneTimeEvent<String>> deviceDeleted = new MutableLiveData<>();
+    public LiveData<OneTimeEvent<String>> getDeviceDeleted() { return deviceDeleted; }
+
     private final PendingStates pendingStates = new PendingStates();
 
     // 제어 실패. 토스트 대신 MainActivity가 Snackbar + "다시 시도"로 보인다.
@@ -359,6 +363,8 @@ public class DeviceViewModel extends ViewModel {
                 finishLoading(deviceId, null);
                 if (response.isSuccessful()) {
                     showToast("기기를 삭제했습니다. 90일 안에 다시 등록하면 기록을 이어받습니다.");
+                    forgetTileTrend(deviceId);
+                    deviceDeleted.setValue(new OneTimeEvent<>(deviceId));
                     DeleteDeviceResponse body = response.body();
                     if (body != null && body.needsDeviceReset()) {
                         deleteWarning.setValue(new OneTimeEvent<>(
@@ -612,6 +618,12 @@ public class DeviceViewModel extends ViewModel {
                         }
                     });
         }
+    }
+
+    private void forgetTileTrend(String deviceId) {
+        trendCache.forget(deviceId);
+        Map<String, TrendValues> next = new HashMap<>(tileTrends.getValue());
+        if (next.remove(deviceId) != null) tileTrends.setValue(next);
     }
 
     private void scheduleNextDetailPoll() {

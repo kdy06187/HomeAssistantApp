@@ -18,6 +18,7 @@ import com.example.homeassistantapp.fragment.SettingsFragment;
 import com.example.homeassistantapp.network.RetrofitClient;
 import com.example.homeassistantapp.network.ServerDefaults;
 import com.example.homeassistantapp.security.TokenStore;
+import com.example.homeassistantapp.view.TileConfigStore;
 import com.example.homeassistantapp.viewmodel.ControlFailure;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -93,6 +94,11 @@ public class MainActivity extends AppCompatActivity {
                     .setAnchorView(bottomNav.getVisibility() == View.VISIBLE ? bottomNav : null)
                     .setAction("다시 시도", v -> viewModel.controlDevice(failure.deviceId, failure.command))
                     .show();
+        });
+
+        viewModel.getDeviceDeleted().observe(this, event -> {
+            String deviceId = event != null ? event.takeIfNotHandled() : null;
+            if (deviceId != null) new TileConfigStore(this).remove(deviceId);
         });
 
         viewModel.getDeleteWarning().observe(this, event -> {
