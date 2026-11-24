@@ -14,8 +14,16 @@ public class EnergyLogResponse {
     @SerializedName("logs")
     private List<EnergyLog> logs;
 
+    // 범위 안 기록이 limit보다 많아 오래된 쪽이 잘렸으면 true
+    @SerializedName("truncated")
+    public Boolean truncated;
+
     public List<EnergyLog> getLogs() {
         return logs;
+    }
+
+    public boolean isTruncated() {
+        return Boolean.TRUE.equals(truncated);
     }
 
     /** state가 비어 있으면 fallback을 쓴다(null로 덮어쓰지 않게). */

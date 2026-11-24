@@ -1,6 +1,8 @@
 package com.example.homeassistantapp.dto;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import com.google.gson.Gson;
 
@@ -17,6 +19,13 @@ public class EnergyLogResponseTest {
         assertEquals("SN12345", r.deviceId);
         assertEquals("ON", r.stateOr("OFF"));
         assertEquals(1048576L, r.getLogs().get(0).getTotalEnergy_mWh());
+    }
+
+    @Test
+    public void truncatedFlag() {
+        assertTrue(gson.fromJson("{\"logs\":[],\"truncated\":true}", EnergyLogResponse.class).isTruncated());
+        assertFalse(gson.fromJson("{\"logs\":[],\"truncated\":false}", EnergyLogResponse.class).isTruncated());
+        assertFalse(gson.fromJson("{\"logs\":[]}", EnergyLogResponse.class).isTruncated());
     }
 
     @Test

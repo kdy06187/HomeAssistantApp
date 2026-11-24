@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-06d 해설</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-06d 해설 — 전력량 기록의 시각 형식(ISO 8601)</h1>
+  <p>v2.0 브랜치 · 계약 v2.0 초안 E7 · 2026-11-24 · 작은 변경이라 짧게 정리</p>
+</header>
+
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>무엇을</b>: E7 기록 시각을 <code>"2026-11-16 09:30:00"</code> 꼴에서 <code>"2026-11-16T09:30:00Z"</code>(ISO 8601, UTC) 꼴로 읽는다. 응답의 <code>truncated</code>(오래된 쪽이 잘렸는지)를 받는다.</li>
+    <li><b>그대로인 것</b>: 폰 시간대로 바꿔 "HH:mm"로 표시(#9), 오래된 순 정렬(#10), 이웃 값 차이로 구간 사용량 계산(#14). 요청 파라미터 없이 기본 50건(원본 모드)을 쓴다. 일/주/월 집계 화면은 UI 1차로 미뤘다(D2).</li>
+    <li><b>엄격하게</b>: <code>setLenient(false)</code>로 없는 날짜(13월 40일)는 거절하고, 옛 형식·밀리초·<code>+00:00</code>는 읽지 않는다(빈 라벨).</li>
+  </ul>
+  <div class="table-wrap"><table>
+    <tr><th>파일</th><th>변경</th></tr>
+    <tr><td><code>view/EnergyLogTimeline.java</code></td><td>입력 패턴 <code>yyyy-MM-dd'T'HH:mm:ss'Z'</code>, 엄격 모드</td></tr>
+    <tr><td><code>dto/EnergyLogResponse.java</code></td><td><code>truncated</code>, <code>isTruncated()</code></td></tr>
+    <tr><td>테스트</td><td><code>EnergyLogTimelineTest</code> 시각을 ISO로 바꾸고 2개 추가, <code>EnergyLogResponseTest</code> 1개 추가(총 81개)</td></tr>
+  </table></div>
+</section>
+
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림</h2>
+  <svg class="flow" viewBox="0 0 760 100" role="img" aria-label="UTC 문자열이 현지 시각 라벨이 되는 과정">
+    <rect x="10" y="25" width="220" height="50" rx="8"/><text x="120" y="47" text-anchor="middle">"2026-11-16T09:30:00Z"</text><text class="small" x="120" y="65" text-anchor="middle">서버(UTC)</text>
+    <rect class="hl" x="280" y="25" width="200" height="50" rx="8"/><text x="380" y="47" text-anchor="middle">SimpleDateFormat.parse</text><text class="small" x="380" y="65" text-anchor="middle">시간대 UTC, 엄격</text>
+    <rect x="530" y="25" width="220" height="50" rx="8"/><text x="640" y="47" text-anchor="middle">"18:30"</text><text class="small" x="640" y="65" text-anchor="middle">폰 시간대(서울 +9)</text>
+    <line x1="230" y1="50" x2="280" y2="50"/><line x1="480" y1="50" x2="530" y2="50"/>
+  </svg>
+</section>
+
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+  <div class="ba">
+    <div class="before"><div class="label">BEFORE</div><pre><code>SERVER_PATTERN = "yyyy-MM-dd HH:mm:ss";
+input.setTimeZone(UTC);</code></pre></div>
+    <div class="after"><div class="label">AFTER</div><pre><code>SERVER_PATTERN = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+input.setTimeZone(UTC);
+input.setLenient(false);</code></pre></div>
+  </div>
+  <div class="why">
+    <div><b>무엇을</b> 작은따옴표 안의 <code>T</code>·<code>Z</code>는 "이 글자가 그대로 있어야 한다"는 뜻이다. 그래서 시간대는 패턴이 아니라 <code>setTimeZone(UTC)</code>로 정한다.</div>
+    <div><b>왜 엄격 모드</b> 기본(관대한) 모드는 "13월 40일"을 다음 해 2월로 넘겨 버린다. 잘못된 값은 빈 라벨로 드러나는 편이 낫다.</div>
+    <div class="drop"><b>빼면(패턴을 안 바꾸면)</b> 모든 라벨이 빈 문자열이 되어 차트 x축이 비어 보인다.</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b>ISO 8601</b>: 날짜·시각을 쓰는 국제 표준. <code>T</code>로 날짜와 시각을 나눈다.</li>
+    <li><b>Z</b>: "Zulu", 곧 UTC(+00:00)라는 표시.</li>
+    <li><b>lenient(관대한) 파싱</b>: 범위를 벗어난 값을 자동으로 넘겨 계산하는 방식. 끄면 오류로 처리한다.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol>
+    <li>ISO 시각도 문자열로 정렬해도 시간 순서가 맞는 이유는?</li>
+    <li>서버가 <code>.123</code> 같은 밀리초를 붙이기 시작하면 화면은 어떻게 될까?</li>
+  </ol>
+  <details><summary>정답 보기</summary>
+    <ol>
+      <li>큰 단위(연)부터 작은 단위(초) 순서로, 모두 같은 자릿수(0 채움)로 쓰고 시간대도 모두 UTC로 같기 때문이다.</li>
+      <li>파싱이 실패해 라벨이 빈 문자열이 된다(앱은 죽지 않음). 그때는 패턴을 하나 더 시도하도록 고친다.</li>
+    </ol>
+  </details>
+</section>
+
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <p>원본을 망가뜨리지 않게 <b>새 브랜치</b>나 <code>learning/exercise-06d/</code> 사본에서 한다.</p>
+  <h3>실습. 밀리초도 받기</h3>
+  <ul>
+    <li><b>목표</b>: <code>"2026-11-16T09:30:00.123Z"</code>도 "18:30"으로 보이게 한다. 기존 형식은 그대로 동작해야 한다.</li>
+    <li><b>고칠 파일</b>: <code>EnergyLogTimeline.java</code>, <code>EnergyLogTimelineTest.java</code>(지금 빈 문자열을 기대하는 단언을 바꾼다)</li>
+    <li><b>완료 기준</b>: 두 형식 모두 테스트 통과.</li>
+  </ul>
+  <details><summary>힌트</summary>패턴 두 개(<code>…ss'Z'</code>, <code>…ss.SSS'Z'</code>)를 차례로 시도하고, 둘 다 실패하면 빈 문자열.</details>
+  <details><summary>정답</summary><pre><code>private static final String[] SERVER_PATTERNS = {
+    "yyyy-MM-dd'T'HH:mm:ss'Z'", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'" };
+for (String pattern : SERVER_PATTERNS) {
+    SimpleDateFormat input = new SimpleDateFormat(pattern, Locale.US);
+    input.setTimeZone(TimeZone.getTimeZone("UTC"));
+    input.setLenient(false);
+    try { return output.format(input.parse(utcTimestamp)); }
+    catch (ParseException ignored) { }
+}
+return "";</code></pre></details>
+</section>
+</main>
+</body>
+</html>

@@ -23,12 +23,25 @@ public class EnergyLogTimelineTest {
 
     @Test
     public void utcTimestamp_isShownInLocalTime() {
-        assertEquals("18:30", EnergyLogTimeline.toLocalTimeLabel("2026-11-16 09:30:00", SEOUL));
+        assertEquals("18:30", EnergyLogTimeline.toLocalTimeLabel("2026-11-16T09:30:00Z", SEOUL));
     }
 
     @Test
     public void utcTimestamp_crossesMidnight() {
-        assertEquals("05:00", EnergyLogTimeline.toLocalTimeLabel("2026-11-16 20:00:00", SEOUL));
+        assertEquals("05:00", EnergyLogTimeline.toLocalTimeLabel("2026-11-16T20:00:00Z", SEOUL));
+    }
+
+    @Test
+    public void oldOrOtherFormats_returnEmpty() {
+        assertEquals("", EnergyLogTimeline.toLocalTimeLabel("2026-11-16 09:30:00", SEOUL));
+        assertEquals("", EnergyLogTimeline.toLocalTimeLabel("2026-11-16T09:30:00.123Z", SEOUL));
+        assertEquals("", EnergyLogTimeline.toLocalTimeLabel("2026-11-16T09:30:00+00:00", SEOUL));
+        assertEquals("", EnergyLogTimeline.toLocalTimeLabel("2026-13-40T09:30:00Z", SEOUL));
+    }
+
+    @Test
+    public void utcTimestamp_otherZone() {
+        assertEquals("09:30", EnergyLogTimeline.toLocalTimeLabel("2026-11-16T09:30:00Z", TimeZone.getTimeZone("UTC")));
     }
 
     @Test
@@ -40,9 +53,9 @@ public class EnergyLogTimelineTest {
     @Test
     public void newestFirstLogs_areSortedOldestFirst() {
         List<EnergyLog> fromServer = Arrays.asList(
-                log("2026-11-16 09:30:00", 300),
-                log("2026-11-16 09:20:00", 200),
-                log("2026-11-16 09:10:00", 100));
+                log("2026-11-16T09:30:00Z", 300),
+                log("2026-11-16T09:20:00Z", 200),
+                log("2026-11-16T09:10:00Z", 100));
         List<EnergyLog> sorted = EnergyLogTimeline.oldestFirst(fromServer);
         assertEquals(100, sorted.get(0).getTotalEnergy_mWh());
         assertEquals(300, sorted.get(2).getTotalEnergy_mWh());
@@ -53,24 +66,24 @@ public class EnergyLogTimelineTest {
     @Test
     public void cumulative_becomesIntervalUsage() {
         List<EnergyLog> logs = Arrays.asList(
-                log("2026-11-16 09:00:00", 100),
-                log("2026-11-16 09:10:00", 200),
-                log("2026-11-16 09:20:00", 350));
+                log("2026-11-16T09:00:00Z", 100),
+                log("2026-11-16T09:10:00Z", 200),
+                log("2026-11-16T09:20:00Z", 350));
         assertEquals(Arrays.asList(100L, 150L), EnergyLogTimeline.intervalUsage(logs));
     }
 
     @Test
     public void counterReset_becomesZero() {
         List<EnergyLog> logs = Arrays.asList(
-                log("2026-11-16 09:00:00", 5000),
-                log("2026-11-16 09:10:00", 30),
-                log("2026-11-16 09:20:00", 80));
+                log("2026-11-16T09:00:00Z", 5000),
+                log("2026-11-16T09:10:00Z", 30),
+                log("2026-11-16T09:20:00Z", 80));
         assertEquals(Arrays.asList(0L, 50L), EnergyLogTimeline.intervalUsage(logs));
     }
 
     @Test
     public void oneOrNoLog_hasNoInterval() {
-        assertTrue(EnergyLogTimeline.intervalUsage(Arrays.asList(log("2026-11-16 09:00:00", 100))).isEmpty());
+        assertTrue(EnergyLogTimeline.intervalUsage(Arrays.asList(log("2026-11-16T09:00:00Z", 100))).isEmpty());
         assertTrue(EnergyLogTimeline.intervalUsage(Arrays.asList()).isEmpty());
         assertTrue(EnergyLogTimeline.intervalUsage(null).isEmpty());
     }

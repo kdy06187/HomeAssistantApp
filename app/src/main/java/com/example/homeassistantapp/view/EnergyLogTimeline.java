@@ -13,12 +13,14 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 public final class EnergyLogTimeline {
-    private static final String SERVER_PATTERN = "yyyy-MM-dd HH:mm:ss";
+    // 서버는 UTC를 "2026-11-16T00:20:00Z" 꼴로 준다(밀리초·오프셋 없음).
+    private static final String SERVER_PATTERN = "yyyy-MM-dd'T'HH:mm:ss'Z'";
     private static final String LABEL_PATTERN = "HH:mm";
 
     private EnergyLogTimeline() {}
 
-    // 오래된 순으로 정렬한 복사본. "yyyy-MM-dd HH:mm:ss"는 문자열 순서가 곧 시간 순서다.
+    // 오래된 순으로 정렬한 복사본. 서버가 이미 오래된 순으로 주지만 안전장치로 둔다.
+    // 같은 꼴의 UTC 시각은 문자열 순서가 곧 시간 순서다.
     public static List<EnergyLog> oldestFirst(List<EnergyLog> logs) {
         if (logs == null) return new ArrayList<>();
         List<EnergyLog> sorted = new ArrayList<>(logs);
@@ -44,6 +46,7 @@ public final class EnergyLogTimeline {
         if (utcTimestamp == null) return "";
         SimpleDateFormat input = new SimpleDateFormat(SERVER_PATTERN, Locale.US);
         input.setTimeZone(TimeZone.getTimeZone("UTC"));
+        input.setLenient(false);
         SimpleDateFormat output = new SimpleDateFormat(LABEL_PATTERN, Locale.US);
         output.setTimeZone(localZone);
         try {
