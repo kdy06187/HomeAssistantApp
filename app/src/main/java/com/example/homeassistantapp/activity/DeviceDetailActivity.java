@@ -1,5 +1,7 @@
 package com.example.homeassistantapp.activity;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -13,6 +15,14 @@ import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.dto.Device;
 public class DeviceDetailActivity extends AppCompatActivity {
     private DeviceViewModel viewModel;
+
+    public static Intent intentFor(Context context, Device device) {
+        Intent intent = new Intent(context, DeviceDetailActivity.class);
+        intent.putExtra("EXTRA_DEVICE_ID", device.getId());
+        intent.putExtra("EXTRA_DEVICE_NAME", device.getName());
+        intent.putExtra("EXTRA_DEVICE_TYPE", device.getType());
+        return intent;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

@@ -405,7 +405,10 @@ public class DeviceViewModel extends ViewModel {
 
                     String powerText = String.format("실시간: %.1f W / 누적: %.4f kWh", currentPowerW, totalEnergyKwh);
 
-                    updateDevice(deviceId, device -> device.setPowerInfo(powerText));
+                    updateDevice(deviceId, device -> {
+                        device.setPowerInfo(powerText);
+                        device.setEnergy(currentPowerW, totalEnergyKwh);
+                    });
                     finishLoading(deviceId, response.body().state);
 
                 } else {

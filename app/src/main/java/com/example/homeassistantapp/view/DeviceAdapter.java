@@ -1,6 +1,5 @@
 package com.example.homeassistantapp.view;
 
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -66,11 +65,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             holder.itemView.setAlpha(1.0f);
 
             holder.itemView.setOnClickListener(v -> {
-                Intent intent = new Intent(v.getContext(), DeviceDetailActivity.class);
-                intent.putExtra("EXTRA_DEVICE_ID", device.getId());
-                intent.putExtra("EXTRA_DEVICE_NAME", device.getName());
-                intent.putExtra("EXTRA_DEVICE_TYPE", device.getType());
-                v.getContext().startActivity(intent);
+                v.getContext().startActivity(DeviceDetailActivity.intentFor(v.getContext(), device));
             });
 
             holder.itemView.setOnLongClickListener(v -> {

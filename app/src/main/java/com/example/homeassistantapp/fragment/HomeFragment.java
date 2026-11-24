@@ -1,7 +1,6 @@
 package com.example.homeassistantapp.fragment;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,142 +10,86 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.homeassistantapp.R;
+import com.example.homeassistantapp.activity.DeviceDetailActivity;
 import com.example.homeassistantapp.dto.Device;
-import com.example.homeassistantapp.view.DashboardAdapter;
+import com.example.homeassistantapp.view.DeviceOrder;
+import com.example.homeassistantapp.view.HomeTileAdapter;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
+/** 홈: 기기마다 타일 하나(2열). 순서는 기기 탭에서 정한 device_order를 따른다. */
 public class HomeFragment extends Fragment {
     private DeviceViewModel viewModel;
-    private DashboardAdapter adapter;
+    private HomeTileAdapter adapter;
 
-    private Set<String> requestedChartIds = new HashSet<>();
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_home, container, false);
+        return inflater.inflate(R.layout.fragment_home, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        // DeviceFragment와 같은 ViewModel을 쓰도록 Activity 범위로 가져온다.
+        viewModel = new ViewModelProvider(requireActivity()).get(DeviceViewModel.class);
 
         RecyclerView recyclerView = view.findViewById(R.id.recyclerViewDashboard);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        adapter = new HomeTileAdapter(new HomeTileAdapter.Listener() {
+            @Override
+            public void onToggle(Device device, boolean turnOn) {
+                viewModel.controlDevice(device.getId(), turnOn ? "ON" : "OFF");
+            }
 
-        adapter = new DashboardAdapter(new DashboardAdapter.OnDeviceControlListener() {
             @Override
-            public void onToggle(String deviceId, boolean isChecked) {
-                String command = isChecked ? "ON" : "OFF";
-                viewModel.controlDevice(deviceId, command);
+            public void onRefresh(Device device) {
+                viewModel.syncDeviceState(device.getId(), true);
             }
+
             @Override
-            public void onRefreshDevice(String deviceId) {
-                viewModel.syncDeviceState(deviceId,true);
-            }
-            @Override
-            public void onRefreshChart(String deviceId) {
-                viewModel.fetchDeviceEnergyHistory(deviceId);
-            }
-            @Override
-            public void onRefreshEnergy(String deviceId) {
-                viewModel.fetchDeviceEnergy(deviceId);
+            public void onOpen(Device device) {
+                startActivity(DeviceDetailActivity.intentFor(requireContext(), device));
             }
         });
         recyclerView.setAdapter(adapter);
 
-        ItemTouchHelper.SimpleCallback touchHelperCallback = new ItemTouchHelper.SimpleCallback(
-                ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) { // 위아래 드래그만, 스와이프 없음
-
-            @Override
-            public boolean isLongPressDragEnabled() {
-                return !adapter.isAnyDeviceEditing();
-            }
-            @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-                int fromPosition = viewHolder.getAdapterPosition();
-                int toPosition = target.getAdapterPosition();
-
-                adapter.moveItem(fromPosition, toPosition);
-                return true;
-            }
-
-            @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                // 스와이프는 쓰지 않는다.
-            }
-
-            @Override
-            public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-                super.clearView(recyclerView, viewHolder);
-
-                List<Device> currentList = adapter.getCurrentList();
-                viewModel.updateDeviceOrder(currentList);
-
-                SharedPreferences prefs = requireActivity().getSharedPreferences("DashboardPrefs", Context.MODE_PRIVATE);
-                StringBuilder orderString = new StringBuilder();
-                for (Device device : currentList) {
-                    orderString.append(device.getId()).append(",");
-                }
-                // "id1,id2,id3," 형태로 저장
-                prefs.edit().putString("device_order", orderString.toString()).apply();
-            }
-        };
-
-        new ItemTouchHelper(touchHelperCallback).attachToRecyclerView(recyclerView);
-        // DeviceFragment와 같은 ViewModel을 쓰도록 Activity 범위로 가져온다.
-        viewModel = new ViewModelProvider(requireActivity()).get(DeviceViewModel.class);
+        SwipeRefreshLayout swipeRefresh = view.findViewById(R.id.swipeRefreshHome);
+        swipeRefresh.setOnRefreshListener(() -> viewModel.fetchDevices(true));
+        // 성공이면 목록이, 실패면 토스트가 온다. 어느 쪽이든 당겨서 새로고침 표시를 끈다.
+        viewModel.getToastMessage().observe(getViewLifecycleOwner(), event -> swipeRefresh.setRefreshing(false));
 
         viewModel.getDeviceList().observe(getViewLifecycleOwner(), devices -> {
-            if (devices != null) {
-                SharedPreferences prefs = requireActivity().getSharedPreferences("DashboardPrefs", Context.MODE_PRIVATE);
-                String savedOrder = prefs.getString("device_order", "");
-
-                List<Device> sortedList = new ArrayList<>(devices);
-
-                if (!savedOrder.isEmpty()) {
-                    List<String> orderList = Arrays.asList(savedOrder.split(","));
-
-                    Collections.sort(sortedList, (d1, d2) -> {
-                        int index1 = orderList.indexOf(d1.getId());
-                        int index2 = orderList.indexOf(d2.getId());
-
-                        // 순서표에 없는 새 기기는 맨 뒤로
-                        if (index1 == -1) index1 = Integer.MAX_VALUE;
-                        if (index2 == -1) index2 = Integer.MAX_VALUE;
-
-                        return Integer.compare(index1, index2);
-                    });
-                }
-
-                adapter.setDeviceList(sortedList);
-
-                for (Device device : sortedList) {
-                    // MATTER 기기는 차트 기록을 한 번만 자동 요청한다.
-                    if(!"TEMP_PAIRING".equals(device.getId()) && !device.isPairing()) {
-                        if ("MATTER".equals(device.getType()) && device.getPowerInfo() != null && device.getEnergyLogs() == null) {
-                            if (!requestedChartIds.contains(device.getId())) {
-                                requestedChartIds.add(device.getId());
-                                viewModel.fetchDeviceEnergyHistory(device.getId());
-                            }
-                        }
-                    }
-                }
-            }
+            swipeRefresh.setRefreshing(false);
+            if (devices == null) return;
+            adapter.setDevices(sorted(devices));
         });
 
-        return view;
+        ExtendedFloatingActionButton fab = view.findViewById(R.id.fabHomeAddDevice);
+        fab.setOnClickListener(v -> AddDeviceDialog.show(this, viewModel));
+        // 등록 작업이 끝날 때까지 새 등록을 막는다(서버도 동시에 1개만 받는다).
+        viewModel.getCommissioning().observe(getViewLifecycleOwner(),
+                running -> fab.setEnabled(!Boolean.TRUE.equals(running)));
     }
+
     @Override
     public void onStart() {
         super.onStart();
         // 홈이 시작 탭이므로 들어올 때마다(상세에서 돌아올 때 포함) 목록과 전력을 새로 받는다.
         viewModel.fetchDevices(true);
+    }
+
+    private List<Device> sorted(List<Device> devices) {
+        String saved = requireContext()
+                .getSharedPreferences(DeviceOrder.PREFS_NAME, Context.MODE_PRIVATE)
+                .getString(DeviceOrder.KEY_ORDER, "");
+        return DeviceOrder.sort(devices, saved);
     }
 }

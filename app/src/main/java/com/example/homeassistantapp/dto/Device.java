@@ -21,6 +21,23 @@ public class Device {
 
     public boolean isPairing;
 
+    // 화면용 값. 서버 목록에는 없고 E6 응답으로 채운다(transient: JSON에서 빠짐).
+    private transient Double activePowerW;
+    private transient Double totalEnergyKwh;
+
+    public Double getActivePowerW() {
+        return activePowerW;
+    }
+
+    public Double getTotalEnergyKwh() {
+        return totalEnergyKwh;
+    }
+
+    public void setEnergy(Double activePowerW, Double totalEnergyKwh) {
+        this.activePowerW = activePowerW;
+        this.totalEnergyKwh = totalEnergyKwh;
+    }
+
     public boolean isPairing() {
         return isPairing;
     }
