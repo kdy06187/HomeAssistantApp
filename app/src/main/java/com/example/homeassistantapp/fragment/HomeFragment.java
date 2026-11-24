@@ -77,8 +77,8 @@ public class HomeFragment extends Fragment {
 
         SwipeRefreshLayout swipeRefresh = view.findViewById(R.id.swipeRefreshHome);
         swipeRefresh.setOnRefreshListener(() -> viewModel.fetchDevices(true));
-        // 성공이면 목록이, 실패면 토스트가 온다. 어느 쪽이든 당겨서 새로고침 표시를 끈다.
-        viewModel.getToastMessage().observe(getViewLifecycleOwner(), event -> swipeRefresh.setRefreshing(false));
+        // 성공이면 목록이, 실패면 요청 끝 신호가 온다. 어느 쪽이든 당겨서 새로고침 표시를 끈다.
+        viewModel.getListRequestFinished().observe(getViewLifecycleOwner(), done -> swipeRefresh.setRefreshing(false));
 
         ExtendedFloatingActionButton fab = view.findViewById(R.id.fabHomeAddDevice);
         View emptyView = view.findViewById(R.id.emptyHome);

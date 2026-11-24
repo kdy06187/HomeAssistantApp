@@ -43,6 +43,10 @@ public class DeviceViewModel extends ViewModel {
     public LiveData<List<Device>> getDeviceList() { return deviceList; }
     public LiveData<OneTimeEvent<String>> getToastMessage() { return toastMessage; }
 
+    // 목록 요청이 끝날 때마다(성공·실패) 바뀐다. 당겨서 새로고침 표시를 끄는 데 쓴다.
+    private final MutableLiveData<Long> listRequestFinished = new MutableLiveData<>();
+    public LiveData<Long> getListRequestFinished() { return listRequestFinished; }
+
     // 삭제는 됐지만 기기 쪽 해제가 실패했을 때의 경고. 토스트보다 오래 보이도록 대화상자로 띄운다.
     private final MutableLiveData<OneTimeEvent<String>> deleteWarning = new MutableLiveData<>();
     public LiveData<OneTimeEvent<String>> getDeleteWarning() { return deleteWarning; }
@@ -158,13 +162,15 @@ public class DeviceViewModel extends ViewModel {
                     }
                 } else {
                     showFailure("목록 로드 실패: ", response);
+                    listRequestFinished.setValue(SystemClock.elapsedRealtime());
                 }
             }
 
             @Override
             public void onFailure(Call<DeviceListResponse> call, Throwable t) {
-                Log.d("DeviceViewModel", "fetchDevices onFailure: " + t.getMessage());
-                showToast("서버 연결 실패: " + t.getMessage());
+                Log.d("DeviceViewModel", "fetchDevices onFailure: " + t.getClass().getSimpleName());
+                // 안내는 화면 위 연결 배너가 한다.
+                listRequestFinished.setValue(SystemClock.elapsedRealtime());
             }
         });
     }
@@ -184,7 +190,6 @@ public class DeviceViewModel extends ViewModel {
                 updateDevice(targetId, device -> device.setPendingCommand(null));
                 switch (outcome) {
                     case DONE:
-                        showToast("명령 성공!");
                         finishLoading(targetId, body != null ? body.state : null);
                         break;
                     case ACCEPTED:
@@ -380,7 +385,6 @@ public class DeviceViewModel extends ViewModel {
     }
     public void deleteDevice(String deviceId) {
         beginLoading(deviceId);
-        showToast("기기 삭제 중...");
 
         RetrofitClient.getApi().deleteDevice(new DeleteDeviceRequest(deviceId)).enqueue(new Callback<DeleteDeviceResponse>() {
             @Override
@@ -411,7 +415,7 @@ public class DeviceViewModel extends ViewModel {
             @Override
             public void onFailure(Call<DeleteDeviceResponse> call, Throwable t) {
                 finishLoading(deviceId, null);
-                showToast("통신 실패: " + t.getMessage());
+                showToast("기기를 삭제하지 못했어요. " + ControlFailure.UNREACHABLE_SERVER);
             }
         });
     }
@@ -431,7 +435,8 @@ public class DeviceViewModel extends ViewModel {
 
             @Override
             public void onFailure(Call<DeviceStateResponse> call, Throwable t) {
-                finishLoading(deviceId, "OFFLINE");
+                // 서버에 닿지 못한 것이지 기기가 꺼진 것이 아니다. 마지막 확인값을 두고 배너로 알린다.
+                finishLoading(deviceId, null);
             }
         });
     }
@@ -446,11 +451,8 @@ public class DeviceViewModel extends ViewModel {
 
             @Override
             public void onFailure(ApiError error, String reason) {
-                if (error != null) {
-                    showFailure("전력 조회 실패: ", error);
-                } else {
-                    showToast("통신 실패: " + reason);
-                }
+                // 통신 실패(error == null)는 연결 배너가 알린다.
+                if (error != null) showFailure("전력 조회 실패: ", error);
             }
         });
     }
@@ -495,7 +497,7 @@ public class DeviceViewModel extends ViewModel {
 
             @Override
             public void onFailure(Call<EnergyResponse> call, Throwable t) {
-                listener.onFailure(null, t.getMessage());
+                listener.onFailure(null, ControlFailure.UNREACHABLE_SERVER);
             }
         });
     }

@@ -139,8 +139,8 @@ public class DeviceFragment extends Fragment {
                 isManualRefresh = false; // 상태 갱신이 목록을 다시 내보내도 반복 요청하지 않게
             }
         });
-        // 토스트 표시는 MainActivity가 한다. 여기서는 실패 응답에도 새로고침 표시를 끄기 위해 관찰한다.
-        viewModel.getToastMessage().observe(getViewLifecycleOwner(), event -> {
+        // 목록 요청이 실패해도 새로고침 표시를 끈다(성공은 목록 관찰에서 끈다).
+        viewModel.getListRequestFinished().observe(getViewLifecycleOwner(), done -> {
             if (swipeRefreshLayout.isRefreshing()) {
                 swipeRefreshLayout.setRefreshing(false);
             }
