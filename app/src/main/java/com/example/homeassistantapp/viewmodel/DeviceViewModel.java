@@ -416,12 +416,9 @@ public class DeviceViewModel extends ViewModel {
                     double currentPowerW = response.body().activePowerMw / 1000.0;
                     double totalEnergyKwh = response.body().totalEnergyMwh / 1000000.0;
 
-                    String powerText = String.format("실시간: %.1f W / 누적: %.4f kWh", currentPowerW, totalEnergyKwh);
-
                     String state = response.body().state;
                     pendingStates.remember(deviceId, state);
                     updateDevice(deviceId, device -> {
-                        device.setPowerInfo(powerText);
                         device.setEnergy(currentPowerW, totalEnergyKwh);
                         // 제어 등 다른 요청이 진행 중이면 그 결과가 상태를 정한다.
                         if (state != null && !pendingStates.isPending(deviceId)) device.setState(state);
@@ -454,7 +451,6 @@ public class DeviceViewModel extends ViewModel {
                 EnergyLogResponse body = response.body();
                 if (response.isSuccessful() && body != null) {
                     detailEnergyHistory.setValue(body.getLogs());
-                    updateDevice(deviceId, device -> device.setEnergyLogs(body.getLogs()));
                     finishLoading(deviceId, body.stateOr(null));
                 }
                 else{
@@ -508,11 +504,6 @@ public class DeviceViewModel extends ViewModel {
                 }
             }
         }
-    }
-    public void updateDeviceOrder(List<Device> reorderedList) {
-        deviceList.setValue(new ArrayList<>(reorderedList));
-
-        // TODO: 앱을 다시 켜도 순서가 유지되도록 영구 저장
     }
 }
 

@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-
     <!-- 라이트 테마 색 토큰. values-night/colors.xml과 이름이 같아야 한다. -->
     <color name="color_surface">#FFFEF7FF</color>
     <color name="color_surface_container">#FFF3EDF7</color>

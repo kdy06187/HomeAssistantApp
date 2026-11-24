@@ -9,8 +9,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -19,9 +17,6 @@ import java.util.regex.Pattern;
 
 /** 라이트·다크 colors.xml을 직접 읽어 토큰 이름이 맞는지, 글자/배경 쌍 대비가 4.5:1 이상인지 본다. */
 public class ColorTokensTest {
-
-    // 템플릿에서 온 색. 다크 짝이 필요 없다.
-    private static final Set<String> LIGHT_ONLY = new HashSet<>(Arrays.asList("black", "white"));
 
     private static final String[][] TEXT_PAIRS = {
             {"color_on_surface", "color_surface"},
@@ -43,8 +38,7 @@ public class ColorTokensTest {
 
     @Test
     public void lightAndDark_haveSameTokenNames() throws IOException {
-        Set<String> light = new HashSet<>(read("values").keySet());
-        light.removeAll(LIGHT_ONLY);
+        Set<String> light = read("values").keySet();
         Set<String> dark = read("values-night").keySet();
         assertEquals(light, dark);
     }
