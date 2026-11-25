@@ -153,6 +153,14 @@ public class DeviceDetailFragment extends Fragment {
     }
 
     @Override
+    public void onDestroyView() {
+        // 뒤로 스택에 남아 있는 동안 옛 View를 붙잡지 않게 한다.
+        powerCard = null;
+        chartCard = null;
+        super.onDestroyView();
+    }
+
+    @Override
     public void onStart() {
         super.onStart();
         started = true;

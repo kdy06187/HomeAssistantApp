@@ -129,6 +129,11 @@ public class RetrofitClient {
         return apiToken;
     }
 
+    /** 이 프로세스에서 클라이언트를 이미 만들었으면 true. */
+    public static boolean isBuilt() {
+        return api != null;
+    }
+
     public static HomeAssistantApi getApi() {
         if (api == null) {
             rebuildClient(ServerDefaults.IP, ServerDefaults.PORT);

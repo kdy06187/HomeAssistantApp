@@ -57,6 +57,8 @@ public class QrScanFragment extends Fragment {
     private ProcessCameraProvider cameraProvider;
     private Camera camera;
     private boolean cameraStarted;
+    // 상태 저장 뒤에 인식되면 화면을 바로 닫을 수 없어, 다시 보일 때 닫는다.
+    private boolean closePending;
     private QrPayload.Check lastRejected;
 
     private final ActivityResultLauncher<String> permissionLauncher =
@@ -91,6 +93,7 @@ public class QrScanFragment extends Fragment {
         textHint = view.findViewById(R.id.textQrHint);
         btnTorch = view.findViewById(R.id.btnTorch);
         cameraStarted = false;
+        closePending = false;
         lastRejected = null;
         analysisExecutor = Executors.newSingleThreadExecutor();
 
@@ -103,17 +106,29 @@ public class QrScanFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        if (closePending) {
+            close();
+            return;
+        }
         // 앱 설정 화면에서 권한을 켜고 돌아왔을 수 있어 보일 때마다 다시 본다.
         render();
     }
 
     @Override
     public void onDestroyView() {
-        // 카메라 사용은 화면 수명 주기에 묶여 자동으로 풀린다. 분석 스레드만 직접 멈춘다.
+        // 분석기가 멈춘 실행기에 일을 넘기지 않도록 카메라를 먼저 풀고 실행기를 멈춘다.
+        if (cameraProvider != null) cameraProvider.unbindAll();
         if (analysisExecutor != null) analysisExecutor.shutdown();
         analysisExecutor = null;
         camera = null;
         cameraProvider = null;
+        cameraStarted = false;
+        preview = null;
+        panelPermission = null;
+        textPermission = null;
+        btnPermission = null;
+        textHint = null;
+        btnTorch = null;
         super.onDestroyView();
     }
 
@@ -171,7 +186,10 @@ public class QrScanFragment extends Fragment {
         Context context = requireContext();
         ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(context);
         future.addListener(() -> {
-            if (getView() == null) return;
+            if (getView() == null) {
+                cameraStarted = false;
+                return;
+            }
             try {
                 cameraProvider = future.get();
                 bindCamera();
@@ -220,6 +238,8 @@ public class QrScanFragment extends Fragment {
     }
 
     private void showCameraUnavailable() {
+        // 다른 앱이 카메라를 놓은 뒤 돌아오면 다시 켜 볼 수 있게 한다.
+        cameraStarted = false;
         showPanel("카메라를 켤 수 없어요. 다른 앱이 카메라를 쓰고 있지 않은지 확인하거나 코드를 직접 입력해 주세요.",
                 "직접 입력", this::close);
     }
@@ -232,7 +252,8 @@ public class QrScanFragment extends Fragment {
 
     private void deliver(String payload) {
         new ViewModelProvider(requireActivity()).get(QrScanResult.class).deliver(payload);
-        close();
+        if (getParentFragmentManager().isStateSaved()) closePending = true;
+        else close();
     }
 
     private void runOnMain(Runnable action) {

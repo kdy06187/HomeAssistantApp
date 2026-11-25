@@ -39,6 +39,8 @@ import java.util.List;
 
 /** 기기 추가 입력(전체 화면). 홈·기기 탭의 추가 버튼에서 열리고, 등록을 시작하면 진행 화면으로 넘어간다. */
 public class AddDeviceFragment extends Fragment {
+    /** 뒤로 스택 이름. 진행 화면의 "다시 시도"가 이 화면으로 정확히 돌아온다. */
+    public static final String BACK_STACK_NAME = "add_device";
     private static final String KEY_WIFI_SSID = "WIFI_SSID";
 
     private DeviceViewModel viewModel;
@@ -72,7 +74,7 @@ public class AddDeviceFragment extends Fragment {
         fm.beginTransaction()
                 .setReorderingAllowed(true)
                 .replace(R.id.fragmentContainer, new AddDeviceFragment())
-                .addToBackStack(null)
+                .addToBackStack(BACK_STACK_NAME)
                 .commit();
     }
 
@@ -149,6 +151,26 @@ public class AddDeviceFragment extends Fragment {
         super.onResume();
         // 설정 탭에서 Wi-Fi를 저장하고 돌아왔을 수 있어 보일 때마다 다시 본다.
         renderWifiCard();
+    }
+
+    @Override
+    public void onDestroyView() {
+        toggleType = null;
+        layoutName = null;
+        layoutCode = null;
+        layoutServerIp = null;
+        editName = null;
+        editCode = null;
+        editServerIp = null;
+        groupMatter = null;
+        cardWifiMissing = null;
+        textFormError = null;
+        textWifiMissing = null;
+        spinnerDriver = null;
+        rowScanned = null;
+        textScanned = null;
+        textScannedError = null;
+        super.onDestroyView();
     }
 
     @Override

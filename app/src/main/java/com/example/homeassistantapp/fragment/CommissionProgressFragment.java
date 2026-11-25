@@ -35,13 +35,15 @@ public class CommissionProgressFragment extends Fragment {
 
     private DeviceViewModel viewModel;
     private final Handler ticker = new Handler(Looper.getMainLooper());
+    // 경과 시간은 진행 중일 때만 1초마다 고친다. 결과 화면에서 TalkBack이 매초 읽지 않게 한다.
     private final Runnable tick = new Runnable() {
         @Override
         public void run() {
             render();
-            ticker.postDelayed(this, TICK_MS);
+            scheduleTick();
         }
     };
+    private boolean started;
 
     private View progress;
     private TextView textName;
@@ -101,19 +103,44 @@ public class CommissionProgressFragment extends Fragment {
                     }
                 });
 
-        viewModel.getCommissionStatus().observe(getViewLifecycleOwner(), status -> render());
+        viewModel.getCommissionStatus().observe(getViewLifecycleOwner(), status -> {
+            render();
+            scheduleTick();
+        });
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        ticker.post(tick);
+        started = true;
+        render();
+        scheduleTick();
     }
 
     @Override
     public void onStop() {
+        started = false;
         ticker.removeCallbacks(tick);
         super.onStop();
+    }
+
+    @Override
+    public void onDestroyView() {
+        ticker.removeCallbacks(tick);
+        progress = null;
+        textName = null;
+        textTitle = null;
+        textElapsed = null;
+        textBody = null;
+        btnPrimary = null;
+        btnSecondary = null;
+        super.onDestroyView();
+    }
+
+    private void scheduleTick() {
+        ticker.removeCallbacks(tick);
+        CommissionStatus status = viewModel != null ? viewModel.getCommissionStatus().getValue() : null;
+        if (started && status != null && status.isActive()) ticker.postDelayed(tick, TICK_MS);
     }
 
     private void render() {
@@ -148,8 +175,12 @@ public class CommissionProgressFragment extends Fragment {
                 viewModel.acknowledgeCommission();
                 FragmentManager fm = getParentFragmentManager();
                 if (fm.isStateSaved()) return;
-                fm.popBackStack();
-                if (fm.getBackStackEntryCount() <= 1) AddDeviceFragment.open(requireActivity());
+                // 이름으로 찾아 그 위(이 화면)만 걷어 낸다. 입력 화면이 스택에 없으면 이 화면을 닫고 새로 연다.
+                FragmentActivity activity = requireActivity();
+                if (!fm.popBackStackImmediate(AddDeviceFragment.BACK_STACK_NAME, 0)) {
+                    fm.popBackStackImmediate();
+                    AddDeviceFragment.open(activity);
+                }
                 break;
             case OPEN_DEVICES:
                 viewModel.acknowledgeCommission();

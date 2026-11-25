@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-07h-3 해설 — 화면 수명주기 정리</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07h-3 해설 — 화면 수명주기 정리</h1>
+  <p>ui-1 브랜치 · UI 1차 보완 07h ③ · U12·U13·U14·U15·U16·U17·U29 · 2026-11-25</p>
+</header>
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>ViewModel이 없어질 때(U12)</b>: 진행 중인 등록 요청(E3·E8)을 취소하고 <code>cleared</code> 표시를 세운다. 늦게 온 응답이 폴링을 다시 살리지 못한다.</li>
+    <li><b>QR 카메라(U13)</b>: 카메라 시작이 실패하면 "시작함" 표시를 되돌려 돌아왔을 때 다시 켠다. 화면을 닫을 때 카메라를 먼저 풀고 분석 스레드를 멈춘다. 상태 저장 뒤 인식되면 다시 보일 때 닫는다.</li>
+    <li><b>"다시 시도"(U14·U29)</b>: 입력 화면을 백스택 이름 <code>add_device</code>로 넣고, 진행 화면은 그 이름까지 즉시 되돌린다(<code>popBackStackImmediate</code>). 없으면 새로 연다.</li>
+    <li><b>View 참조 비우기(U15)</b>: 전체 화면 4개가 <code>onDestroyView</code>에서 View 필드를 null로.</li>
+    <li><b>1초 타이머(U16)</b>: 진행 중일 때만 예약한다.</li>
+    <li><b>회전(U17)</b>: <code>MainActivity</code>가 회전 때 토큰 복호화·클라이언트 재생성을 되풀이하지 않는다.</li>
+  </ul>
+  <div class="table-wrap"><table>
+    <tr><th>파일</th><th>변경 요약</th></tr>
+    <tr><td><code>viewmodel/DeviceViewModel</code></td><td><code>commissionCall</code>·<code>cleared</code>, <code>onCleared</code>에서 취소·비움</td></tr>
+    <tr><td><code>fragment/QrScanFragment</code></td><td>실패 시 <code>cameraStarted=false</code>, unbind 먼저, <code>closePending</code>, View null</td></tr>
+    <tr><td><code>fragment/AddDeviceFragment</code></td><td><code>BACK_STACK_NAME</code>, View null</td></tr>
+    <tr><td><code>fragment/CommissionProgressFragment</code></td><td><code>scheduleTick</code>(진행 중만), 이름으로 되돌리기, View null</td></tr>
+    <tr><td><code>fragment/DeviceDetailFragment</code></td><td>카드 참조 null</td></tr>
+    <tr><td><code>MainActivity</code>·<code>RetrofitClient</code></td><td><code>savedInstanceState == null || !isBuilt()</code>일 때만 초기화</td></tr>
+  </table></div>
+</section>
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림 — "다시 시도"가 돌아가는 길</h2>
+  <svg class="flow" viewBox="0 0 760 210" role="img" aria-label="백스택에 홈 탭, add_device 입력 화면, 진행 화면이 쌓여 있고, 다시 시도를 누르면 add_device 이름까지 되돌려 입력 화면이 보이고, 이름이 없으면 진행 화면을 닫고 입력 화면을 새로 연다">
+    <rect x="20" y="20" width="160" height="40" rx="8"/><text x="100" y="45" text-anchor="middle">홈 탭(바닥)</text>
+    <rect x="20" y="70" width="160" height="40" rx="8" class="hl"/><text x="100" y="95" text-anchor="middle">입력 · "add_device"</text>
+    <rect x="20" y="120" width="160" height="40" rx="8"/><text x="100" y="145" text-anchor="middle">진행 화면</text>
+    <rect x="260" y="70" width="230" height="50" rx="10"/><text x="375" y="92" text-anchor="middle">popBackStackImmediate</text><text x="375" y="110" text-anchor="middle" class="small">("add_device", 0)</text>
+    <rect x="560" y="30" width="180" height="50" rx="10"/><text x="650" y="52" text-anchor="middle">true → 입력 화면</text><text x="650" y="70" text-anchor="middle" class="small">적은 값 그대로</text>
+    <rect x="560" y="120" width="180" height="50" rx="10"/><text x="650" y="142" text-anchor="middle">false → 닫고 새로 열기</text><text x="650" y="160" text-anchor="middle" class="small">탭에서 진행 화면을 연 경우</text>
+    <path d="M180,140 L260,100"/><path d="M490,90 L560,55"/><path d="M490,100 L560,145"/>
+  </svg>
+</section>
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+  <h3>① 늦게 온 응답 막기</h3>
+<pre><code>protected void onCleared() {
+    cleared = true;
+    if (commissionCall != null) commissionCall.cancel();
+    pairingDevice = null;
+    ...
+}
+public void onResponse(...) {
+    if (cleared) return;</code></pre>
+  <div class="why">
+    <div><b>왜</b> Activity가 완전히 끝나도 OkHttp 요청은 계속 날아가고, 응답이 오면 콜백이 <code>schedulePoll</code>로 핸들러에 또 일을 넣었다. 이미 버린 ViewModel이 2초마다 서버에 묻는 "유령 폴링"이 된다.</div>
+    <div class="drop"><b>취소만 하면?</b> 취소 직전에 응답이 이미 메인 스레드 큐에 들어가 있을 수 있다. 그래서 플래그도 함께 본다.</div>
+  </div>
+  <h3>② 진행 중일 때만 tick</h3>
+  <div class="ba">
+    <div class="before"><div class="label">before</div>
+<pre><code>public void run() {
+    render();
+    ticker.postDelayed(this, TICK_MS);
+}</code></pre></div>
+    <div class="after"><div class="label">after</div>
+<pre><code>private void scheduleTick() {
+    ticker.removeCallbacks(tick);
+    if (started &amp;&amp; status != null &amp;&amp; status.isActive())
+        ticker.postDelayed(tick, TICK_MS);
+}</code></pre></div>
+  </div>
+  <div class="why"><div><b>왜</b> 결과 화면에도 매초 글자를 다시 써서 TalkBack이 같은 문장을 반복해 읽었다. 상태가 다시 진행 중이 되면 관찰자가 <code>scheduleTick</code>을 불러 다시 돈다.</div></div>
+  <h3>③ 카메라: 푸는 순서</h3>
+<pre><code>if (cameraProvider != null) cameraProvider.unbindAll();   // 먼저
+if (analysisExecutor != null) analysisExecutor.shutdown(); // 나중</code></pre>
+  <div class="why"><div><b>왜</b> 실행기를 먼저 멈추면 아직 묶여 있는 분석기가 멈춘 실행기에 프레임을 넘기려다 거절 예외가 날 수 있다. 쓰는 쪽을 먼저 끊는다.</div></div>
+</section>
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b>onCleared</b>: ViewModel이 버려질 때 한 번 불린다(Activity가 회전이 아니라 진짜로 끝날 때).</li>
+    <li><b>onDestroyView</b>: Fragment 객체는 살아 있지만 화면(View)만 버릴 때. 백스택에 가려진 Fragment가 여기 해당한다.</li>
+    <li><b>isStateSaved</b>: 상태 저장이 끝나 화면 전환(트랜잭션)을 하면 안 되는 때.</li>
+    <li><b>백스택 이름</b>: <code>addToBackStack("이름")</code>으로 붙인 표. 그 지점까지 정확히 되돌릴 수 있다.</li>
+  </ul>
+</section>
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol>
+    <li>화면을 돌리면 <code>DeviceViewModel.onCleared</code>가 불릴까? 등록 폴링은?</li>
+    <li>홈 탭 → "등록 진행 보기"로 진행 화면만 연 뒤 "다시 시도"를 누르면 백스택은 어떻게 될까?</li>
+  </ol>
+  <details><summary>정답 보기</summary><ol>
+    <li>안 불린다. Activity 범위 ViewModel은 회전을 넘어 살아남으니 폴링도 계속된다.</li>
+    <li><code>add_device</code>가 없어 false → 진행 화면을 닫고 입력 화면을 새로 연다(스택: 홈 위에 입력 하나).</li>
+  </ol></details>
+</section>
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <p><b>목표</b>: 기기 상세(<code>DeviceDetailFragment.open</code>)에도 백스택 이름을 붙여, 상세 위에서 무엇을 열었든 "상세로 돌아가기"를 한 번에 하게 만들기. <b>고칠 파일</b>: <code>DeviceDetailFragment</code>(새 브랜치에서). <b>완료 기준</b>: 이름 상수를 두고 <code>popBackStackImmediate(이름, 0)</code>가 true를 돌려준다.</p>
+  <details><summary>힌트</summary>flags 0은 "그 항목은 남기고 위만 걷기", <code>POP_BACK_STACK_INCLUSIVE</code>는 "그 항목까지 걷기".</details>
+  <details><summary>정답</summary><pre><code>public static final String BACK_STACK_NAME = "device_detail";
+... .addToBackStack(BACK_STACK_NAME)
+fm.popBackStackImmediate(DeviceDetailFragment.BACK_STACK_NAME, 0);</code></pre></details>
+</section>
+
+</main>
+</body>
+</html>

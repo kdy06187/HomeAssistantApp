@@ -43,17 +43,21 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        // 예전 버전이 둔 토큰 암호문·평문 Wi-Fi 비밀번호를 백업 제외 저장소로 옮긴다. 실패하면 다음 실행에 다시 한다.
-        TokenStore.migrateLegacy(this);
-        WifiPasswordStore.migrateLegacy(this);
+        // 회전처럼 Activity만 다시 만들어질 때는 정적 클라이언트·토큰이 이미 있으므로
+        // Keystore 복호화와 클라이언트 재생성을 되풀이하지 않는다(프로세스가 죽었다 살아나면 다시 한다).
+        if (savedInstanceState == null || !RetrofitClient.isBuilt()) {
+            // 예전 버전이 둔 토큰 암호문·평문 Wi-Fi 비밀번호를 백업 제외 저장소로 옮긴다. 실패하면 다음 실행에 다시 한다.
+            TokenStore.migrateLegacy(this);
+            WifiPasswordStore.migrateLegacy(this);
 
-        SharedPreferences prefs = getSharedPreferences(ServerDefaults.PREFS_NAME, Context.MODE_PRIVATE);
-        String ip = prefs.getString(ServerDefaults.KEY_SERVER_IP, ServerDefaults.IP);
-        String port = prefs.getString(ServerDefaults.KEY_SERVER_PORT, ServerDefaults.PORT);
+            SharedPreferences prefs = getSharedPreferences(ServerDefaults.PREFS_NAME, Context.MODE_PRIVATE);
+            String ip = prefs.getString(ServerDefaults.KEY_SERVER_IP, ServerDefaults.IP);
+            String port = prefs.getString(ServerDefaults.KEY_SERVER_PORT, ServerDefaults.PORT);
 
-        RetrofitClient.rebuildClient(ip, port);
-        StoredSecret token = TokenStore.read(this);
-        RetrofitClient.setApiToken(token.state == StoredSecret.State.OK ? token.value : null);
+            RetrofitClient.rebuildClient(ip, port);
+            StoredSecret token = TokenStore.read(this);
+            RetrofitClient.setApiToken(token.state == StoredSecret.State.OK ? token.value : null);
+        }
         bottomNav = findViewById(R.id.bottomNavigation);
         banner = findViewById(R.id.connectionBanner);
         bannerText = findViewById(R.id.textConnectionBanner);

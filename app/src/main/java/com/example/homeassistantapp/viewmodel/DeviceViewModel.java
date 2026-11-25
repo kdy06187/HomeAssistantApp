@@ -66,6 +66,10 @@ public class DeviceViewModel extends ViewModel {
     private Runnable pollRunnable;
     // 토큰 오류로 폴링을 멈춘 작업. 설정을 다시 저장하면 이어서 묻는다.
     private String pausedJobId;
+    // 진행 중인 등록 요청(E3 또는 E8). ViewModel이 없어질 때 취소한다.
+    private Call<CommissionJobResponse> commissionCall;
+    // onCleared 뒤에 도착한 응답이 폴링을 다시 예약하지 않게 한다.
+    private boolean cleared;
     private long commissionStartedAt;
     // 진행·결과 화면이 보는 상태. null이면 등록한 적 없거나 결과를 확인함.
     private final MutableLiveData<CommissionStatus> commissionStatus = new MutableLiveData<>();
@@ -109,8 +113,14 @@ public class DeviceViewModel extends ViewModel {
 
     @Override
     protected void onCleared() {
+        cleared = true;
         mainHandler.removeCallbacksAndMessages(null);
         pendingRechecks.clear();
+        if (commissionCall != null) commissionCall.cancel();
+        commissionCall = null;
+        pollRunnable = null;
+        pausedJobId = null;
+        pairingDevice = null;
         super.onCleared();
     }
 
@@ -262,9 +272,12 @@ public class DeviceViewModel extends ViewModel {
         pairingDevice = tempDevice;
         deviceList.setValue(withPairingItem(deviceList.getValue()));
 
-        RetrofitClient.getApi().addDevice(request).enqueue(new Callback<CommissionJobResponse>() {
+        commissionCall = RetrofitClient.getApi().addDevice(request);
+        commissionCall.enqueue(new Callback<CommissionJobResponse>() {
             @Override
             public void onResponse(Call<CommissionJobResponse> call, Response<CommissionJobResponse> response){
+                if (cleared) return;
+                commissionCall = null;
                 CommissionJobResponse body = response.body();
                 CommissionStatus current = currentCommission(name);
                 if (response.isSuccessful() && body != null && body.jobId != null) {
@@ -285,6 +298,8 @@ public class DeviceViewModel extends ViewModel {
             }
             @Override
             public void onFailure(Call<CommissionJobResponse> call, Throwable t){
+                if (cleared) return;
+                commissionCall = null;
                 endCommission();
                 finishCommission(CommissionStatus.rejected(name, 0, null, null));
             }
@@ -303,17 +318,20 @@ public class DeviceViewModel extends ViewModel {
     }
 
     private void pollCommission(String jobId) {
-        RetrofitClient.getApi().getCommissionJob(jobId).enqueue(new Callback<CommissionJobResponse>() {
+        commissionCall = RetrofitClient.getApi().getCommissionJob(jobId);
+        commissionCall.enqueue(new Callback<CommissionJobResponse>() {
             @Override
             public void onResponse(Call<CommissionJobResponse> call, Response<CommissionJobResponse> response) {
-                if (pairingDevice == null) return; // 이미 끝냄
+                if (cleared || pairingDevice == null) return; // 이미 끝냄
+                commissionCall = null;
                 CommissionJobResponse body = response.body();
                 handlePoll(jobId, CommissionPoller.afterResponse(elapsedSinceCommission(), response.code(), body), body);
             }
 
             @Override
             public void onFailure(Call<CommissionJobResponse> call, Throwable t) {
-                if (pairingDevice == null) return;
+                if (cleared || pairingDevice == null) return;
+                commissionCall = null;
                 handlePoll(jobId, CommissionPoller.afterNetworkFailure(elapsedSinceCommission()), null);
             }
         });
