@@ -1,6 +1,9 @@
 package com.example.homeassistantapp.network;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * 기기 등록 요청을 보내기 전에 서버와 같은 입력 규칙으로 검사한다. 걸리면 보내지 않고 바로 안내한다.
@@ -17,16 +20,22 @@ public final class CommissionInputValidator {
     /** 오류를 어느 입력 칸 아래에 보일지. */
     public enum Field { NAME, PAYLOAD, WIFI, TYPE }
 
-    /** 검사 결과. error가 null이면 통과이고, payload는 서버에 보낼 정리된 값이다. */
+    /**
+     * 검사 결과. error가 null이면 통과이고, payload는 서버에 보낼 정리된 값이다.
+     * errors는 걸린 칸 전부(검사 순서대로), error·field는 그중 첫 번째.
+     */
     public static final class Result {
         public final String error;
         public final Field field;
         public final String payload;
+        public final Map<Field, String> errors;
 
-        private Result(String error, Field field, String payload) {
-            this.error = error;
-            this.field = field;
-            this.payload = payload;
+        private Result(Map<Field, String> errors, String payload) {
+            this.errors = Collections.unmodifiableMap(errors);
+            Map.Entry<Field, String> first = errors.isEmpty() ? null : errors.entrySet().iterator().next();
+            this.field = first != null ? first.getKey() : null;
+            this.error = first != null ? first.getValue() : null;
+            this.payload = first == null ? payload : null;
         }
 
         public boolean isValid() {
@@ -34,11 +43,13 @@ public final class CommissionInputValidator {
         }
 
         static Result ok(String payload) {
-            return new Result(null, null, payload);
+            return new Result(new LinkedHashMap<>(), payload);
         }
 
         static Result fail(Field field, String error) {
-            return new Result(error, field, null);
+            Map<Field, String> errors = new LinkedHashMap<>();
+            errors.put(field, error);
+            return new Result(errors, null);
         }
     }
 
@@ -53,15 +64,21 @@ public final class CommissionInputValidator {
      */
     public static Result validate(String protocolType, String deviceName, String payload,
                                   String ssid, String password, String serverHost) {
+        // 한 번에 모든 칸의 오류를 보이도록 끝까지 검사한다.
+        Map<Field, String> errors = new LinkedHashMap<>();
         String nameError = checkName(deviceName);
-        if (nameError != null) return Result.fail(Field.NAME, nameError);
+        if (nameError != null) errors.put(Field.NAME, nameError);
 
         String wifiError = checkWifi(ssid, password);
-        if (wifiError != null) return Result.fail(Field.WIFI, wifiError);
+        if (wifiError != null) errors.put(Field.WIFI, wifiError);
 
-        String raw = payload == null ? "" : payload;
+        Result payloadResult = checkPayload(protocolType, payload == null ? "" : payload, serverHost);
+        errors.putAll(payloadResult.errors);
+        return errors.isEmpty() ? payloadResult : new Result(errors, null);
+    }
+
+    private static Result checkPayload(String protocolType, String raw, String serverHost) {
         if (hasControlChar(raw)) return Result.fail(Field.PAYLOAD, "페어링 코드·서버 IP에 줄바꿈 같은 제어 문자를 쓸 수 없습니다.");
-
         if ("MATTER".equals(protocolType)) return matterPayload(raw);
         if ("TCP_DIY".equals(protocolType)) return tcpPayload(raw, serverHost);
         return Result.fail(Field.TYPE, "알 수 없는 프로토콜입니다.");
@@ -78,7 +95,7 @@ public final class CommissionInputValidator {
     }
 
     static String checkName(String name) {
-        if (name == null || name.isEmpty()) return "기기 이름을 입력해주세요.";
+        if (name == null || isBlank(name)) return "기기 이름을 입력해주세요.";
         if (hasControlChar(name)) return "기기 이름에 줄바꿈 같은 제어 문자를 쓸 수 없습니다.";
         if (name.codePointCount(0, name.length()) > NAME_MAX_CHARS) return "기기 이름은 64자까지 쓸 수 있습니다.";
         return null;
@@ -130,15 +147,27 @@ public final class CommissionInputValidator {
         return a == 10 || (a == 172 && b >= 16 && b <= 31) || (a == 192 && b == 168) || (a == 169 && b == 254);
     }
 
+    /** 각 자리 0~255, 앞에 0을 붙인 자리(01, 010)는 받지 않는다(8진수로 읽는 프로그램이 있어 서버와 어긋날 수 있다). */
     static boolean isIpv4(String ip) {
         String[] parts = ip.split("\\.", -1);
         if (parts.length != 4) return false;
         for (String part : parts) {
             if (part.isEmpty() || part.length() > 3) return false;
+            if (part.length() > 1 && part.charAt(0) == '0') return false;
             for (int i = 0; i < part.length(); i++) {
                 if (part.charAt(i) < '0' || part.charAt(i) > '9') return false;
             }
             if (Integer.parseInt(part) > 255) return false;
+        }
+        return true;
+    }
+
+    // 공백·전각 공백·줄 바꿈 없는 공백만 있는 이름은 목록에서 빈 이름처럼 보인다.
+    private static boolean isBlank(String s) {
+        for (int i = 0; i < s.length(); ) {
+            int cp = s.codePointAt(i);
+            if (!Character.isWhitespace(cp) && !Character.isSpaceChar(cp)) return false;
+            i += Character.charCount(cp);
         }
         return true;
     }

@@ -3,7 +3,12 @@ package com.example.homeassistantapp.viewmodel;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import com.example.homeassistantapp.dto.Device;
+
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 public class PendingStatesTest {
 
@@ -90,5 +95,42 @@ public class PendingStatesTest {
         org.junit.Assert.assertTrue(states.isPending("A"));
         states.finish("A", null);
         org.junit.Assert.assertFalse(states.isPending("A"));
+    }
+
+    private static Device device(String id, String state) {
+        Device d = new Device();
+        d.setId(id);
+        d.setState(state);
+        return d;
+    }
+
+    @Test
+    public void carryOver_keepsLoadingAndCommandOnPendingDevices() {
+        PendingStates states = new PendingStates();
+        Device oldA = device("A", PendingStates.LOADING);
+        oldA.setPendingCommand("ON");
+        states.begin("A", "OFF");
+
+        Device freshA = device("A", "OFF");
+        Device freshB = device("B", "ON");
+        states.remember("A", freshA.getState());
+        states.carryOver(Arrays.asList(freshA, freshB), Collections.singletonList(oldA));
+
+        assertEquals(PendingStates.LOADING, freshA.getState());
+        assertEquals("ON", freshA.getPendingCommand());
+        assertEquals("ON", freshB.getState());
+        assertNull(freshB.getPendingCommand());
+        // 요청이 실패하면 목록이 알려 준 실제 상태로 돌아간다.
+        assertEquals("OFF", states.finish("A", null));
+    }
+
+    @Test
+    public void carryOver_newPendingDeviceWithoutOld_stillLoading() {
+        PendingStates states = new PendingStates();
+        states.begin("A", "ON");
+        Device freshA = device("A", "ON");
+        states.carryOver(Collections.singletonList(freshA), null);
+        assertEquals(PendingStates.LOADING, freshA.getState());
+        states.carryOver(null, null);
     }
 }

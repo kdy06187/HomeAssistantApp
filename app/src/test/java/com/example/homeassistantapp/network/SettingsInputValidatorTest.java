@@ -76,4 +76,12 @@ public class SettingsInputValidatorTest {
         assertTrue(errors.containsKey(SettingsInputValidator.Field.WIFI_SSID));
         assertTrue(SettingsInputValidator.validate("192.168.0.10", "8000", "", true, "", "").isEmpty());
     }
+
+    @Test
+    public void port_leadingZeroRejected() {
+        assertNotNull(SettingsInputValidator.checkPort("08000"));
+        assertNotNull(SettingsInputValidator.checkPort("00"));
+        assertNull(SettingsInputValidator.checkPort("8000"));
+        assertNotNull(valid("192.168.0.010", "8000").get(SettingsInputValidator.Field.SERVER_IP));
+    }
 }

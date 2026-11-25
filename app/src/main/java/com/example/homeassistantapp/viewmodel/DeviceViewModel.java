@@ -165,6 +165,7 @@ public class DeviceViewModel extends ViewModel {
                             pendingStates.remember(device.getId(), device.getState());
                         }
                     }
+                    pendingStates.carryOver(devices, deviceList.getValue());
                     deviceList.setValue(withPairingItem(devices));
                     if (withEnergy && devices != null) {
                         for (Device device : devices) {

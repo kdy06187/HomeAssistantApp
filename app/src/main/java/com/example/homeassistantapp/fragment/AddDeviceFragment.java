@@ -36,6 +36,7 @@ import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /** 기기 추가 입력(전체 화면). 홈·기기 탭의 추가 버튼에서 열리고, 등록을 시작하면 진행 화면으로 넘어간다. */
 public class AddDeviceFragment extends Fragment {
@@ -228,25 +229,34 @@ public class AddDeviceFragment extends Fragment {
         }
     }
 
+    /** 걸린 칸마다 오류를 보이고, 첫 칸으로 커서를 옮긴다. */
     private void showError(CommissionInputValidator.Result result) {
-        switch (result.field) {
-            case NAME:
-                layoutName.setError(result.error);
-                editName.requestFocus();
-                break;
-            case PAYLOAD:
-                if (isMatter() && draft.scannedPayload != null) {
-                    textScannedError.setText(result.error);
-                    textScannedError.setVisibility(View.VISIBLE);
+        boolean focused = false;
+        for (Map.Entry<CommissionInputValidator.Field, String> e : result.errors.entrySet()) {
+            EditText focusTarget = null;
+            switch (e.getKey()) {
+                case NAME:
+                    layoutName.setError(e.getValue());
+                    focusTarget = editName;
                     break;
-                }
-                TextInputLayout target = isMatter() ? layoutCode : layoutServerIp;
-                target.setError(result.error);
-                if (target.getEditText() != null) target.getEditText().requestFocus();
-                break;
-            default:
-                showFormError(result.error);
-                break;
+                case PAYLOAD:
+                    if (isMatter() && draft.scannedPayload != null) {
+                        textScannedError.setText(e.getValue());
+                        textScannedError.setVisibility(View.VISIBLE);
+                        break;
+                    }
+                    TextInputLayout target = isMatter() ? layoutCode : layoutServerIp;
+                    target.setError(e.getValue());
+                    focusTarget = target.getEditText();
+                    break;
+                default:
+                    showFormError(e.getValue());
+                    break;
+            }
+            if (!focused && focusTarget != null) {
+                focusTarget.requestFocus();
+                focused = true;
+            }
         }
     }
 

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-07h-4 해설 — 입력 검사와 제어 잠금</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07h-4 해설 — 입력 검사와 제어 잠금</h1>
+  <p>ui-1 브랜치 · UI 1차 보완 07h ④ · U4·U5·U20 · 2026-11-25</p>
+</header>
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>칸별 오류 전부(U4)</b>: 기기 추가 검사가 걸린 칸을 모두 <code>errors</code>(칸 → 문구)에 담는다. 화면은 모든 칸에 한 번에 보이고 첫 칸에 커서를 둔다. 예전 <code>field</code>·<code>error</code>는 첫 오류로 남겨 다른 코드는 그대로 돈다.</li>
+    <li><b>경계 입력(U5)</b>: IPv4 자리 앞 0(<code>192.168.01.10</code>)과 포트 앞 0(<code>08000</code>), 공백만 있는 이름(전각·줄 바꿈 없는 공백 포함)을 막는다.</li>
+    <li><b>제어 중 목록 새로고침(U20)</b>: 새 목록이 와도 진행 중인 기기는 "켜는 중…"과 잠금을 이어 받는다. 실제 상태는 기억해 두었다가 요청이 끝나면 보인다.</li>
+  </ul>
+  <div class="table-wrap"><table>
+    <tr><th>파일</th><th>변경 요약</th></tr>
+    <tr><td><code>network/CommissionInputValidator</code></td><td><code>Result.errors</code>, 끝까지 검사, <code>isBlank</code>, IPv4 앞 0 거절</td></tr>
+    <tr><td><code>network/SettingsInputValidator</code></td><td>포트 앞 0 거절</td></tr>
+    <tr><td><code>fragment/AddDeviceFragment</code></td><td><code>showError</code>가 모든 칸에</td></tr>
+    <tr><td><code>viewmodel/PendingStates</code>·<code>DeviceViewModel</code></td><td><code>carryOver</code>로 진행 중 표시 이어 붙이기</td></tr>
+  </table></div>
+</section>
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림 — 제어 중에 목록이 오면</h2>
+  <svg class="flow" viewBox="0 0 760 190" role="img" aria-label="켜기를 누르면 PendingStates에 요청이 기록되고, 그 사이 목록 응답이 오면 실제 상태를 기억한 뒤 carryOver가 LOADING과 켜는 중을 다시 붙이고, 제어 응답이 오면 잠금이 풀린다">
+    <rect x="10" y="20" width="140" height="50" rx="10"/><text x="80" y="42" text-anchor="middle">"켜기" 누름</text><text x="80" y="60" text-anchor="middle" class="small">begin(A) · 켜는 중</text>
+    <rect x="190" y="20" width="160" height="50" rx="10"/><text x="270" y="42" text-anchor="middle">목록 응답 도착</text><text x="270" y="60" text-anchor="middle" class="small">A = OFF(아직 안 켜짐)</text>
+    <rect x="390" y="20" width="170" height="50" rx="10" class="hl"/><text x="475" y="42" text-anchor="middle">remember + carryOver</text><text x="475" y="60" text-anchor="middle" class="small">A = LOADING · 켜는 중</text>
+    <rect x="600" y="20" width="150" height="50" rx="10"/><text x="675" y="42" text-anchor="middle">제어 응답</text><text x="675" y="60" text-anchor="middle" class="small">finish → ON</text>
+    <line x1="150" y1="45" x2="190" y2="45"/><line x1="350" y1="45" x2="390" y2="45"/><line x1="560" y1="45" x2="600" y2="45"/>
+    <rect x="190" y="120" width="370" height="44" rx="10"/><text x="375" y="140" text-anchor="middle">예전: 목록이 OFF로 덮어 잠금이 풀림 → 한 번 더 누르면 명령이 겹침</text>
+    <path d="M270,70 L270,120" class="no"/>
+  </svg>
+</section>
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+  <h3>① 첫 오류에서 멈추지 않기</h3>
+  <div class="ba">
+    <div class="before"><div class="label">before</div>
+<pre><code>String nameError = checkName(deviceName);
+if (nameError != null) return Result.fail(NAME, nameError);
+String wifiError = checkWifi(ssid, password);
+if (wifiError != null) return Result.fail(WIFI, wifiError);</code></pre></div>
+    <div class="after"><div class="label">after</div>
+<pre><code>Map&lt;Field, String&gt; errors = new LinkedHashMap&lt;&gt;();
+if (nameError != null) errors.put(NAME, nameError);
+if (wifiError != null) errors.put(WIFI, wifiError);
+errors.putAll(payloadResult.errors);</code></pre></div>
+  </div>
+  <div class="why">
+    <div><b>왜</b> 이름을 고치고 누르면 그제야 코드 칸 오류가 나오는 "두더지 잡기"가 됐다. 설정 화면 검사는 이미 전부 보여 줘서 두 화면이 달랐다.</div>
+    <div><b>왜 LinkedHashMap</b> 넣은 순서가 유지돼 "첫 오류"(커서를 둘 칸)가 늘 이름 → Wi-Fi → 코드 순이다.</div>
+  </div>
+  <h3>② 앞 0 거절</h3>
+<pre><code>if (part.length() &gt; 1 &amp;&amp; part.charAt(0) == '0') return false;</code></pre>
+  <div class="why"><div><b>왜</b> <code>010</code>을 어떤 프로그램은 10, 어떤 것은 8진수 8로 읽는다. 앱이 통과시킨 주소를 서버나 기기가 다르게 읽을 수 있어 아예 받지 않는다. <code>0</code> 한 자리는 그대로 된다.</div></div>
+  <h3>③ 진행 중 표시 이어 붙이기</h3>
+<pre><code>for (Device device : fresh) {
+    if (!isPending(device.getId())) continue;
+    device.setState(LOADING);
+    device.setPendingCommand(old.getPendingCommand());
+}</code></pre>
+  <div class="why">
+    <div><b>왜</b> 목록 응답은 새 <code>Device</code> 객체를 만든다. <code>pendingCommand</code>는 앱만 아는 값(<code>transient</code>)이라 새 객체엔 없다.</div>
+    <div class="drop"><b>순서 주의</b> <code>remember</code>(실제 상태 기억)를 먼저 해야 요청이 실패했을 때 목록이 알려 준 값으로 돌아간다.</div>
+  </div>
+</section>
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b>LinkedHashMap</b>: 넣은 순서를 기억하는 Map.</li>
+    <li><b>전각 공백(U+3000)</b>: 한글 입력기에서 들어갈 수 있는 넓은 공백. <code>trim()</code>으로는 안 지워진다.</li>
+    <li><b>transient</b>: Gson이 JSON으로 읽고 쓰지 않는 필드. 앱 안에서만 쓰는 값.</li>
+  </ul>
+</section>
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol>
+    <li>이름이 비고 코드가 12자리면 커서는 어느 칸으로 갈까?</li>
+    <li><code>carryOver</code>를 <code>remember</code>보다 먼저 부르면 무엇이 틀어질까?</li>
+  </ol>
+  <details><summary>정답 보기</summary><ol>
+    <li>이름 칸. 두 칸 모두 오류 문구가 뜨지만 커서는 첫 오류로.</li>
+    <li>목록의 기기 상태가 이미 LOADING으로 바뀐 뒤 기억하려 해서 <code>remember</code>가 무시한다(LOADING은 기억하지 않음). 실패 때 옛 값으로 돌아간다.</li>
+  </ol></details>
+</section>
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <p><b>목표</b>: 기기 이름 앞뒤 공백을 지운 값으로 보내기. <b>고칠 파일</b>: <code>CommissionInputValidator</code>(새 브랜치에서). <b>완료 기준</b>: <code>Result</code>에 정리된 이름을 담고, <code>" 거실 "</code>을 넣으면 <code>"거실"</code>이 나오는 테스트 통과.</p>
+  <details><summary>힌트</summary>payload처럼 <code>Result</code>에 <code>name</code> 필드를 더하고 <code>ok()</code>에 넘긴다. 서버 규칙(64자)은 지운 뒤 길이로 센다.</details>
+  <details><summary>정답 방향</summary><code>String cleaned = name.strip();</code>(Android에선 API 33 미만이면 직접 공백을 건너뛰는 반복문) → 길이 검사 → <code>Result.ok(payload, cleaned)</code>.</details>
+</section>
+
+</main>
+</body>
+</html>

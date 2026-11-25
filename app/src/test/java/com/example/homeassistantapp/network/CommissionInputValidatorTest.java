@@ -154,4 +154,43 @@ public class CommissionInputValidatorTest {
     private static CommissionInputValidator.Result tcpVia(String payload, String serverHost) {
         return CommissionInputValidator.validate("TCP_DIY", "전등", payload, "MyWiFi", "pw", serverHost);
     }
+
+    @Test
+    public void reportsEveryField_firstStaysAsField() {
+        CommissionInputValidator.Result r = CommissionInputValidator.validate(
+                "MATTER", "", "12", repeat("a", 33), "p");
+        assertFalse(r.isValid());
+        assertEquals(3, r.errors.size());
+        assertTrue(r.errors.containsKey(CommissionInputValidator.Field.NAME));
+        assertTrue(r.errors.containsKey(CommissionInputValidator.Field.WIFI));
+        assertTrue(r.errors.containsKey(CommissionInputValidator.Field.PAYLOAD));
+        assertEquals(CommissionInputValidator.Field.NAME, r.field);
+        assertEquals(r.errors.get(CommissionInputValidator.Field.NAME), r.error);
+        assertNull(r.payload);
+    }
+
+    @Test
+    public void valid_hasNoErrors() {
+        CommissionInputValidator.Result r = matter("34970112332");
+        assertTrue(r.errors.isEmpty());
+        assertNull(r.field);
+    }
+
+    @Test
+    public void blankName_rejected() {
+        assertFalse(CommissionInputValidator.validate("MATTER", "   ", "34970112332", "w", "p").isValid());
+        assertFalse(CommissionInputValidator.validate("MATTER", "　", "34970112332", "w", "p").isValid());
+        assertFalse(CommissionInputValidator.validate("MATTER", " ", "34970112332", "w", "p").isValid());
+        assertTrue(CommissionInputValidator.validate("MATTER", " 거실 등 ", "34970112332", "w", "p").isValid());
+    }
+
+    @Test
+    public void ipv4_leadingZeroRejected() {
+        assertFalse(CommissionInputValidator.isIpv4("192.168.01.10"));
+        assertFalse(CommissionInputValidator.isIpv4("010.0.0.1"));
+        assertFalse(CommissionInputValidator.isIpv4("10.0.0.00"));
+        assertTrue(CommissionInputValidator.isIpv4("10.0.0.0"));
+        assertTrue(CommissionInputValidator.isIpv4("192.168.100.10"));
+        assertFalse(tcp("192.168.0.010").isValid());
+    }
 }

@@ -45,6 +45,7 @@ public final class SettingsInputValidator {
         for (int i = 0; i < v.length(); i++) {
             if (v.charAt(i) < '0' || v.charAt(i) > '9') return "포트는 숫자만 쓸 수 있어요.";
         }
+        if (v.length() > 1 && v.charAt(0) == '0') return "포트 앞에 0을 붙이지 말아 주세요(예: 8000).";
         int n = Integer.parseInt(v);
         if (n < 1 || n > 65535) return "포트는 1~65535 사이 숫자예요.";
         return null;

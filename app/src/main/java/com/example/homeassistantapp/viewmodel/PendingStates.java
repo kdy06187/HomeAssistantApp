@@ -1,6 +1,9 @@
 package com.example.homeassistantapp.viewmodel;
 
+import com.example.homeassistantapp.dto.Device;
+
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,6 +42,28 @@ final class PendingStates {
     /** 이 기기에 끝나지 않은 요청이 있으면 true. */
     boolean isPending(String deviceId) {
         return counts.containsKey(deviceId);
+    }
+
+    /**
+     * 새로 받은 목록에 진행 중인 요청 표시(LOADING·"켜는 중")를 이어 붙인다. 안 그러면 제어 중에 목록이 오면
+     * 잠금이 풀려 같은 기기에 명령이 겹친다. 실제 상태는 이미 remember로 기억해 두었다가 요청이 끝나면 보인다.
+     */
+    void carryOver(List<Device> fresh, List<Device> previous) {
+        if (fresh == null) return;
+        for (Device device : fresh) {
+            if (device == null || !isPending(device.getId())) continue;
+            device.setState(LOADING);
+            Device old = find(previous, device.getId());
+            if (old != null) device.setPendingCommand(old.getPendingCommand());
+        }
+    }
+
+    private static Device find(List<Device> devices, String id) {
+        if (devices == null || id == null) return null;
+        for (Device device : devices) {
+            if (device != null && id.equals(device.getId())) return device;
+        }
+        return null;
     }
 
     /** 목록을 새로 받았을 때처럼 진행 중인 요청과 상관없이 실제 상태를 알게 된 경우. */
