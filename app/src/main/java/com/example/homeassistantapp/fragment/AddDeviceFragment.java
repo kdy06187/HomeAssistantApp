@@ -24,7 +24,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.network.CommissionInputValidator;
 import com.example.homeassistantapp.network.ServerDefaults;
-import com.example.homeassistantapp.security.WifiPassword;
+import com.example.homeassistantapp.security.StoredSecret;
 import com.example.homeassistantapp.security.WifiPasswordStore;
 import com.example.homeassistantapp.view.QrPayload;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
@@ -67,6 +67,8 @@ public class AddDeviceFragment extends Fragment {
     public static void open(FragmentActivity activity) {
         FragmentManager fm = activity.getSupportFragmentManager();
         if (fm.isStateSaved() || fm.findFragmentById(R.id.fragmentContainer) instanceof AddDeviceFragment) return;
+        // 지난번에 쓰지 않은 스캔 값이 새 입력 화면에서 자동 제출되지 않게 비운다.
+        new ViewModelProvider(activity).get(QrScanResult.class).clear();
         fm.beginTransaction()
                 .setReorderingAllowed(true)
                 .replace(R.id.fragmentContainer, new AddDeviceFragment())
@@ -147,6 +149,15 @@ public class AddDeviceFragment extends Fragment {
         super.onResume();
         // 설정 탭에서 Wi-Fi를 저장하고 돌아왔을 수 있어 보일 때마다 다시 본다.
         renderWifiCard();
+    }
+
+    @Override
+    public void onDestroy() {
+        // 입력 화면을 아주 떠날 때(뒤로 스택에서 빠질 때) 남은 스캔 값을 비운다. 스캔 화면에 가려질 때는 그대로.
+        if (isRemoving() && getActivity() != null) {
+            new ViewModelProvider(requireActivity()).get(QrScanResult.class).clear();
+        }
+        super.onDestroy();
     }
 
     private boolean wifiReady() {
@@ -277,7 +288,7 @@ public class AddDeviceFragment extends Fragment {
 
     // 메모리에만 두고 등록 요청 본문으로만 보낸다.
     private String wifiPassword() {
-        WifiPassword saved = WifiPasswordStore.read(requireContext());
+        StoredSecret saved = WifiPasswordStore.read(requireContext());
         return saved.isUsable() ? saved.value : "";
     }
 

@@ -1,11 +1,17 @@
 package com.example.homeassistantapp.security;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 
-/** API 토큰 보관. 암호화는 SecretStore가 하고, 저장 위치·키 이름은 예전과 같아 기존 토큰을 그대로 읽는다. */
+/**
+ * API 토큰 보관. 암호문은 백업에서 빠지는 SecretPrefs에 둔다. 예전 버전은 HomeAssistantPrefs에 두었으므로
+ * 앱을 켤 때 암호문을 그대로 옮긴다(키 별칭이 같아 다시 암호화할 필요가 없다).
+ */
 public final class TokenStore {
-    private static final SecretStore STORE =
-            new SecretStore("HomeAssistantPrefs", "API_TOKEN_ENC", "home_assistant_api_token_key");
+    private static final String KEY_ALIAS = "home_assistant_api_token_key";
+    private static final String PREF_KEY = "API_TOKEN_ENC";
+    private static final String LEGACY_PREFS = "HomeAssistantPrefs";
+    private static final SecretStore STORE = new SecretStore(WifiPasswordStore.SECRET_PREFS, PREF_KEY, KEY_ALIAS);
 
     private TokenStore() {}
 
@@ -14,12 +20,21 @@ public final class TokenStore {
         return STORE.save(context, token);
     }
 
-    /** 없거나 복호화할 수 없으면 null. */
-    public static String load(Context context) {
-        return STORE.load(context);
+    public static StoredSecret read(Context context) {
+        boolean stored = STORE.has(context);
+        return StoredSecret.of(stored, stored ? STORE.load(context) : null);
     }
 
-    public static boolean hasToken(Context context) {
-        return STORE.has(context);
+    /** MainActivity가 시작할 때 부른다. */
+    public static PlainSecretMigration.Outcome migrateLegacy(Context context) {
+        SharedPreferences legacy = context.getSharedPreferences(LEGACY_PREFS, Context.MODE_PRIVATE);
+        return PlainSecretMigration.run(new PlainSecretMigration.Source() {
+            @Override public boolean has() { return legacy.contains(PREF_KEY); }
+            @Override public String get() { return legacy.getString(PREF_KEY, null); }
+            @Override public void remove() { legacy.edit().remove(PREF_KEY).commit(); }
+        }, new PlainSecretMigration.Target() {
+            @Override public boolean has() { return STORE.has(context); }
+            @Override public boolean save(String value) { return STORE.saveRaw(context, value); }
+        });
     }
 }

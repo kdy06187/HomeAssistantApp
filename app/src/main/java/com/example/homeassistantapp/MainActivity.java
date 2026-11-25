@@ -20,6 +20,7 @@ import com.example.homeassistantapp.fragment.SettingsFragment;
 import com.example.homeassistantapp.network.ConnectionState;
 import com.example.homeassistantapp.network.RetrofitClient;
 import com.example.homeassistantapp.network.ServerDefaults;
+import com.example.homeassistantapp.security.StoredSecret;
 import com.example.homeassistantapp.security.TokenStore;
 import com.example.homeassistantapp.security.WifiPasswordStore;
 import com.example.homeassistantapp.view.ConnectionBanner;
@@ -42,7 +43,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        // 예전 버전이 평문으로 둔 Wi-Fi 비밀번호를 암호화해 옮긴다. 실패하면 다음 실행에 다시 한다.
+        // 예전 버전이 둔 토큰 암호문·평문 Wi-Fi 비밀번호를 백업 제외 저장소로 옮긴다. 실패하면 다음 실행에 다시 한다.
+        TokenStore.migrateLegacy(this);
         WifiPasswordStore.migrateLegacy(this);
 
         SharedPreferences prefs = getSharedPreferences(ServerDefaults.PREFS_NAME, Context.MODE_PRIVATE);
@@ -50,7 +52,8 @@ public class MainActivity extends AppCompatActivity {
         String port = prefs.getString(ServerDefaults.KEY_SERVER_PORT, ServerDefaults.PORT);
 
         RetrofitClient.rebuildClient(ip, port);
-        RetrofitClient.setApiToken(TokenStore.load(this));
+        StoredSecret token = TokenStore.read(this);
+        RetrofitClient.setApiToken(token.state == StoredSecret.State.OK ? token.value : null);
         bottomNav = findViewById(R.id.bottomNavigation);
         banner = findViewById(R.id.connectionBanner);
         bannerText = findViewById(R.id.textConnectionBanner);

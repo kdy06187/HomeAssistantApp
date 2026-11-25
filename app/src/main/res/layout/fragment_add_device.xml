@@ -178,7 +178,9 @@
                         android:id="@+id/editCode"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="text"
+                        android:importantForAutofill="no"
+                        android:inputType="text|textNoSuggestions"
+                        android:saveEnabled="false"
                         android:maxLines="1" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>

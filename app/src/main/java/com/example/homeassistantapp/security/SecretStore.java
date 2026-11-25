@@ -35,8 +35,17 @@ public final class SecretStore {
         this.keyAlias = keyAlias;
     }
 
-    /** 디스크에 쓴 것까지 확인되면 true(옮기기 뒤 원본을 지워도 되는지 판단에 쓴다). */
+    /**
+     * 디스크에 쓴 것까지 확인되면 true(옮기기 뒤 원본을 지워도 되는지 판단에 쓴다).
+     * 키가 망가져 암호화가 실패하면 키를 지우고 한 번 다시 만들어 시도한다(이 칸의 옛 암호문은 어차피 못 푼다).
+     */
     public boolean save(Context context, String value) {
+        if (encryptAndSave(context, value)) return true;
+        deleteKey();
+        return encryptAndSave(context, value);
+    }
+
+    private boolean encryptAndSave(Context context, String value) {
         try {
             Cipher cipher = Cipher.getInstance(TRANSFORMATION);
             // Keystore 키는 IV를 직접 지정할 수 없어 cipher가 만든 IV를 함께 저장한다.
@@ -80,6 +89,29 @@ public final class SecretStore {
 
     public boolean has(Context context) {
         return prefs(context).contains(prefKey);
+    }
+
+    /** 암호문 그대로(저장 위치를 옮길 때만 쓴다. 같은 키 별칭이면 그대로 풀린다). */
+    public String loadRaw(Context context) {
+        return prefs(context).getString(prefKey, null);
+    }
+
+    public boolean saveRaw(Context context, String stored) {
+        return prefs(context).edit().putString(prefKey, stored).commit();
+    }
+
+    public boolean remove(Context context) {
+        return prefs(context).edit().remove(prefKey).commit();
+    }
+
+    private void deleteKey() {
+        try {
+            KeyStore keyStore = KeyStore.getInstance(KEYSTORE);
+            keyStore.load(null);
+            if (keyStore.containsAlias(keyAlias)) keyStore.deleteEntry(keyAlias);
+        } catch (Exception e) {
+            Log.e(TAG, "키 삭제 실패(" + prefKey + "): " + e.getClass().getSimpleName());
+        }
     }
 
     private SecretKey getOrCreateKey() throws Exception {

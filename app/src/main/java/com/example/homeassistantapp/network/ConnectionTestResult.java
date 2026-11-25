@@ -45,12 +45,8 @@ public final class ConnectionTestResult {
         return new ConnectionTestResult(Kind.UNREACHABLE, message);
     }
 
-    /**
-     * 첫 실행에는 지금 입력과 같은 값으로 테스트가 성공했을 때만 저장할 수 있다.
-     * testedInputs는 마지막으로 성공한 입력(없으면 null).
-     */
-    public static boolean canSave(boolean firstRun, String testedInputs, String currentInputs) {
-        if (!firstRun) return true;
-        return testedInputs != null && testedInputs.equals(currentInputs);
+    /** 첫 실행에는 지금 입력 그대로 테스트가 성공했을 때만 저장할 수 있다. */
+    public static boolean canSave(boolean firstRun, boolean passedForCurrentInput) {
+        return !firstRun || passedForCurrentInput;
     }
 }

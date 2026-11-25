@@ -24,7 +24,7 @@ import com.example.homeassistantapp.network.ServerDefaults;
 import com.example.homeassistantapp.network.SettingsInputValidator;
 import com.example.homeassistantapp.security.TokenFormat;
 import com.example.homeassistantapp.security.TokenStore;
-import com.example.homeassistantapp.security.WifiPassword;
+import com.example.homeassistantapp.security.StoredSecret;
 import com.example.homeassistantapp.security.WifiPasswordStore;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.color.MaterialColors;
@@ -48,8 +48,10 @@ public class SettingsFragment extends Fragment {
     private Button btnTestConnection;
     private TextView textTestResult;
     private Call<DeviceListResponse> testCall;
-    // 마지막으로 연결 테스트가 성공한 입력(메모리에만). 첫 실행에는 이 값과 같아야 저장할 수 있다.
-    private String testedInputs;
+    // 주소·토큰 칸을 고칠 때마다 1씩 오른다. 테스트가 성공한 순간의 번호와 같아야 첫 실행 저장이 된다
+    // (토큰 문자열을 따로 들고 있지 않으려고 번호만 비교한다).
+    private int inputVersion;
+    private int passedVersion = -1;
     private SharedPreferences prefs;
 
     @Nullable
@@ -73,7 +75,8 @@ public class SettingsFragment extends Fragment {
         for (TextInputLayout layout : fieldLayouts.values()) clearErrorOnEdit(layout);
         btnTestConnection = view.findViewById(R.id.btnTestConnection);
         textTestResult = view.findViewById(R.id.textTestResult);
-        testedInputs = null;
+        inputVersion = 0;
+        passedVersion = -1;
 
         prefs = requireActivity().getSharedPreferences(ServerDefaults.PREFS_NAME, Context.MODE_PRIVATE);
 
@@ -89,7 +92,8 @@ public class SettingsFragment extends Fragment {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override public void afterTextChanged(Editable s) {
-                if (testedInputs != null && !testedInputs.equals(currentInputs())) textTestResult.setVisibility(View.GONE);
+                inputVersion++;
+                textTestResult.setVisibility(View.GONE);
                 renderSaveButton();
             }
         };
@@ -107,25 +111,33 @@ public class SettingsFragment extends Fragment {
         return view;
     }
 
+    // 첫 실행 = 토큰을 저장한 적 없음. 저장됐지만 못 읽으면(UNREADABLE) 첫 실행은 아니지만 다시 입력해야 한다.
     private boolean isFirstRun() {
-        return !TokenStore.hasToken(requireContext());
+        return TokenStore.read(requireContext()).state == StoredSecret.State.NONE;
+    }
+
+    private boolean hasUsableToken() {
+        return TokenStore.read(requireContext()).state == StoredSecret.State.OK;
     }
 
     private void renderTokenState() {
         // 저장된 토큰은 화면에 다시 채우지 않는다. 칸이 비어 있으면 기존 토큰을 유지한다.
-        tilApiToken.setHint(isFirstRun() ? "API 토큰 (필수)" : "API 토큰 (저장됨 · 바꿀 때만 입력)");
-        cardFirstRun.setVisibility(isFirstRun() ? View.VISIBLE : View.GONE);
+        StoredSecret.State state = TokenStore.read(requireContext()).state;
+        tilApiToken.setHint(state == StoredSecret.State.OK ? "API 토큰 (저장됨 · 바꿀 때만 입력)" : "API 토큰 (필수)");
+        tilApiToken.setHelperText(state == StoredSecret.State.UNREADABLE
+                ? "저장된 토큰을 읽을 수 없어요. 다시 입력해 주세요." : null);
+        cardFirstRun.setVisibility(state == StoredSecret.State.NONE ? View.VISIBLE : View.GONE);
         renderSaveButton();
     }
 
     // 저장된 비밀번호는 토큰처럼 화면에 다시 채우지 않는다.
     private void renderWifiPasswordState() {
         TextInputLayout layout = fieldLayouts.get(SettingsInputValidator.Field.WIFI_PASSWORD);
-        WifiPassword saved = WifiPasswordStore.read(requireContext());
-        if (saved.state == WifiPassword.State.OK) {
+        StoredSecret saved = WifiPasswordStore.read(requireContext());
+        if (saved.state == StoredSecret.State.OK) {
             layout.setHint("비밀번호 (저장됨 · 바꿀 때만 입력)");
             layout.setHelperText(null);
-        } else if (saved.state == WifiPassword.State.UNREADABLE) {
+        } else if (saved.state == StoredSecret.State.UNREADABLE) {
             layout.setHint("비밀번호");
             layout.setHelperText("저장된 비밀번호를 읽을 수 없어요. 다시 입력해 주세요.");
         } else {
@@ -137,11 +149,7 @@ public class SettingsFragment extends Fragment {
     private void renderSaveButton() {
         boolean firstRun = isFirstRun();
         btnSaveSettings.setText(firstRun ? "저장하고 시작하기" : "변경사항 저장");
-        btnSaveSettings.setEnabled(ConnectionTestResult.canSave(firstRun, testedInputs, currentInputs()));
-    }
-
-    private String currentInputs() {
-        return text(etServerIp).trim() + "\n" + text(etServerPort).trim() + "\n" + TokenFormat.normalize(text(etApiToken));
+        btnSaveSettings.setEnabled(ConnectionTestResult.canSave(firstRun, passedVersion == inputVersion));
     }
 
     /** 저장하지 않고 입력한 주소·토큰으로 E1을 한 번 부른다. 토큰 칸이 비었으면 저장된 토큰을 쓴다. */
@@ -150,10 +158,10 @@ public class SettingsFragment extends Fragment {
         String port = text(etServerPort).trim();
         String typed = TokenFormat.normalize(text(etApiToken));
         Map<SettingsInputValidator.Field, String> errors = SettingsInputValidator.validate(
-                ip, port, typed, !isFirstRun(), "", "");
+                ip, port, typed, hasUsableToken(), "", "");
         if (showErrors(errors)) return;
         String token = typed.isEmpty() ? RetrofitClient.currentApiToken() : typed;
-        String inputs = currentInputs();
+        int startedVersion = inputVersion;
 
         btnTestConnection.setEnabled(false);
         btnTestConnection.setText("연결 테스트 중…");
@@ -161,28 +169,29 @@ public class SettingsFragment extends Fragment {
         try {
             testCall = RetrofitClient.createTestApi(ip, port, token).getDeviceList();
         } catch (IllegalArgumentException e) {
-            showTestResult(ConnectionTestResult.fromFailure(e), inputs);
+            showTestResult(ConnectionTestResult.fromFailure(e), startedVersion);
             return;
         }
         testCall.enqueue(new Callback<DeviceListResponse>() {
             @Override
             public void onResponse(Call<DeviceListResponse> call, Response<DeviceListResponse> response) {
-                showTestResult(ConnectionTestResult.fromHttp(response.code()), inputs);
+                showTestResult(ConnectionTestResult.fromHttp(response.code()), startedVersion);
             }
 
             @Override
             public void onFailure(Call<DeviceListResponse> call, Throwable t) {
                 if (call.isCanceled()) return;
-                showTestResult(ConnectionTestResult.fromFailure(t), inputs);
+                showTestResult(ConnectionTestResult.fromFailure(t), startedVersion);
             }
         });
     }
 
-    private void showTestResult(ConnectionTestResult result, String inputs) {
+    private void showTestResult(ConnectionTestResult result, int startedVersion) {
         if (getView() == null) return;
         btnTestConnection.setEnabled(true);
         btnTestConnection.setText("연결 테스트");
-        testedInputs = result.isSuccess() ? inputs : null;
+        // 테스트 중에 입력을 바꿨으면(되돌렸더라도) 이 결과로는 저장을 풀지 않는다.
+        passedVersion = result.isSuccess() && startedVersion == inputVersion ? startedVersion : -1;
         textTestResult.setVisibility(View.VISIBLE);
         textTestResult.setText(result.message);
         textTestResult.setTextColor(MaterialColors.getColor(textTestResult, result.isSuccess()
@@ -211,9 +220,19 @@ public class SettingsFragment extends Fragment {
 
         boolean firstRun = isFirstRun();
         Map<SettingsInputValidator.Field, String> errors = SettingsInputValidator.validate(
-                ip, port, token, !firstRun, ssid, password);
+                ip, port, token, hasUsableToken(), ssid, password);
         if (showErrors(errors)) return;
-        if (!ConnectionTestResult.canSave(firstRun, testedInputs, currentInputs())) return;
+        if (!ConnectionTestResult.canSave(firstRun, passedVersion == inputVersion)) return;
+
+        // 토큰을 먼저 저장한다. 실패하면 아무것도 바꾸지 않는다(주소만 바뀐 반쪽 저장 방지).
+        if (!token.isEmpty()) {
+            if (!TokenStore.save(requireContext(), token)) {
+                tilApiToken.setError("토큰을 안전하게 저장하지 못했어요. 다시 시도해 주세요.");
+                return;
+            }
+            RetrofitClient.setApiToken(token);
+            etApiToken.setText("");
+        }
 
         // 비밀번호 칸이 비어 있으면 저장된 비밀번호를 그대로 둔다.
         if (!password.isEmpty() && !WifiPasswordStore.save(requireContext(), password)) {
@@ -231,15 +250,6 @@ public class SettingsFragment extends Fragment {
                 .apply();
 
         RetrofitClient.rebuildClient(ip, port);
-
-        if (!token.isEmpty()) {
-            if (!TokenStore.save(requireContext(), token)) {
-                tilApiToken.setError("토큰을 안전하게 저장하지 못했어요. 다시 시도해 주세요.");
-                return;
-            }
-            RetrofitClient.setApiToken(token);
-            etApiToken.setText("");
-        }
         renderTokenState();
 
         // 저장한 값이 또 틀리면 다시 알려 줘야 하므로, 저장할 때마다 401 안내를 되살린다.

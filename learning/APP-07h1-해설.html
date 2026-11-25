@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-07h-1 해설 — 비밀값 보관 보완</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07h-1 해설 — 비밀값 보관 보완</h1>
+  <p>ui-1 브랜치 · UI 1차 보완 07h ① · U1·U6~U11·U28 · 2026-11-25</p>
+</header>
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>토큰도 SecretPrefs로(U28·U7)</b>: 토큰 암호문을 백업에 들어가는 <code>HomeAssistantPrefs</code>에서 백업 제외 <code>SecretPrefs</code>로 옮긴다. 키 별칭이 같아 암호문을 그대로 복사하고, 복사가 디스크에 써진 뒤에만 옛 칸을 지운다.</li>
+    <li><b>상태 하나(U1)</b>: 토큰·Wi-Fi 비밀번호 모두 <code>StoredSecret</code>(없음 / 저장됨 / 읽을 수 없음). 첫 실행 = 토큰 없음. 읽을 수 없으면 "다시 입력해 주세요" 안내와 함께 토큰을 꼭 입력하게 한다(시작 탭·설정이 같은 기준).</li>
+    <li><b>이전 규칙(U9)</b>: 새 저장소에 이미 값이 있으면 옛 값으로 덮지 않고 옛 값만 지운다. 빈 값은 옮기지 않고 "없음". 암호화가 실패하면 평문을 백업 제외 파일의 대기 칸으로 옮겨 둔다(U7).</li>
+    <li><b>키 다시 만들기(U8)</b>: 암호화가 실패하면 그 칸의 Keystore 키를 지우고 한 번 다시 만든다.</li>
+    <li><b>입력칸(U6)</b>: 토큰·Wi-Fi 비밀번호·페어링 코드 칸이 화면 상태 저장(Bundle)·자동완성에 들어가지 않게, 코드 칸은 키보드 추천 학습도 끈다.</li>
+    <li><b>QR 잔여값(U10)</b>: 기기 추가 화면을 새로 열 때·완전히 떠날 때 남은 스캔 값을 비운다.</li>
+    <li><b>테스트 통과 표시(U11·U30·U22)</b>: 토큰 문자열을 들고 있지 않고 "입력 번호"만 비교한다. 테스트 중에 입력을 바꾸면(되돌려도) 통과로 치지 않는다. 저장은 토큰을 먼저 하고 실패하면 아무것도 바꾸지 않는다.</li>
+  </ul>
+</section>
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림 — 앱 시작 때 옮기기</h2>
+  <svg class="flow" viewBox="0 0 760 200" role="img" aria-label="옛 칸에 값이 있으면, 새 칸에 이미 값이 있는지 보고, 있으면 옛 값만 지우고, 없으면 빈 값인지 보고, 저장 성공 뒤 옛 값을 지우는 흐름">
+    <rect x="10" y="30" width="140" height="50" rx="10" class="hl"/><text x="80" y="60" text-anchor="middle">옛 칸에 값?</text>
+    <rect x="190" y="30" width="150" height="50" rx="10"/><text x="265" y="60" text-anchor="middle">새 칸에 이미 값?</text>
+    <rect x="380" y="30" width="130" height="50" rx="10"/><text x="445" y="60" text-anchor="middle">빈 값?</text>
+    <rect x="550" y="30" width="200" height="50" rx="10"/><text x="650" y="52" text-anchor="middle">새 칸 저장(commit)</text><text x="650" y="70" text-anchor="middle" class="small">성공 → 옛 칸 삭제</text>
+    <rect x="190" y="130" width="150" height="40" rx="10"/><text x="265" y="155" text-anchor="middle">옛 칸만 삭제</text>
+    <rect x="380" y="130" width="130" height="40" rx="10"/><text x="445" y="155" text-anchor="middle">삭제 = 없음</text>
+    <rect x="550" y="130" width="200" height="40" rx="10"/><text x="650" y="155" text-anchor="middle">실패 → 남겨 두고 재시도</text>
+    <line x1="150" y1="55" x2="190" y2="55"/><line x1="340" y1="55" x2="380" y2="55"/><line x1="510" y1="55" x2="550" y2="55"/>
+    <path d="M265,80 L265,130"/><path d="M445,80 L445,130"/><path d="M650,80 L650,130" class="no"/>
+  </svg>
+</section>
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+<pre><code>if (target.has()) { legacy.remove(); return Outcome.DISCARDED_STALE; }
+if (value == null || value.isEmpty()) { legacy.remove(); return Outcome.DISCARDED_EMPTY; }
+if (!target.save(value)) return Outcome.KEPT_FOR_RETRY;
+legacy.remove();</code></pre>
+  <div class="why">
+    <div><b>왜 "이미 있으면 덮지 않음"</b> 평문 삭제(<code>commit</code>)가 실패해 옛 값이 남은 채로 사용자가 새 비밀번호를 저장했다면, 다음 실행의 이전이 새 값을 옛 값으로 덮는다. 새 칸이 있으면 그쪽이 최신이다.</div>
+  </div>
+<pre><code>if (encryptAndSave(context, value)) return true;
+deleteKey();
+return encryptAndSave(context, value);</code></pre>
+  <div class="why"><div><b>왜 한 번만</b> 키가 망가진 경우는 새 키로 풀리지만, 기기 문제라면 계속 실패한다. 한 번 다시 해 보고 안 되면 화면이 "저장하지 못했어요"를 보인다.</div></div>
+</section>
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b>saveEnabled="false"</b>: 화면 회전·백그라운드 때 입력칸 글자를 상태 Bundle에 저장하지 않는다(비밀값이 디스크에 남지 않게).</li>
+    <li><b>textNoSuggestions</b>: 키보드가 입력을 학습·추천하지 않게 한다.</li>
+  </ul>
+</section>
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol><li>토큰 이전에서 다시 암호화하지 않고 암호문을 복사해도 되는 이유는?</li><li>테스트 중에 토큰을 지웠다 다시 같은 값으로 쳤다. 저장 버튼은?</li></ol>
+  <details><summary>정답 보기</summary><ol><li>같은 Keystore 키 별칭으로 풀기 때문. 저장 위치(prefs 파일)만 바뀐다.</li><li>잠긴 채. 입력 번호가 올라가서 테스트 시작 때 번호와 다르다. 다시 테스트해야 한다.</li></ol></details>
+</section>
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <p>새 브랜치에서 <code>PlainSecretMigrationTest</code>에 "새 칸이 있고 옛 값이 빈 값" 경우를 더해 보세요. 어떤 결과가 맞을까요? <b>완료 기준</b>: 결과를 예측하고 테스트로 확인.</p>
+  <details><summary>정답</summary>DISCARDED_STALE. 새 칸 확인이 빈 값 확인보다 먼저다.</details>
+</section>
+
+</main>
+</body>
+</html>

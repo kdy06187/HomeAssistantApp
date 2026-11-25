@@ -35,9 +35,8 @@ public class ConnectionTestResultTest {
 
     @Test
     public void firstRun_needsMatchingSuccessfulTest() {
-        assertTrue(ConnectionTestResult.canSave(false, null, "a"));
-        assertFalse(ConnectionTestResult.canSave(true, null, "a"));
-        assertTrue(ConnectionTestResult.canSave(true, "a", "a"));
-        assertFalse(ConnectionTestResult.canSave(true, "a", "b"));
+        assertTrue(ConnectionTestResult.canSave(false, false));
+        assertFalse(ConnectionTestResult.canSave(true, false));
+        assertTrue(ConnectionTestResult.canSave(true, true));
     }
 }
