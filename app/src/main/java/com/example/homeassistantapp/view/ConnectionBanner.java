@@ -18,7 +18,7 @@ public final class ConnectionBanner {
         this.actionLabel = actionLabel;
     }
 
-    /** onSettingsTab이면 이미 고칠 곳에 있으므로 "설정으로" 버튼을 숨긴다(문구는 계속 보인다). */
+    /** onSettingsTab(설정 화면이 맨 위에 보임)이면 이미 고칠 곳에 있으므로 "설정으로" 버튼을 숨긴다(문구는 계속 보인다). */
     public static ConnectionBanner of(ConnectionState.Kind kind, boolean onSettingsTab) {
         if (kind == ConnectionState.Kind.UNREACHABLE) {
             return new ConnectionBanner(true, "서버에 연결할 수 없어요 · Wi-Fi와 서버 주소를 확인해 주세요",

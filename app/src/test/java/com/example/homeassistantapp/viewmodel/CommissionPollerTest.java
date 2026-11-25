@@ -39,9 +39,9 @@ public class CommissionPollerTest {
     }
 
     @Test
-    public void jobNotFoundOrUnauthorized_isLost() {
+    public void jobNotFound_isLost_unauthorized_pauses() {
         assertEquals(CommissionPoller.Next.LOST, CommissionPoller.afterResponse(4_000, 404, null));
-        assertEquals(CommissionPoller.Next.LOST, CommissionPoller.afterResponse(4_000, 401, null));
+        assertEquals(CommissionPoller.Next.PAUSED, CommissionPoller.afterResponse(4_000, 401, null));
     }
 
     @Test

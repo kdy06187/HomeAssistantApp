@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-07h-2 해설 — 연결 상태 한 곳으로</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07h-2 해설 — 연결 상태 한 곳으로</h1>
+  <p>ui-1 브랜치 · UI 1차 보완 07h ② · U27·U18·U19·U2·U3·U21 (+U31) · 2026-11-25</p>
+</header>
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>상태 하나(U27·U19)</b>: <code>RetrofitClient</code>에 흩어져 있던 "연결 상태 · 안내 대기 플래그 · 401 신호"를 <code>ConnectionState</code> 하나로 합쳤다. 상태를 바꾸는 함수가 "토큰 오류로 막 들어갔다"(<code>ENTERED_TOKEN_ERROR</code>)를 같은 잠금 안에서 돌려주고, 1회 안내 플래그도 그 안에서 함께 바뀐다.</li>
+    <li><b>세대 번호(U18)</b>: 설정을 저장해 클라이언트를 다시 만들면 번호가 오른다. 옛 클라이언트의 늦은 401·실패는 번호가 달라 무시된다.</li>
+    <li><b>화면(U2·U3)</b>: 설정 화면은 연결 상태를 관찰해 이 탭에 있는 동안 401이 와도 토큰 칸에 오류를 띄운다. 배너의 "설정으로" 버튼은 설정 탭 위에 전체 화면이 열려 있으면 보이고, 누르면 그 화면을 닫는다.</li>
+    <li><b>등록 확인 중 401(U21)</b>: 폴링을 "확인 불가"로 끝내지 않고 멈춘다(<code>PAUSED</code>). 진행 화면은 그대로, 토큰을 저장하면 같은 작업을 이어서 묻는다.</li>
+    <li><b>중복 LiveData 없앰(U31)</b>: <code>commissioning</code>(참/거짓)을 지우고 버튼 글자는 <code>commissionStatus.isActive()</code>로 정한다.</li>
+  </ul>
+  <div class="table-wrap"><table>
+    <tr><th>파일</th><th>역할</th><th>변경 요약</th></tr>
+    <tr><td><code>network/ConnectionState</code></td><td>연결 상태 기계</td><td>세대 번호, <code>Change</code> 결과, 1회 안내 플래그</td></tr>
+    <tr><td><code>network/RetrofitClient</code></td><td>클라이언트 보관</td><td>플래그·신호 LiveData 삭제, 세대별 감시자 <code>listenerFor</code></td></tr>
+    <tr><td><code>MainActivity</code></td><td>배너·탭</td><td>상태 관찰 하나로 안내, <code>isSettingsShown</code>·<code>openSettings</code></td></tr>
+    <tr><td><code>fragment/SettingsFragment</code></td><td>설정</td><td>상태 관찰로 토큰 칸 오류, 저장 뒤 등록 확인 재개</td></tr>
+    <tr><td><code>viewmodel/CommissionPoller</code>·<code>DeviceViewModel</code></td><td>등록 폴링</td><td>401 → <code>PAUSED</code>, <code>resumeCommissionPolling</code>, <code>commissioning</code> 삭제</td></tr>
+    <tr><td><code>HomeFragment</code>·<code>DeviceFragment</code></td><td>추가 버튼</td><td>버튼 글자를 등록 상태로</td></tr>
+  </table></div>
+</section>
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림 — 401 하나가 지나가는 길</h2>
+  <svg class="flow" viewBox="0 0 760 230" role="img" aria-label="OkHttp 응답이 인터셉터를 거쳐 세대 번호를 확인하고, 같으면 상태를 바꾼 뒤 메인 스레드로 최신 값을 내보내고, MainActivity와 SettingsFragment가 관찰하는 흐름">
+    <rect x="10" y="20" width="150" height="50" rx="10"/><text x="85" y="42" text-anchor="middle">OkHttp 응답 401</text><text x="85" y="60" text-anchor="middle" class="small">세대 2 클라이언트</text>
+    <rect x="200" y="20" width="170" height="50" rx="10"/><text x="285" y="42" text-anchor="middle">ConnectionState</text><text x="285" y="60" text-anchor="middle" class="small">onResponse(2, 401)</text>
+    <rect x="410" y="20" width="160" height="50" rx="10" class="hl"/><text x="490" y="42" text-anchor="middle">TOKEN_ERROR</text><text x="490" y="60" text-anchor="middle" class="small">안내 플래그 = 참</text>
+    <rect x="600" y="20" width="150" height="50" rx="10"/><text x="675" y="42" text-anchor="middle">메인 스레드</text><text x="675" y="60" text-anchor="middle" class="small">최신 값 LiveData</text>
+    <rect x="460" y="140" width="140" height="60" rx="10"/><text x="530" y="165" text-anchor="middle">MainActivity</text><text x="530" y="183" text-anchor="middle" class="small">배너 + 1회 안내</text>
+    <rect x="620" y="140" width="130" height="60" rx="10"/><text x="685" y="165" text-anchor="middle">Settings</text><text x="685" y="183" text-anchor="middle" class="small">토큰 칸 오류</text>
+    <rect x="200" y="140" width="170" height="60" rx="10"/><text x="285" y="165" text-anchor="middle">세대 1(옛) 결과</text><text x="285" y="183" text-anchor="middle" class="small">번호가 달라 NONE</text>
+    <line x1="160" y1="45" x2="200" y2="45"/><line x1="370" y1="45" x2="410" y2="45"/><line x1="570" y1="45" x2="600" y2="45"/>
+    <path d="M675,70 L675,105 L530,105 L530,140"/><path d="M675,105 L685,105 L685,140"/>
+    <path d="M285,140 L285,70" class="no"/>
+  </svg>
+</section>
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+  <h3>① 확인과 설정을 한 잠금 안에서</h3>
+  <div class="ba">
+    <div class="before"><div class="label">before (RetrofitClient)</div>
+<pre><code>if (!connection.onResponse(code)) return;
+publishLatest();
+if (connection.get() == TOKEN_ERROR) {
+    unauthorizedPending.set(true);
+    unauthorizedSignal.postValue(true);
+}</code></pre></div>
+    <div class="after"><div class="label">after (ConnectionState)</div>
+<pre><code>private Change set(Kind next) {
+    if (next == kind) return Change.NONE;
+    boolean entered = next == Kind.TOKEN_ERROR;
+    kind = next;
+    tokenNoticePending = entered;
+    return entered ? ENTERED_TOKEN_ERROR : CHANGED;
+}</code></pre></div>
+  </div>
+  <div class="why">
+    <div><b>무엇을</b> 상태 변경과 "안내할 것이 있다" 표시를 synchronized 메서드 하나 안에서 같이 바꾼다.</div>
+    <div><b>왜</b> before는 상태를 바꾼 뒤 잠금 밖에서 <code>get()</code>을 다시 읽었다. 그 사이 다른 스레드나 설정 저장이 끼어들면 안내가 두 번 나가거나, 저장 직후 이미 풀린 오류로 설정 탭에 끌려갈 수 있었다.</div>
+    <div class="drop"><b>빼면</b> 토큰 오류가 풀린 뒤에도 플래그가 남아 엉뚱한 때 안내가 뜬다(after는 풀리면 플래그도 내린다).</div>
+  </div>
+  <h3>② 세대 번호</h3>
+<pre><code>.addInterceptor(new ConnectionStateInterceptor(listenerFor(connection.nextGeneration())))
+
+public synchronized Change onResponse(int fromGeneration, int httpCode) {
+    if (fromGeneration != generation) return Change.NONE;
+    ...</code></pre>
+  <div class="why">
+    <div><b>왜</b> 저장 전 틀린 토큰으로 보낸 요청이 저장 뒤에 401로 돌아오면, 새 토큰이 맞아도 배너가 다시 "토큰 오류"가 됐다. 감시자가 자기 번호를 들고 있으면 옛 클라이언트 결과를 걸러 낼 수 있다.</div>
+    <div class="drop"><b>대안</b> 옛 클라이언트의 요청을 모두 취소(<code>dispatcher().cancelAll()</code>)할 수도 있지만, 진행 중인 등록 확인까지 끊긴다. 번호 비교가 더 좁고 안전하다.</div>
+  </div>
+  <h3>③ 등록 확인 중 401은 "멈춤"</h3>
+<pre><code>if (httpCode == 401) return Next.PAUSED;   // 결과 없이 멈춤
+...
+case PAUSED:
+    pollRunnable = null;
+    pausedJobId = jobId;                    // 저장 뒤 resumeCommissionPolling()</code></pre>
+  <div class="why">
+    <div><b>왜</b> 예전엔 401을 "작업 없어짐"으로 보고 목록을 다시 받았다(또 401) → "확인 불가" 결과까지 떴다. 실제로 등록은 서버에서 계속 진행 중일 수 있다. 토큰만 고치면 같은 작업 ID로 결과를 알 수 있다.</div>
+  </div>
+</section>
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b>원자적(atomic)</b>: 여러 단계를 다른 스레드가 끼어들 수 없게 한 번에 하는 것.</li>
+    <li><b>세대 번호(generation)</b>: 무언가를 새로 만들 때마다 올리는 번호. 옛것이 보낸 소식을 알아보는 데 쓴다.</li>
+    <li><b>LiveData 재전달</b>: 화면 회전으로 관찰자가 다시 붙으면 마지막 값을 또 준다. 그래서 "1번만" 할 일은 따로 플래그로 관리한다.</li>
+    <li><b>백스택(back stack)</b>: 뒤로 가기로 닫을 화면 쌓음. 0개면 탭 화면이 맨 위에 보인다.</li>
+  </ul>
+</section>
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol>
+    <li>화면을 돌렸더니 <code>MainActivity</code> 관찰자가 TOKEN_ERROR를 다시 받았다. 토스트가 또 뜰까?</li>
+    <li>설정 탭 위에 기기 상세가 열려 있다. 배너 "설정으로"를 누르면 왜 <code>setSelectedItemId</code>가 아니라 백스택을 비울까?</li>
+    <li>401 다음 곧바로 200이 와서 메인 스레드에는 OK만 전달됐다. 안내는?</li>
+  </ol>
+  <details><summary>정답 보기</summary><ol>
+    <li>안 뜬다. <code>consumeTokenNotice()</code>가 처음 한 번만 true.</li>
+    <li>이미 선택된 탭을 다시 선택하면 선택 콜백이 오지 않아 아무 일도 안 일어난다. 위의 전체 화면만 닫으면 설정이 보인다.</li>
+    <li>없다. 200으로 풀릴 때 플래그도 내려간다(<code>tokenNoticePending = false</code>).</li>
+  </ol></details>
+</section>
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <p><b>목표</b>: "닿지 않음"에 들어간 순간에도 1번만 진동을 주고 싶다. <b>고칠 파일</b>: <code>ConnectionState</code>(새 브랜치나 <code>learning/exercise-connection/</code> 사본에서). <b>완료 기준</b>: <code>Change.ENTERED_UNREACHABLE</code>을 더하고, 실패가 두 번 와도 한 번만 그 값을 돌려주는 테스트 통과.</p>
+  <details><summary>힌트</summary><code>set()</code>에서 <code>next == Kind.UNREACHABLE</code>인지 보고 돌려줄 값을 고른다. 같은 상태면 이미 NONE이 나간다.</details>
+  <details><summary>정답</summary><pre><code>if (next == Kind.TOKEN_ERROR) return Change.ENTERED_TOKEN_ERROR;
+if (next == Kind.UNREACHABLE) return Change.ENTERED_UNREACHABLE;
+return Change.CHANGED;</code></pre></details>
+</section>
+
+</main>
+</body>
+</html>

@@ -15,9 +15,11 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.dto.DeviceListResponse;
+import com.example.homeassistantapp.network.ConnectionState;
 import com.example.homeassistantapp.network.ConnectionTestResult;
 import com.example.homeassistantapp.network.RetrofitClient;
 import com.example.homeassistantapp.network.ServerDefaults;
@@ -26,6 +28,7 @@ import com.example.homeassistantapp.security.TokenFormat;
 import com.example.homeassistantapp.security.TokenStore;
 import com.example.homeassistantapp.security.StoredSecret;
 import com.example.homeassistantapp.security.WifiPasswordStore;
+import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.textfield.TextInputEditText;
@@ -103,12 +106,18 @@ public class SettingsFragment extends Fragment {
         renderTokenState();
         renderWifiPasswordState();
 
-        // 401로 이 탭에 왔으면 무엇을 고쳐야 하는지 토큰 칸에 바로 보인다.
-        if (RetrofitClient.isTokenRejected()) {
+        return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        // 401로 이 탭에 왔거나, 이 탭에 있는 동안 401이 오면 무엇을 고쳐야 하는지 토큰 칸에 바로 보인다.
+        RetrofitClient.getConnectionState().observe(getViewLifecycleOwner(), kind -> {
+            if (kind != ConnectionState.Kind.TOKEN_ERROR) return;
             tilApiToken.setError("서버가 이 토큰을 거절했어요. 새 토큰을 입력해 주세요.");
             etApiToken.requestFocus();
-        }
-        return view;
+        });
     }
 
     // 첫 실행 = 토큰을 저장한 적 없음. 저장됐지만 못 읽으면(UNREADABLE) 첫 실행은 아니지만 다시 입력해야 한다.
@@ -254,6 +263,8 @@ public class SettingsFragment extends Fragment {
 
         // 저장한 값이 또 틀리면 다시 알려 줘야 하므로, 저장할 때마다 401 안내를 되살린다.
         RetrofitClient.onSettingsSaved();
+        // 토큰 오류로 멈춘 등록 확인이 있으면 새 설정으로 이어서 확인한다.
+        new ViewModelProvider(requireActivity()).get(DeviceViewModel.class).resumeCommissionPolling();
         Toast.makeText(getContext(), "설정을 저장했어요.", Toast.LENGTH_SHORT).show();
         // 첫 실행이면 연결을 확인했으니 바로 홈으로 간다.
         if (firstRun) {

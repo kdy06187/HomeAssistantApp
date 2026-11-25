@@ -16,8 +16,10 @@ final class CommissionPoller {
         POLL_AGAIN,
         SUCCEEDED,
         FAILED,
-        /** 작업이 없어짐(서버 재시작 등) 또는 인증 실패: 멈추고 목록으로 확인 */
+        /** 작업이 없어짐(서버 재시작 등): 멈추고 목록으로 확인 */
         LOST,
+        /** 토큰 오류: 결과 없이 멈췄다가 토큰을 다시 저장하면 같은 작업을 이어서 묻는다 */
+        PAUSED,
         /** 상한 초과: 멈추고 목록으로 확인 */
         TIMED_OUT
     }
@@ -30,7 +32,8 @@ final class CommissionPoller {
             if (CommissionJobResponse.SUCCEEDED.equals(body.state)) return Next.SUCCEEDED;
             if (CommissionJobResponse.FAILED.equals(body.state)) return Next.FAILED;
         }
-        if (httpCode == 404 || httpCode == 401) return Next.LOST;
+        if (httpCode == 401) return Next.PAUSED;
+        if (httpCode == 404) return Next.LOST;
         return continueOrTimeOut(elapsedMs);
     }
 

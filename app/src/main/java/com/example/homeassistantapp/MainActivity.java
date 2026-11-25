@@ -61,7 +61,10 @@ public class MainActivity extends AppCompatActivity {
         FragmentManager fragmentManager = getSupportFragmentManager();
 
         // 상세는 전체 화면이라 열려 있는 동안 하단 탭을 숨긴다.
-        fragmentManager.addOnBackStackChangedListener(() -> syncBottomNav(bottomNav));
+        fragmentManager.addOnBackStackChangedListener(() -> {
+            syncBottomNav(bottomNav);
+            renderBanner(RetrofitClient.getConnectionState().getValue());
+        });
         syncBottomNav(bottomNav);
 
         bottomNav.setOnItemSelectedListener(item -> {
@@ -85,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
                         .replace(R.id.fragmentContainer, selectedFragment)
                         .commit();
             }
+            // 선택 표시는 이 콜백이 끝난 뒤 바뀌므로 아직 isSettingsShown을 쓸 수 없다.
             renderBanner(RetrofitClient.getConnectionState().getValue(), itemId == R.id.nav_settings);
             return true;
         });
@@ -146,21 +150,37 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // 탭을 옮겨도 고칠 때까지 보이는 배너. 자동 이동·토스트는 토큰 오류로 바뀐 순간 1번만.
-        RetrofitClient.getConnectionState().observe(this,
-                kind -> renderBanner(kind, bottomNav.getSelectedItemId() == R.id.nav_settings));
-
-        RetrofitClient.getUnauthorizedSignal().observe(this, signal -> {
-            if (!RetrofitClient.consumeUnauthorized()) return;
+        // 탭을 옮겨도 고칠 때까지 보이는 배너. 자동 이동·토스트는 토큰 오류로 바뀐 순간 1번만
+        // (회전으로 관찰자가 다시 붙어도 consumeTokenNotice가 false라 되풀이하지 않는다).
+        RetrofitClient.getConnectionState().observe(this, kind -> {
+            renderBanner(kind);
+            if (kind != ConnectionState.Kind.TOKEN_ERROR || !RetrofitClient.consumeTokenNotice()) return;
             Toast.makeText(this, "API 토큰이 맞지 않습니다. 설정에서 다시 입력해 주세요.", Toast.LENGTH_LONG).show();
-            if (bottomNav.getSelectedItemId() != R.id.nav_settings) {
-                bottomNav.setSelectedItemId(R.id.nav_settings);
-            }
+            openSettings();
         });
     }
 
-    private void renderBanner(ConnectionState.Kind kind, boolean onSettingsTab) {
-        ConnectionBanner state = ConnectionBanner.of(kind, onSettingsTab);
+    /** 설정 탭이 선택돼 있고 그 위에 전체 화면이 없을 때만 "설정 화면에 있다"고 본다. */
+    private boolean isSettingsShown() {
+        return bottomNav.getSelectedItemId() == R.id.nav_settings
+                && getSupportFragmentManager().getBackStackEntryCount() == 0;
+    }
+
+    /** 이미 설정 탭이면 탭 선택 콜백이 다시 오지 않으므로 위에 열린 전체 화면만 닫는다. */
+    private void openSettings() {
+        if (bottomNav.getSelectedItemId() == R.id.nav_settings) {
+            getSupportFragmentManager().popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        } else {
+            bottomNav.setSelectedItemId(R.id.nav_settings);
+        }
+    }
+
+    private void renderBanner(ConnectionState.Kind kind) {
+        renderBanner(kind, isSettingsShown());
+    }
+
+    private void renderBanner(ConnectionState.Kind kind, boolean onSettingsScreen) {
+        ConnectionBanner state = ConnectionBanner.of(kind, onSettingsScreen);
         banner.setVisibility(state.visible ? View.VISIBLE : View.GONE);
         if (!state.visible) return;
         bannerText.setText(state.message);
@@ -168,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
         bannerAction.setText(state.actionLabel);
         bannerAction.setOnClickListener(v -> {
             if (state.action == ConnectionBanner.Action.RETRY) viewModel.fetchDevices(true);
-            else if (state.action == ConnectionBanner.Action.OPEN_SETTINGS) bottomNav.setSelectedItemId(R.id.nav_settings);
+            else if (state.action == ConnectionBanner.Action.OPEN_SETTINGS) openSettings();
         });
     }
 

@@ -62,9 +62,10 @@ public class DeviceViewModel extends ViewModel {
     public LiveData<OneTimeEvent<ControlFailure>> getControlFailure() { return controlFailure; }
 
     // 등록 작업 폴링 상태. 메인 스레드에서만 바뀐다.
-    private final MutableLiveData<Boolean> commissioning = new MutableLiveData<>(false);
     private Device pairingDevice;
     private Runnable pollRunnable;
+    // 토큰 오류로 폴링을 멈춘 작업. 설정을 다시 저장하면 이어서 묻는다.
+    private String pausedJobId;
     private long commissionStartedAt;
     // 진행·결과 화면이 보는 상태. null이면 등록한 적 없거나 결과를 확인함.
     private final MutableLiveData<CommissionStatus> commissionStatus = new MutableLiveData<>();
@@ -228,9 +229,7 @@ public class DeviceViewModel extends ViewModel {
                 new ControlFailure(deviceId, currentName(deviceId), command, reason)));
     }
 
-    /** 등록 작업이 진행 중이면 true. 기기 추가 버튼을 잠그는 데 쓴다(서버도 동시에 1개만 받는다). */
-    public LiveData<Boolean> getCommissioning() { return commissioning; }
-
+    /** 진행 중(isActive)이면 기기 추가 버튼이 "등록 진행 보기"가 된다(서버도 동시에 1개만 받는다). */
     public LiveData<CommissionStatus> getCommissionStatus() { return commissionStatus; }
     public LiveData<OneTimeEvent<CommissionStatus>> getCommissionFinished() { return commissionFinished; }
 
@@ -261,7 +260,6 @@ public class DeviceViewModel extends ViewModel {
         tempDevice.setPairing(true);
         tempDevice.setType(type);
         pairingDevice = tempDevice;
-        commissioning.setValue(true);
         deviceList.setValue(withPairingItem(deviceList.getValue()));
 
         RetrofitClient.getApi().addDevice(request).enqueue(new Callback<CommissionJobResponse>() {
@@ -339,6 +337,11 @@ public class DeviceViewModel extends ViewModel {
                 finishCommission(current.failed(error != null ? error.code : null, error != null ? error.message : null));
                 if (CommissionPoller.shouldRefreshListAfterFailure(error)) fetchDevices();
                 break;
+            case PAUSED:
+                // 결과를 내지 않고 진행 화면은 그대로 둔다. 토큰 안내는 연결 상태가 맡는다.
+                pollRunnable = null;
+                pausedJobId = jobId;
+                break;
             case LOST:
             case TIMED_OUT:
                 endCommission();
@@ -346,6 +349,13 @@ public class DeviceViewModel extends ViewModel {
                 fetchDevices();
                 break;
         }
+    }
+
+    /** 설정을 저장한 뒤 부른다. 토큰 오류로 멈춘 등록 확인이 있으면 바로 다시 묻는다. */
+    public void resumeCommissionPolling() {
+        String jobId = pausedJobId;
+        pausedJobId = null;
+        if (jobId != null && pairingDevice != null) pollCommission(jobId);
     }
 
     private long elapsedSinceCommission() {
@@ -359,7 +369,7 @@ public class DeviceViewModel extends ViewModel {
             pollRunnable = null;
         }
         pairingDevice = null;
-        commissioning.setValue(false);
+        pausedJobId = null;
         removeTempDevice();
     }
 

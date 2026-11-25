@@ -101,8 +101,8 @@ public class HomeFragment extends Fragment {
         viewModel.getTileTrends().observe(getViewLifecycleOwner(), adapter::setTrends);
 
         // 등록 중에는 새 등록 대신 진행 화면을 연다(서버도 동시에 1개만 받는다).
-        viewModel.getCommissioning().observe(getViewLifecycleOwner(),
-                running -> fab.setText(Boolean.TRUE.equals(running) ? "등록 진행 보기" : "기기 추가"));
+        viewModel.getCommissionStatus().observe(getViewLifecycleOwner(),
+                status -> fab.setText(status != null && status.isActive() ? "등록 진행 보기" : "기기 추가"));
     }
 
     @Override

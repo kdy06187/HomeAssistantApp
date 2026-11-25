@@ -10,7 +10,6 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import okhttp3.OkHttpClient;
 import retrofit2.Retrofit;
@@ -37,22 +36,13 @@ public class RetrofitClient {
     private static final MutableLiveData<ConnectionState.Kind> connectionState =
             new MutableLiveData<>(ConnectionState.Kind.OK);
 
-    // LiveData는 새 관찰자에게 마지막 값을 다시 주므로(화면 회전 등),
-    // 처리 여부는 플래그로 따로 관리해 토큰 오류로 바뀐 순간의 설정 탭 이동이 한 번만 일어나게 한다.
-    private static final AtomicBoolean unauthorizedPending = new AtomicBoolean(false);
-    private static final MutableLiveData<Boolean> unauthorizedSignal = new MutableLiveData<>();
-
     public static LiveData<ConnectionState.Kind> getConnectionState() {
         return connectionState;
     }
 
-    public static LiveData<Boolean> getUnauthorizedSignal() {
-        return unauthorizedSignal;
-    }
-
-    /** 처리하지 않은 토큰 오류 진입이 있으면 true를 돌려주고 플래그를 내린다. */
-    public static boolean consumeUnauthorized() {
-        return unauthorizedPending.getAndSet(false);
+    /** 토큰 오류로 들어간 뒤 아직 안내하지 않았으면 true를 돌려주고 내린다. */
+    public static boolean consumeTokenNotice() {
+        return connection.consumeTokenNotice();
     }
 
     /** 지금 토큰 오류 상태면 true. 설정 화면이 토큰 칸에 오류를 보인다. */
@@ -62,7 +52,6 @@ public class RetrofitClient {
 
     /** 설정을 저장하면 새 값으로 다시 판단한다(배너를 내리고, 또 틀리면 다시 안내). */
     public static void onSettingsSaved() {
-        unauthorizedPending.set(false);
         connection.reset();
         connectionState.setValue(connection.get());
     }
@@ -78,23 +67,20 @@ public class RetrofitClient {
         mainHandler.post(() -> connectionState.setValue(connection.get()));
     }
 
-    private static final ConnectionStateInterceptor.Listener connectionListener =
-            new ConnectionStateInterceptor.Listener() {
-                @Override
-                public void onResponse(int httpCode) {
-                    if (!connection.onResponse(httpCode)) return;
-                    publishLatest();
-                    if (connection.get() == ConnectionState.Kind.TOKEN_ERROR) {
-                        unauthorizedPending.set(true);
-                        unauthorizedSignal.postValue(true);
-                    }
-                }
+    /** 이 세대 클라이언트의 결과만 상태에 반영하는 감시자. */
+    private static ConnectionStateInterceptor.Listener listenerFor(int generation) {
+        return new ConnectionStateInterceptor.Listener() {
+            @Override
+            public void onResponse(int httpCode) {
+                if (connection.onResponse(generation, httpCode) != ConnectionState.Change.NONE) publishLatest();
+            }
 
-                @Override
-                public void onNetworkFailure() {
-                    if (connection.onNetworkFailure()) publishLatest();
-                }
-            };
+            @Override
+            public void onNetworkFailure() {
+                if (connection.onNetworkFailure(generation) != ConnectionState.Change.NONE) publishLatest();
+            }
+        };
+    }
 
     public static void rebuildClient(String ip, String port) {
         String baseUrl = "http://" + ip + ":" + port + "/";
@@ -107,7 +93,7 @@ public class RetrofitClient {
                 .readTimeout(60, TimeUnit.SECONDS)
                 .writeTimeout(60, TimeUnit.SECONDS)
                 // AuthInterceptor가 만든 401(형식이 틀린 토큰)도 받도록 상태 감시를 바깥에 둔다.
-                .addInterceptor(new ConnectionStateInterceptor(connectionListener))
+                .addInterceptor(new ConnectionStateInterceptor(listenerFor(connection.nextGeneration())))
                 .addInterceptor(new AuthInterceptor(() -> apiToken))
                 .build();
 
