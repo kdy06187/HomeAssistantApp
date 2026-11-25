@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-07h-5 해설 — 빈틈 시험 채우기</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07h-5 해설 — 빈틈 시험 채우기</h1>
+  <p>ui-1 브랜치 · UI 1차 보완 07h ⑤ · U23·U24·U25·U26 · 2026-11-25</p>
+</header>
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>QR 분석기(U23)</b>: 카메라 없이 가짜 프레임으로 <code>QrAnalyzer</code>를 시험한다. 모든 경로에서 <code>close()</code>, Matter QR은 한 번만, 일반 QR 뒤 Matter QR도 읽힘.</li>
+    <li><b>취소한 요청(U24)</b>: 화면을 떠나 취소한 요청은 "서버에 닿지 않음"으로 세지 않는다.</li>
+    <li><b>연결 상태(U25)</b>: 스레드 2개가 동시에 401을 보내도 토큰 오류 진입은 1번. 성공 범위 경계 199·200·299·300.</li>
+    <li><b>경계값(U26)</b>: Wi-Fi 32/33바이트·63/64바이트(한글 3바이트·이모지 4바이트), 이모지 이름 64/65자, 토큰 중간 줄바꿈, 폴링 상한, QR 버퍼 최소 길이.</li>
+  </ul>
+  <div class="table-wrap"><table>
+    <tr><th>시험 파일</th><th>더한 것</th></tr>
+    <tr><td><code>view/QrAnalyzerTest</code>(새로)</td><td>가짜 <code>ImageProxy</code>(java.lang.reflect.Proxy) 4개</td></tr>
+    <tr><td><code>view/QrDecoderTest</code></td><td>마지막 줄 padding 없는 최소 버퍼</td></tr>
+    <tr><td><code>network/ConnectionStateInterceptorTest</code></td><td>취소 분기</td></tr>
+    <tr><td><code>network/ConnectionStateTest</code></td><td>동시 401, 2xx 경계</td></tr>
+    <tr><td><code>network/CommissionInputValidatorTest</code>·<code>SettingsInputValidatorTest</code></td><td>바이트·글자 수 경계, 토큰 줄바꿈</td></tr>
+    <tr><td><code>viewmodel/CommissionPollerTest</code></td><td>통신 실패 상한, 본문 없는 2xx, 상한 뒤 401</td></tr>
+  </table></div>
+</section>
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림 — 가짜 프레임으로 분석기 시험</h2>
+  <svg class="flow" viewBox="0 0 760 170" role="img" aria-label="ZXing으로 QR 그림을 만들어 밝기 배열로 바꾸고, Proxy로 만든 가짜 ImageProxy에 담아 QrAnalyzer에 넣은 뒤, 리스너 기록과 close 횟수를 확인한다">
+    <rect x="10" y="40" width="150" height="56" rx="10"/><text x="85" y="64" text-anchor="middle">QRCodeWriter</text><text x="85" y="82" text-anchor="middle" class="small">QR → 밝기 배열</text>
+    <rect x="200" y="40" width="170" height="56" rx="10" class="hl"/><text x="285" y="64" text-anchor="middle">가짜 ImageProxy</text><text x="285" y="82" text-anchor="middle" class="small">Proxy.newProxyInstance</text>
+    <rect x="410" y="40" width="150" height="56" rx="10"/><text x="485" y="64" text-anchor="middle">QrAnalyzer</text><text x="485" y="82" text-anchor="middle" class="small">analyze(frame)</text>
+    <rect x="600" y="20" width="150" height="44" rx="10"/><text x="675" y="47" text-anchor="middle">events 목록</text>
+    <rect x="600" y="80" width="150" height="44" rx="10"/><text x="675" y="107" text-anchor="middle">closed 횟수</text>
+    <line x1="160" y1="68" x2="200" y2="68"/><line x1="370" y1="68" x2="410" y2="68"/>
+    <path d="M560,60 L600,42"/><path d="M560,76 L600,102"/>
+  </svg>
+</section>
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+  <h3>① 인터페이스를 통째로 흉내 내기</h3>
+<pre><code>(ImageProxy) Proxy.newProxyInstance(loader, new Class&lt;?&gt;[]{ImageProxy.class},
+    (p, method, args) -&gt; {
+        switch (method.getName()) {
+            case "getPlanes": return new PlaneProxy[]{plane};
+            case "close": closed++; return null;
+            default: throw new UnsupportedOperationException(method.getName());
+        }
+    });</code></pre>
+  <div class="why">
+    <div><b>무엇을</b> 메서드가 많은 <code>ImageProxy</code>를 클래스로 다 구현하지 않고, 불리는 메서드 이름만 골라 답한다.</div>
+    <div><b>왜</b> CameraX 버전이 올라 메서드가 늘어도 시험 코드가 깨지지 않는다. 예상 못 한 메서드를 부르면 예외로 바로 드러난다.</div>
+    <div class="drop"><b>빼면</b> 실제 카메라가 필요해 Studio·실기기에서만 확인할 수 있었다(<code>close</code>를 빼먹으면 카메라가 프레임을 더 안 준다 — 화면이 멈춘 듯 보인다).</div>
+  </div>
+  <h3>② 동시성 시험</h3>
+<pre><code>CountDownLatch go = new CountDownLatch(1);
+// 두 스레드가 go.await() 뒤 동시에 401·통신 실패를 200번씩
+assertEquals(1, entered.get());</code></pre>
+  <div class="why"><div><b>왜</b> 07h-2에서 상태 변경과 "진입" 판단을 한 잠금 안에 넣었다. 잠금이 없으면 두 스레드가 모두 "내가 처음"이라고 판단해 안내가 두 번 나갈 수 있다. 50번 반복해 우연히 통과하는 일을 줄였다.</div></div>
+  <h3>③ 바이트 경계</h3>
+<pre><code>repeat("가", 10)  // 30바이트 → 통과
+repeat("가", 11)  // 33바이트 → SSID 최대 32 넘음
+repeat("😀", 16)  // 64바이트 → 비밀번호 최대 63 넘음</code></pre>
+  <div class="why"><div><b>왜</b> Wi-Fi 규격은 글자 수가 아니라 UTF-8 바이트로 센다. 반대로 기기 이름은 서버가 글자(코드 포인트)로 세므로 이모지 하나가 한 글자다. 두 규칙이 다르다는 걸 시험이 지킨다.</div></div>
+</section>
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b>동적 프록시(Proxy)</b>: 실행 중에 인터페이스 구현 객체를 만들어, 모든 메서드 호출을 한 함수로 받는 Java 기능.</li>
+    <li><b>CountDownLatch</b>: 여러 스레드를 같은 출발선에 세웠다가 한 번에 출발시키는 도구.</li>
+    <li><b>경계값 시험</b>: 허용 한계 바로 안쪽·바깥쪽 값을 넣어 보는 시험.</li>
+    <li><b>코드 포인트</b>: 사람이 보는 한 글자에 해당하는 유니코드 번호. 이모지는 UTF-16으로 2칸(서로게이트 쌍)이다.</li>
+  </ul>
+</section>
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol>
+    <li><code>QrAnalyzer.analyze</code>에서 <code>try/finally</code>를 빼면 어떤 시험이 깨질까?</li>
+    <li>동시성 시험에서 통신 실패를 섞은 이유는?</li>
+  </ol>
+  <details><summary>정답 보기</summary><ol>
+    <li><code>noQr_noCallback_closed</code>(QR 없으면 일찍 return)와 <code>failureWhileReading_stillClosed</code>(예외). 성공 경로만 <code>close</code>하던 실수를 잡는다.</li>
+    <li>토큰 오류 중 통신 실패가 상태를 바꾸면 안 된다는 규칙도 함께 본다. 실패가 상태를 풀어 버리면 진입이 여러 번 생긴다.</li>
+  </ol></details>
+</section>
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <p><b>목표</b>: <code>QrAnalyzerTest</code>에 "BAD_CHARS(예: <code>MT:abc</code> 소문자) 거절" 시험을 더하기. <b>고칠 파일</b>: 시험 파일만(새 브랜치에서). <b>완료 기준</b>: events가 <code>rejected BAD_CHARS</code> 하나, closed 1.</p>
+  <details><summary>힌트</summary><code>qr("MT:abc")</code>로 프레임을 만들고 <code>QrPayload.Check.BAD_CHARS</code>와 비교한다.</details>
+  <details><summary>정답</summary><pre><code>analyzer.analyze(frame(qr("MT:abc"), false));
+assertEquals(List.of("rejected " + QrPayload.Check.BAD_CHARS), events);
+assertEquals(1, closed);</code></pre></details>
+</section>
+
+</main>
+</body>
+</html>

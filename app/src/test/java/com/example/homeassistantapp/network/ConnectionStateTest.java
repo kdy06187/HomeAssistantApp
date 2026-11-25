@@ -9,6 +9,9 @@ import com.example.homeassistantapp.network.ConnectionState.Kind;
 
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class ConnectionStateTest {
     /** 첫 클라이언트를 만든 상태. */
     private static ConnectionState started() {
@@ -121,5 +124,52 @@ public class ConnectionStateTest {
         s.nextGeneration();
         assertEquals(Change.NONE, s.onResponse(current, 200));
         assertEquals(Kind.TOKEN_ERROR, s.get());
+    }
+
+    @Test
+    public void successBoundary_200to299() {
+        ConnectionState s = started();
+        respond(s, 401);
+        assertEquals(Change.NONE, respond(s, 199));
+        assertEquals(Change.NONE, respond(s, 300));
+        assertEquals(Kind.TOKEN_ERROR, s.get());
+        assertEquals(Change.CHANGED, respond(s, 299));
+        assertEquals(Kind.OK, s.get());
+        respond(s, 401);
+        assertEquals(Change.CHANGED, respond(s, 200));
+    }
+
+    @Test
+    public void concurrent401_entersTokenErrorOnce() throws Exception {
+        for (int round = 0; round < 50; round++) {
+            ConnectionState s = started();
+            int gen = s.currentGeneration();
+            AtomicInteger entered = new AtomicInteger();
+            CountDownLatch go = new CountDownLatch(1);
+            Runnable worker = () -> {
+                try {
+                    go.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                for (int i = 0; i < 200; i++) {
+                    if (s.onResponse(gen, 401) == Change.ENTERED_TOKEN_ERROR) entered.incrementAndGet();
+                    s.onNetworkFailure(gen);
+                }
+            };
+            Thread a = new Thread(worker);
+            Thread b = new Thread(worker);
+            a.start();
+            b.start();
+            go.countDown();
+            a.join();
+            b.join();
+            // 401과 통신 실패만 오가면 토큰 오류는 한 번 들어간 뒤 풀리지 않는다.
+            assertEquals(1, entered.get());
+            assertEquals(Kind.TOKEN_ERROR, s.get());
+            assertTrue(s.consumeTokenNotice());
+            assertFalse(s.consumeTokenNotice());
+        }
     }
 }

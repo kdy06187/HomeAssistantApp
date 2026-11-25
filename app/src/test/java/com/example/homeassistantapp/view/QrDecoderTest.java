@@ -52,4 +52,13 @@ public class QrDecoderTest {
         assertNull(new QrDecoder().decode(new byte[10], 100, 100, 100));
         assertNull(new QrDecoder().decode(white, 100, 100, 50));
     }
+
+    @Test
+    public void shortestBuffer_lastRowWithoutPadding() throws Exception {
+        // 카메라 버퍼는 마지막 줄 끝 padding을 생략하기도 한다. 그 길이까지는 읽고, 한 바이트라도 짧으면 null.
+        byte[] padded = luminance(CODE, 300, 320);
+        int minimum = 320 * 299 + 300;
+        assertEquals(CODE, new QrDecoder().decode(java.util.Arrays.copyOf(padded, minimum), 300, 300, 320));
+        assertNull(new QrDecoder().decode(java.util.Arrays.copyOf(padded, minimum - 1), 300, 300, 320));
+    }
 }

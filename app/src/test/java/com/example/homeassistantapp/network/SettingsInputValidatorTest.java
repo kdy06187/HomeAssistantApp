@@ -84,4 +84,14 @@ public class SettingsInputValidatorTest {
         assertNull(SettingsInputValidator.checkPort("8000"));
         assertNotNull(valid("192.168.0.010", "8000").get(SettingsInputValidator.Field.SERVER_IP));
     }
+
+    @Test
+    public void token_innerNewlineRejected_surroundingTrimmed() {
+        assertNotNull(SettingsInputValidator.checkToken("abc\ndef", false));
+        assertNotNull(SettingsInputValidator.checkToken("abc def", true));
+        assertNull(SettingsInputValidator.checkToken("\n abcdef \r\n", false));
+        // 칸이 비면 저장된 토큰이 있을 때만 통과한다.
+        assertNull(SettingsInputValidator.checkToken(" \n", true));
+        assertNotNull(SettingsInputValidator.checkToken(" \n", false));
+    }
 }

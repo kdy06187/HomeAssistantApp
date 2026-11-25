@@ -193,4 +193,24 @@ public class CommissionInputValidatorTest {
         assertTrue(CommissionInputValidator.isIpv4("192.168.100.10"));
         assertFalse(tcp("192.168.0.010").isValid());
     }
+
+    @Test
+    public void wifiByteBoundaries() {
+        assertTrue(CommissionInputValidator.validate("MATTER", "플러그", "34970112332", repeat("a", 32), "p").isValid());
+        // 한글은 글자당 3바이트: 10자 = 30바이트, 11자 = 33바이트
+        assertTrue(CommissionInputValidator.validate("MATTER", "플러그", "34970112332", repeat("가", 10), "p").isValid());
+        assertFalse(CommissionInputValidator.validate("MATTER", "플러그", "34970112332", repeat("가", 11), "p").isValid());
+        assertTrue(CommissionInputValidator.validate("MATTER", "플러그", "34970112332", "w", repeat("p", 63)).isValid());
+        assertFalse(CommissionInputValidator.validate("MATTER", "플러그", "34970112332", "w", repeat("p", 64)).isValid());
+        // 이모지는 4바이트: 15개 + 3글자 = 63바이트, 16개 = 64바이트
+        assertTrue(CommissionInputValidator.validate("MATTER", "플러그", "34970112332", "w", repeat("\uD83D\uDE00", 15) + "abc").isValid());
+        assertFalse(CommissionInputValidator.validate("MATTER", "플러그", "34970112332", "w", repeat("\uD83D\uDE00", 16)).isValid());
+    }
+
+    @Test
+    public void deviceName_emojiCountedAsOneChar() {
+        // 이모지 하나는 UTF-16으로 2칸이지만 한 글자로 센다.
+        assertTrue(CommissionInputValidator.validate("MATTER", repeat("\uD83D\uDE00", 64), "34970112332", "w", "p").isValid());
+        assertFalse(CommissionInputValidator.validate("MATTER", repeat("\uD83D\uDE00", 65), "34970112332", "w", "p").isValid());
+    }
 }

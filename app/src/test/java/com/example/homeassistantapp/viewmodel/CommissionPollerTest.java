@@ -87,4 +87,17 @@ public class CommissionPollerTest {
         assertFalse(CommissionPoller.shouldRefreshListAfterFailure(e));
         assertFalse(CommissionPoller.shouldRefreshListAfterFailure(null));
     }
+
+    @Test
+    public void networkFailure_timesOutAtSameBoundary() {
+        assertEquals(CommissionPoller.Next.POLL_AGAIN, CommissionPoller.afterNetworkFailure(208_000));
+        assertEquals(CommissionPoller.Next.TIMED_OUT, CommissionPoller.afterNetworkFailure(208_001));
+    }
+
+    @Test
+    public void successWithoutBody_keepsPolling() {
+        assertEquals(CommissionPoller.Next.POLL_AGAIN, CommissionPoller.afterResponse(4_000, 200, null));
+        // 토큰 오류는 상한을 넘어도 멈춤(결과를 내지 않는다).
+        assertEquals(CommissionPoller.Next.PAUSED, CommissionPoller.afterResponse(300_000, 401, null));
+    }
 }

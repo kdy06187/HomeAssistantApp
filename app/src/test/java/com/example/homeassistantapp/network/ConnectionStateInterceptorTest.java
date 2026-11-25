@@ -58,4 +58,19 @@ public class ConnectionStateInterceptorTest {
             assertEquals(List.of("fail"), events);
         }
     }
+
+    @Test
+    public void canceledCall_notCountedAsNetworkFailure() {
+        // 화면을 떠나 요청을 취소하면 OkHttp는 IOException으로 끝낸다. 서버 상태와 상관없으니 세지 않는다.
+        Interceptor canceled = chain -> {
+            chain.call().cancel();
+            throw new IOException("Canceled");
+        };
+        try {
+            client(canceled).newCall(request()).execute();
+            fail();
+        } catch (IOException expected) {
+            assertEquals(List.of(), events);
+        }
+    }
 }
