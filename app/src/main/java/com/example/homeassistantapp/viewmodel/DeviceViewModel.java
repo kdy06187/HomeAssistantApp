@@ -47,6 +47,10 @@ public class DeviceViewModel extends ViewModel {
     private final MutableLiveData<Long> listRequestFinished = new MutableLiveData<>();
     public LiveData<Long> getListRequestFinished() { return listRequestFinished; }
 
+    // 마지막 목록 요청이 실패했으면 true. 목록을 한 번도 못 받았을 때 탭이 "불러오지 못함"을 보이는 데 쓴다.
+    private final MutableLiveData<Boolean> listLoadFailed = new MutableLiveData<>(false);
+    public LiveData<Boolean> getListLoadFailed() { return listLoadFailed; }
+
     // 삭제는 됐지만 기기 쪽 해제가 실패했을 때의 경고. 토스트보다 오래 보이도록 대화상자로 띄운다.
     private final MutableLiveData<OneTimeEvent<String>> deleteWarning = new MutableLiveData<>();
     public LiveData<OneTimeEvent<String>> getDeleteWarning() { return deleteWarning; }
@@ -166,6 +170,7 @@ public class DeviceViewModel extends ViewModel {
                         }
                     }
                     pendingStates.carryOver(devices, deviceList.getValue());
+                    listLoadFailed.setValue(false);
                     deviceList.setValue(withPairingItem(devices));
                     if (withEnergy && devices != null) {
                         for (Device device : devices) {
@@ -174,6 +179,7 @@ public class DeviceViewModel extends ViewModel {
                     }
                 } else {
                     showFailure("목록 로드 실패: ", response);
+                    listLoadFailed.setValue(true);
                     listRequestFinished.setValue(SystemClock.elapsedRealtime());
                 }
             }
@@ -182,6 +188,7 @@ public class DeviceViewModel extends ViewModel {
             public void onFailure(Call<DeviceListResponse> call, Throwable t) {
                 Log.d("DeviceViewModel", "fetchDevices onFailure: " + t.getClass().getSimpleName());
                 // 안내는 화면 위 연결 배너가 한다.
+                listLoadFailed.setValue(true);
                 listRequestFinished.setValue(SystemClock.elapsedRealtime());
             }
         });

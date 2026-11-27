@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP-07h-7 해설 — 시스템 바 여백과 실패 화면</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1f2328; --muted: #5f6368; --border: #e0e3e7;
+    --accent: #0066ff; --accent-soft: #e8f0ff; --good: #1a7f37; --good-soft: #e6f4ea;
+    --bad: #c62828; --bad-soft: #fdecea; --code-bg: #f6f8fa; --code-text: #24292f;
+    --svg-box: #ffffff; --svg-line: #5f6368;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --card: #171b21; --text: #e6e8eb; --muted: #9aa3ad; --border: #2b313a;
+      --accent: #5b9dff; --accent-soft: #1b2a44; --good: #57c27a; --good-soft: #15291c;
+      --bad: #ff7b72; --bad-soft: #3a1a1a; --code-bg: #0b0e12; --code-text: #d6dde6;
+      --svg-box: #1d232b; --svg-line: #9aa3ad;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.7; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 1.8em; margin: 0 0 4px; line-height: 1.3; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.3em; }
+  .card h3 { margin: 22px 0 6px; font-size: 1.08em; }
+  .num { display: inline-block; min-width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; text-align: center; line-height: 28px; font-size: .85em; margin-right: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .86em; line-height: 1.55; margin: 8px 0; }
+  pre code { background: none; padding: 0; }
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .ba { grid-template-columns: 1fr; } }
+  .ba .label { font-size: .8em; font-weight: 700; margin-bottom: -2px; }
+  .before .label { color: var(--bad); } .after .label { color: var(--good); }
+  .before pre { border-left: 4px solid var(--bad); }
+  .after pre { border-left: 4px solid var(--good); }
+  .why { display: grid; gap: 6px; margin-top: 8px; }
+  .why div { padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); }
+  .why b { color: var(--accent); }
+  .why .drop { background: var(--bad-soft); } .why .drop b { color: var(--bad); }
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font-size: 13px; font-family: inherit; }
+  .flow .small { fill: var(--muted); font-size: 11px; }
+  .flow rect { fill: var(--svg-box); stroke: var(--border); stroke-width: 1.5; }
+  .flow .hl { stroke: var(--accent); stroke-width: 2.5; }
+  .flow line, .flow path { stroke: var(--svg-line); stroke-width: 1.6; fill: none; }
+  .flow .no { stroke: var(--bad); stroke-dasharray: 5 4; }
+  details { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>APP-07h-7 해설 — 시스템 바 여백과 "불러오지 못함" 화면</h1>
+  <p>ui-1 브랜치 · 에뮬레이터 확인 문제 E1·E3 · 2026-11-26</p>
+</header>
+<section class="card">
+  <h2><span class="num">1</span>한눈에 보기</h2>
+  <ul>
+    <li><b>E1 여백</b>: targetSdk 35 앱은 Android 15에서 화면이 상태 표시줄·제스처 바 아래까지 그려진다(edge-to-edge). <code>MainActivity</code> 한 곳에서 여백을 나눠 준다: 위·좌우 → 루트, 아래 → 하단 탭이 보이면 탭이 스스로, 숨으면 Fragment 자리. 키보드(IME)도 같은 계산에 넣었다. 낮은 버전도 <code>EdgeToEdge.enable</code>로 같게 맞췄다.</li>
+    <li><b>E3 실패 화면</b>: 목록을 한 번도 받지 못했는데 요청이 실패하면 홈·기기 탭 가운데에 "목록을 불러오지 못했어요 + 다시 시도". 0개를 받은 "아직 등록된 기기가 없어요"와 나눈다(<code>ListScreenState</code>).</li>
+  </ul>
+  <div class="table-wrap"><table>
+    <tr><th>파일</th><th>변경</th></tr>
+    <tr><td><code>MainActivity</code></td><td><code>EdgeToEdge.enable</code>, <code>applySystemInsets</code>·<code>applyBottomInset</code></td></tr>
+    <tr><td><code>view/BottomInset</code>(새)</td><td>아래 여백 계산(시험 가능)</td></tr>
+    <tr><td><code>view/ListScreenState</code>(새)</td><td>LOADING·CONTENT·EMPTY·LOAD_FAILED 구분</td></tr>
+    <tr><td><code>DeviceViewModel</code></td><td><code>listLoadFailed</code> LiveData</td></tr>
+    <tr><td><code>HomeFragment</code>·<code>DeviceFragment</code></td><td>상태별 보이기, 다시 시도</td></tr>
+    <tr><td><code>layout/view_list_load_failed</code>(새)·<code>activity_main</code>·<code>AndroidManifest</code></td><td>실패 화면, 루트 id, <code>adjustResize</code></td></tr>
+  </table></div>
+</section>
+<section class="card">
+  <h2><span class="num">2</span>흐름 그림 — 여백을 누가 갖나</h2>
+  <svg class="flow" viewBox="0 0 760 250" role="img" aria-label="시스템이 준 여백이 루트에 오면 위와 좌우는 루트 패딩이 되고, 아래는 하단 탭이 보이면 탭이, 숨으면 Fragment 자리가 갖는다. 키보드가 올라오면 Fragment 자리 아래 여백이 키보드 높이에 맞춰진다">
+    <rect x="10" y="90" width="150" height="60" rx="10"/><text x="85" y="114" text-anchor="middle">시스템 여백</text><text x="85" y="134" text-anchor="middle" class="small">상태 바·제스처 바·키보드</text>
+    <rect x="200" y="90" width="150" height="60" rx="10" class="hl"/><text x="275" y="114" text-anchor="middle">MainActivity 루트</text><text x="275" y="134" text-anchor="middle" class="small">위·좌우 패딩</text>
+    <rect x="400" y="20" width="170" height="60" rx="10"/><text x="485" y="44" text-anchor="middle">하단 탭 보임</text><text x="485" y="64" text-anchor="middle" class="small">탭이 제스처 바 여백</text>
+    <rect x="400" y="160" width="170" height="60" rx="10"/><text x="485" y="184" text-anchor="middle">하단 탭 숨김</text><text x="485" y="204" text-anchor="middle" class="small">전체 화면</text>
+    <rect x="610" y="20" width="140" height="60" rx="10"/><text x="680" y="44" text-anchor="middle">Fragment 아래</text><text x="680" y="64" text-anchor="middle" class="small">키보드 − 탭 높이</text>
+    <rect x="610" y="160" width="140" height="60" rx="10"/><text x="680" y="184" text-anchor="middle">Fragment 아래</text><text x="680" y="204" text-anchor="middle" class="small">max(제스처, 키보드)</text>
+    <line x1="160" y1="120" x2="200" y2="120"/><path d="M350,110 L400,50"/><path d="M350,130 L400,190"/>
+    <line x1="570" y1="50" x2="610" y2="50"/><line x1="570" y1="190" x2="610" y2="190"/>
+  </svg>
+</section>
+<section class="card">
+  <h2><span class="num">3</span>코드 해설</h2>
+  <h3>① 한 곳에서 나누고, 쓴 만큼 빼서 넘기기</h3>
+<pre><code>Insets bars = insets.getInsets(systemBars() | displayCutout());
+v.setPadding(bars.left, bars.top, bars.right, 0);
+applyBottomInset();
+return insets.inset(bars.left, bars.top, bars.right, 0);</code></pre>
+  <div class="why">
+    <div><b>왜 한 곳</b> 화면마다(설정·상세·QR…) 따로 처리하면 빠뜨리기 쉽고, 배너는 어느 화면 위에도 뜬다. 모든 화면이 루트 안에 있으니 루트 한 번이면 된다.</div>
+    <div><b>왜 inset(...)으로 빼서 넘기나</b> 하단 탭도 여백을 스스로 처리한다. 위·좌우를 그대로 넘기면 탭이 좌우 여백을 한 번 더 넣는다.</div>
+    <div class="drop"><b>빼면</b> 배너 글자가 시계와 겹치고, 전체 화면 아래 버튼이 제스처 바에 눌린다(에뮬레이터 확인 E1).</div>
+  </div>
+  <h3>② 아래 여백 계산은 순수 함수로</h3>
+<pre><code>if (bottomNavShown) return Math.max(0, imeBottom - bottomNavHeight);
+return Math.max(systemBarsBottom, imeBottom);</code></pre>
+  <div class="why"><div><b>왜</b> 키보드는 하단 탭을 덮으며 올라온다. 탭이 보이면 탭 높이만큼은 이미 비어 있으니 그 차이만 더 비운다. Android 없이 시험할 수 있게 계산만 떼어 냈다(<code>BottomInsetTest</code>).</div></div>
+  <h3>③ "0개"와 "못 받음" 나누기</h3>
+<pre><code>if (devices == null) return lastLoadFailed ? LOAD_FAILED : LOADING;
+return devices.isEmpty() ? EMPTY : CONTENT;</code></pre>
+  <div class="why"><div><b>왜 null로 나누나</b> 목록 LiveData는 첫 응답 전까지 null이다. 한 번이라도 받았으면(0개 포함) 새로고침이 실패해도 마지막 목록을 두고 배너만 알린다. 그래야 잠깐 끊겼다고 기기들이 사라지지 않는다.</div></div>
+</section>
+<section class="card">
+  <h2><span class="num">4</span>용어 풀이</h2>
+  <ul>
+    <li><b>edge-to-edge</b>: 앱 화면이 상태 표시줄·내비게이션 바 뒤까지 그려지는 방식. 앱이 여백(insets)을 직접 비워야 한다.</li>
+    <li><b>WindowInsets</b>: 시스템이 "이만큼은 가려져 있다"고 알려 주는 값(위·아래·좌우).</li>
+    <li><b>IME</b>: 화면 키보드. 올라오면 아래 여백으로 높이를 알려 준다.</li>
+    <li><b>adjustResize</b>: 키보드가 뜰 때 화면을 밀지 말고 여백으로 처리하라는 설정.</li>
+  </ul>
+</section>
+<section class="card">
+  <h2><span class="num">5</span>이해도 질문</h2>
+  <ol>
+    <li>설정 탭(하단 탭 보임)에서 비밀번호 칸을 누르면 아래 여백은 얼마가 될까?</li>
+    <li>기기 10개를 받은 뒤 서버가 꺼지고 당겨서 새로고침하면 기기 탭은?</li>
+  </ol>
+  <details><summary>정답 보기</summary><ol>
+    <li>키보드 높이 − 하단 탭 높이. NestedScrollView가 그만큼 줄어 포커스 칸이 키보드 위로 스크롤된다.</li>
+    <li>10개 목록 그대로(CONTENT) + 위쪽 "연결할 수 없어요" 배너.</li>
+  </ol></details>
+</section>
+<section class="card">
+  <h2><span class="num">6</span>응용 실습</h2>
+  <p><b>목표</b>: 하단 탭이 숨은 전체 화면에서 Fragment 바탕색이 제스처 바 뒤까지 이어지게 하기(지금은 루트 바탕색이 보임). <b>고칠 곳</b>: 새 브랜치에서 <code>applyBottomInset</code>. <b>완료 기준</b>: 패딩 대신 각 화면 맨 아래 버튼 영역에만 여백이 들어가고 바탕은 끝까지 그려짐.</p>
+  <details><summary>힌트</summary><code>fragmentContainer</code>에 <code>clipToPadding=false</code>를 주거나, 여백 값을 Fragment에 넘겨 스크롤 뷰의 <code>paddingBottom</code>에만 더한다.</details>
+  <details><summary>정답 방향</summary>Fragment가 <code>ViewCompat.setOnApplyWindowInsetsListener</code>로 자기 스크롤 뷰에 아래 여백을 넣고, 루트는 아래를 건드리지 않는다. 대신 화면마다 처리해야 해서 이번에는 한 곳 방식을 골랐다.</details>
+</section>
+
+</main>
+</body>
+</html>

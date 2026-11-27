@@ -19,6 +19,7 @@ import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.view.DeviceAdapter;
 import com.example.homeassistantapp.view.DeviceOrder;
+import com.example.homeassistantapp.view.ListScreenState;
 import com.example.homeassistantapp.viewmodel.DeviceViewModel;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 
@@ -120,10 +121,22 @@ public class DeviceFragment extends Fragment {
         });
         touchHelper.attachToRecyclerView(recyclerView);
 
+        View loadFailedView = view.findViewById(R.id.loadFailedView);
+        view.findViewById(R.id.btnLoadFailedRetry).setOnClickListener(v -> {
+            swipeRefreshLayout.setRefreshing(true);
+            viewModel.fetchDevices();
+        });
+        Runnable renderState = () -> loadFailedView.setVisibility(
+                ListScreenState.of(viewModel.getDeviceList().getValue(),
+                        Boolean.TRUE.equals(viewModel.getListLoadFailed().getValue())) == ListScreenState.LOAD_FAILED
+                        ? View.VISIBLE : View.GONE);
+        viewModel.getListLoadFailed().observe(getViewLifecycleOwner(), failed -> renderState.run());
+
         viewModel.getDeviceList().observe(getViewLifecycleOwner(), devices -> {
             if (swipeRefreshLayout.isRefreshing()) {
                 swipeRefreshLayout.setRefreshing(false);
             }
+            renderState.run();
             if (devices == null) return;
             if (dragging) {
                 deferredDevices = devices;

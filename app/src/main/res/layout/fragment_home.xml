@@ -67,6 +67,12 @@
             app:icon="@drawable/ic_add" />
     </LinearLayout>
 
+    <include
+        layout="@layout/view_list_load_failed"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" />
+
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fabHomeAddDevice"
         android:layout_width="wrap_content"

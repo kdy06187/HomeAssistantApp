@@ -7,10 +7,14 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.homeassistantapp.fragment.CommissionProgressFragment;
@@ -23,6 +27,7 @@ import com.example.homeassistantapp.network.ServerDefaults;
 import com.example.homeassistantapp.security.StoredSecret;
 import com.example.homeassistantapp.security.TokenStore;
 import com.example.homeassistantapp.security.WifiPasswordStore;
+import com.example.homeassistantapp.view.BottomInset;
 import com.example.homeassistantapp.view.ConnectionBanner;
 import com.example.homeassistantapp.view.TileConfigStore;
 import com.example.homeassistantapp.viewmodel.CommissionStatus;
@@ -38,9 +43,13 @@ public class MainActivity extends AppCompatActivity {
     private MaterialButton bannerAction;
     private BottomNavigationView bottomNav;
     private DeviceViewModel viewModel;
+    private View fragmentContainer;
+    private WindowInsetsCompat lastInsets;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Android 15부터는 어차피 화면이 시스템 바 아래까지 그려진다. 낮은 버전도 같게 맞춰 여백을 한 곳에서 처리한다.
+        EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         // 회전처럼 Activity만 다시 만들어질 때는 정적 클라이언트·토큰이 이미 있으므로
@@ -62,6 +71,8 @@ public class MainActivity extends AppCompatActivity {
         banner = findViewById(R.id.connectionBanner);
         bannerText = findViewById(R.id.textConnectionBanner);
         bannerAction = findViewById(R.id.btnConnectionBanner);
+        fragmentContainer = findViewById(R.id.fragmentContainer);
+        applySystemInsets(findViewById(R.id.mainRoot));
         FragmentManager fragmentManager = getSupportFragmentManager();
 
         // 상세는 전체 화면이라 열려 있는 동안 하단 탭을 숨긴다.
@@ -199,5 +210,33 @@ public class MainActivity extends AppCompatActivity {
     private void syncBottomNav(BottomNavigationView bottomNav) {
         boolean detailOpen = getSupportFragmentManager().getBackStackEntryCount() > 0;
         bottomNav.setVisibility(detailOpen ? View.GONE : View.VISIBLE);
+        applyBottomInset();
+    }
+
+    /**
+     * 시스템 바·키보드 여백을 이 한 곳에서 처리한다. 위·좌우는 루트에 주어 배너와 모든 화면이 상태 표시줄 아래에 오게 하고,
+     * 아래는 하단 탭이 보이는지에 따라 Fragment 자리에 준다(하단 탭은 제스처 바 여백을 스스로 가진다).
+     */
+    private void applySystemInsets(View root) {
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            lastInsets = insets;
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            v.setPadding(bars.left, bars.top, bars.right, 0);
+            applyBottomInset();
+            // 위·좌우는 여기서 썼으므로 하단 탭에는 아래 여백만 넘긴다(두 번 비지 않게).
+            return insets.inset(bars.left, bars.top, bars.right, 0);
+        });
+        // 하단 탭 높이가 정해진 뒤 키보드 여백을 다시 계산한다.
+        bottomNav.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            if (b - t != ob - ot) applyBottomInset();
+        });
+    }
+
+    private void applyBottomInset() {
+        if (lastInsets == null || fragmentContainer == null) return;
+        int bottom = BottomInset.of(bottomNav.getVisibility() == View.VISIBLE, bottomNav.getHeight(),
+                lastInsets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom,
+                lastInsets.getInsets(WindowInsetsCompat.Type.ime()).bottom);
+        if (fragmentContainer.getPaddingBottom() != bottom) fragmentContainer.setPadding(0, 0, 0, bottom);
     }
 }

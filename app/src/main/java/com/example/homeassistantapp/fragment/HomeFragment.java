@@ -18,6 +18,7 @@ import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.dto.Device;
 import com.example.homeassistantapp.view.DeviceOrder;
 import com.example.homeassistantapp.view.HomeTile;
+import com.example.homeassistantapp.view.ListScreenState;
 import com.example.homeassistantapp.view.HomeTileAdapter;
 import com.example.homeassistantapp.view.TileConfig;
 import com.example.homeassistantapp.view.TileConfigStore;
@@ -86,12 +87,27 @@ public class HomeFragment extends Fragment {
         fab.setOnClickListener(v -> CommissionProgressFragment.openAddOrProgress(requireActivity()));
         emptyAdd.setOnClickListener(v -> CommissionProgressFragment.openAddOrProgress(requireActivity()));
 
+        View loadFailedView = view.findViewById(R.id.loadFailedView);
+        view.findViewById(R.id.btnLoadFailedRetry).setOnClickListener(v -> {
+            swipeRefresh.setRefreshing(true);
+            viewModel.fetchDevices(true);
+        });
+        Runnable renderState = () -> {
+            ListScreenState state = ListScreenState.of(viewModel.getDeviceList().getValue(),
+                    Boolean.TRUE.equals(viewModel.getListLoadFailed().getValue()));
+            emptyView.setVisibility(state == ListScreenState.EMPTY ? View.VISIBLE : View.GONE);
+            loadFailedView.setVisibility(state == ListScreenState.LOAD_FAILED ? View.VISIBLE : View.GONE);
+            // 빈 상태·실패 화면에는 자기 버튼이 있다.
+            boolean ownButton = state == ListScreenState.EMPTY || state == ListScreenState.LOAD_FAILED;
+            fab.setVisibility(ownButton ? View.GONE : View.VISIBLE);
+        };
+        renderState.run();
+        viewModel.getListLoadFailed().observe(getViewLifecycleOwner(), failed -> renderState.run());
+
         viewModel.getDeviceList().observe(getViewLifecycleOwner(), devices -> {
             swipeRefresh.setRefreshing(false);
+            renderState.run();
             if (devices == null) return;
-            boolean empty = HomeTile.isEmptyHome(devices);
-            emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
-            fab.setVisibility(empty ? View.GONE : View.VISIBLE);
             List<Device> ordered = sorted(devices);
             Map<String, TileConfig> configs = configsFor(ordered);
             adapter.setDevices(ordered, configs);
