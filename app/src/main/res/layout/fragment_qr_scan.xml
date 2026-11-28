@@ -12,7 +12,9 @@
         android:layout_height="match_parent"
         android:contentDescription="QR 코드를 비추는 카메라 화면" />
 
+    <!-- 크기·위치는 화면이 도구 막대와 아래 안내 사이 빈 곳에 맞춘다(가로 화면에서 겹치지 않게). -->
     <View
+        android:id="@+id/viewQrFrame"
         android:layout_width="240dp"
         android:layout_height="240dp"
         android:layout_gravity="center"
@@ -59,6 +61,7 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/panelQrBottom"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"

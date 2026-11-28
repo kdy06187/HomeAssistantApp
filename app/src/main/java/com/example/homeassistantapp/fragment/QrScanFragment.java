@@ -8,9 +8,11 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -34,6 +36,7 @@ import com.example.homeassistantapp.R;
 import com.example.homeassistantapp.network.ServerDefaults;
 import com.example.homeassistantapp.view.CameraPermissionStep;
 import com.example.homeassistantapp.view.QrAnalyzer;
+import com.example.homeassistantapp.view.QrFrameSize;
 import com.example.homeassistantapp.view.QrPayload;
 import com.example.homeassistantapp.viewmodel.QrScanResult;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -101,6 +104,27 @@ public class QrScanFragment extends Fragment {
         toolbar.setNavigationOnClickListener(v -> close());
         view.findViewById(R.id.btnManualEntry).setOnClickListener(v -> close());
         btnTorch.setOnClickListener(v -> toggleTorch());
+
+        View frame = view.findViewById(R.id.viewQrFrame);
+        View bottomPanel = view.findViewById(R.id.panelQrBottom);
+        view.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) ->
+                placeFrame(v.getWidth(), toolbar.getBottom(), bottomPanel.getTop(), frame));
+    }
+
+    /** 네모를 도구 막대와 아래 안내 사이 빈 곳 가운데에, 들어가는 크기로 놓는다. */
+    private void placeFrame(int width, int gapTop, int gapBottom, View frame) {
+        float density = getResources().getDisplayMetrics().density;
+        int gap = gapBottom - gapTop;
+        int size = QrFrameSize.of(Math.round(240 * density), width, gap, Math.round(16 * density));
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) frame.getLayoutParams();
+        int top = gapTop + (gap - size) / 2;
+        if (lp.width == size && lp.topMargin == top && lp.gravity == (Gravity.TOP | Gravity.CENTER_HORIZONTAL)) return;
+        lp.width = size;
+        lp.height = size;
+        lp.topMargin = top;
+        lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        // 레이아웃 콜백 안에서 바로 다시 배치하면 경고가 나므로 다음 차례에 적용한다.
+        frame.post(() -> frame.setLayoutParams(lp));
     }
 
     @Override
